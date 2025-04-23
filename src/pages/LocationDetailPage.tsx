@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Location, Cabin } from "@/lib/types";
@@ -7,6 +6,14 @@ import CabinCard from "@/components/CabinCard";
 import { Button } from "@/components/ui/button";
 import { Clock, MapPin, ArrowLeft } from "lucide-react";
 
+const beautySalonImage =
+  "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=800&q=80";
+
+function formatAddressForMaps(address: string, city: string, state: string) {
+  const full = `${address}, ${city}, ${state}`.replace(/\s/g, "+");
+  return encodeURIComponent(full);
+}
+
 const LocationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [location, setLocation] = useState<Location | null>(null);
@@ -14,11 +21,9 @@ const LocationDetailPage = () => {
 
   useEffect(() => {
     if (id) {
-      // Find the location by id
       const foundLocation = locations.find(loc => loc.id === id);
       setLocation(foundLocation || null);
-      
-      // Filter cabins by locationId
+
       const foundCabins = cabins.filter(cabin => cabin.locationId === id);
       setLocationCabins(foundCabins);
     }
@@ -35,32 +40,49 @@ const LocationDetailPage = () => {
     );
   }
 
+  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&output=embed`;
+
   return (
     <div>
-      {/* Hero section with location image */}
-      <div className="relative h-64 md:h-96">
-        <img
-          src={location.imageUrl}
-          alt={location.name}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="absolute bottom-0 left-0 p-6 text-white">
-          <Link to="/locations" className="flex items-center gap-2 text-sm hover:underline mb-2">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar para Locais
-          </Link>
-          <h1 className="text-3xl font-bold">{location.name}</h1>
-          <div className="mt-2 flex items-center gap-1">
-            <MapPin className="h-4 w-4" />
-            <span className="text-sm">
-              {location.address}, {location.city}, {location.state}
-            </span>
+      <div className="relative h-64 md:h-96 flex flex-col md:flex-row">
+        <div className="relative w-full md:w-3/4 h-64 md:h-96">
+          <img
+            src={beautySalonImage}
+            alt="Salão de beleza"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-black/40"></div>
+          <div className="absolute bottom-0 left-0 p-6 text-white">
+            <Link to="/locations" className="flex items-center gap-2 text-sm hover:underline mb-2">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar para Locais
+            </Link>
+            <h1 className="text-3xl font-bold">{location.name}</h1>
+            <div className="mt-2 flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              <span className="text-sm">
+                {location.address}, {location.city}, {location.state}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="w-full md:w-1/4 flex items-center justify-center md:relative mt-2 md:mt-0">
+          <div className="w-full h-44 md:h-full md:rounded-lg md:shadow-lg overflow-hidden">
+            <iframe
+              title="Mapa"
+              src={googleMapEmbedUrl}
+              width="100%"
+              height="100%"
+              className="border-0 w-full h-full"
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              style={{ minHeight: '160px', borderRadius: '0.5rem' }}
+            />
           </div>
         </div>
       </div>
 
-      {/* Location details */}
       <div className="container px-4 py-12 md:px-6">
         <div className="grid gap-8 md:grid-cols-[2fr_1fr]">
           <div>
@@ -132,7 +154,6 @@ const LocationDetailPage = () => {
           </div>
         </div>
 
-        {/* Cabins section */}
         <div className="mt-12">
           <h2 className="text-2xl font-bold">Cabines disponíveis</h2>
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">

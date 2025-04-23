@@ -7,14 +7,18 @@ interface LocationCardProps {
   location: Location;
 }
 
+const beautySalonImage =
+  "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=800&q=80";
+// Salon, bright, professional, safe Unsplash image.
+
 const LocationCard = ({ location }: LocationCardProps) => {
   return (
     <Link to={`/locations/${location.id}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
         <div className="aspect-[16/9] overflow-hidden">
           <img
-            src={location.imageUrl}
-            alt={location.name}
+            src={beautySalonImage}
+            alt="Salão de beleza"
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
         </div>
