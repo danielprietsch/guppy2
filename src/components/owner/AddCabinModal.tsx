@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -79,15 +80,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     evening: true
   });
 
-  const handleAddEquipment = () => {
-    if (!equipmentInput.trim()) return;
-    setEquipment([...equipment, equipmentInput.trim()]);
-    setEquipmentInput("");
-  };
-
-  const handleRemoveEquipment = (index: number) => {
-    setEquipment(equipment.filter((_, i) => i !== index));
-  };
+  // Removed handleAddEquipment and handleRemoveEquipment methods since they're not needed anymore with CabinEquipmentInput component
 
   const getPricesFromCalendar = () => ({
     defaultPricing: {
