@@ -1,10 +1,11 @@
+
 import AuthForm from "@/components/AuthForm";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthChangeEvent } from "@supabase/supabase-js";
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -25,10 +26,10 @@ const RegisterPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session) => {
+      (event, session) => {
         console.log("Auth state changed:", event);
         
-        if (event === "SIGNED_UP" as AuthChangeEvent && session) {
+        if (event === "SIGNED_UP" && session) {
           setIsRegistering(false);
           
           // Exibir toast de sucesso
