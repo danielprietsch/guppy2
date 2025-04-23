@@ -9,26 +9,20 @@ const Footer = () => {
             <Link to="/" className="flex items-center gap-2">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 100 100" 
+                viewBox="0 0 120 80" 
                 className="h-8 w-8 text-guppy-primary"
               >
                 <path 
-                  d="M20 50 C40 30, 60 30, 80 50 C60 70, 40 70, 20 50" 
+                  d="M30 40 C50 25, 70 25, 90 40 C70 55, 50 55, 30 40" 
                   fill="#9b87f5" 
                   stroke="#7E69AB" 
                   strokeWidth="2"
                 />
                 <path 
-                  d="M80 50 L90 40 Q95 45, 90 50 Z" 
+                  d="M90 40 L110 20 Q115 35, 100 50 Z" 
                   fill="#7E69AB" 
                 />
-                <circle cx="35" cy="45" r="3" fill="#1A1F2C" />
-                <path 
-                  d="M10 50 Q5 50, 10 45 Q15 40, 20 50" 
-                  fill="none" 
-                  stroke="#1A1F2C" 
-                  strokeWidth="1"
-                />
+                <circle cx="45" cy="38" r="3" fill="#1A1F2C" />
               </svg>
               <span className="text-xl font-bold text-guppy-tertiary">Guppy</span>
             </Link>
