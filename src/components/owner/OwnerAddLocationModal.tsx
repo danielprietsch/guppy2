@@ -20,16 +20,15 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
   const [endereco, setEndereco] = React.useState("");
   const [cidade, setCidade] = React.useState("");
   const [estado, setEstado] = React.useState("");
-  const [cabinas, setCabinas] = React.useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nome || !endereco || !cidade || !estado || !cabinas) {
+    if (!nome || !endereco || !cidade || !estado) {
       toast({ title: "Preencha todos os campos obrigatórios.", variant: "destructive" });
       return;
     }
 
-    // Criação "mock" de local, sem preços
+    // Criação "mock" de local, sem preços ou quantidade de cabines
     const novoLocation = {
       id: Math.random().toString(36).slice(2),
       name: nome,
@@ -37,7 +36,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       city: cidade,
       state: estado,
       zipCode: "",
-      cabinsCount: Number(cabinas),
+      cabinsCount: 0, // valor padrão zero, já que não será inserido agora
       openingHours: { open: "08:00", close: "20:00" },
       amenities: [],
       imageUrl: "",
@@ -53,7 +52,6 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
     setEndereco("");
     setCidade("");
     setEstado("");
-    setCabinas("");
   };
 
   return (
@@ -62,7 +60,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         <DialogHeader>
           <DialogTitle>Cadastrar Novo Local</DialogTitle>
           <DialogDescription>
-            Informe os dados básicos do local. O cadastro de valores por turno/dia será feito nas cabines posteriormente.
+            Informe os dados básicos do local. O cadastro de valores por turno/dia e de cabines será feito depois.
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4" onSubmit={handleSubmit}>
@@ -72,7 +70,6 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
             <Input placeholder="Cidade" value={cidade} onChange={e => setCidade(e.target.value)} required />
             <Input placeholder="Estado" value={estado} onChange={e => setEstado(e.target.value)} required />
           </div>
-          <Input placeholder="Quantidade de cabines" type="number" min={1} value={cabinas} onChange={e => setCabinas(e.target.value.replace(/\D/g, ""))} required />
           <DialogFooter className="gap-2 mt-2 flex-row justify-end">
             <DialogClose asChild>
               <Button type="button" variant="outline">Cancelar</Button>
