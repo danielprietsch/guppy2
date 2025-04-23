@@ -18,7 +18,7 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [userType, setUserType] = useState<"client" | "provider">("client");
+  const [userType, setUserType] = useState<"client" | "provider" | "owner">("client");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,7 +98,7 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
         {mode === "register" && (
           <div className="space-y-2">
             <Label>Tipo de Usuário</Label>
-            <RadioGroup value={userType} onValueChange={(value) => setUserType(value as "client" | "provider")}>
+            <RadioGroup value={userType} onValueChange={(value) => setUserType(value as "client" | "provider" | "owner")}>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="client" id="client" />
                 <Label htmlFor="client">Cliente (estou procurando profissionais)</Label>
@@ -106,6 +106,10 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="provider" id="provider" />
                 <Label htmlFor="provider">Prestador de Serviço (cabeleireiro/barbeiro/manicure/etc)</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="owner" id="owner" />
+                <Label htmlFor="owner">Dono de Local/Franqueado</Label>
               </div>
             </RadioGroup>
           </div>

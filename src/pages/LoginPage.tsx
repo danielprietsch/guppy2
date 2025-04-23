@@ -23,6 +23,8 @@ const LoginPage = () => {
       // Redirect based on user type
       if (foundUser.userType === "provider") {
         navigate("/provider/dashboard");
+      } else if (foundUser.userType === "owner") {
+        navigate("/owner/dashboard");
       } else {
         navigate("/client/dashboard");
       }

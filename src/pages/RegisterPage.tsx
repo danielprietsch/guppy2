@@ -12,7 +12,7 @@ const RegisterPage = () => {
     name: string;
     email: string;
     password: string;
-    userType: "client" | "provider";
+    userType: "client" | "provider" | "owner";
   }) => {
     // Check if email already exists
     const emailExists = users.some((user) => user.email === data.email);
@@ -39,15 +39,18 @@ const RegisterPage = () => {
       avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`,
       // Add default specialties if provider
       ...(data.userType === "provider" && { specialties: [] }),
+      // Add empty owned locations array if owner
+      ...(data.userType === "owner" && { ownedLocationIds: [] }),
     };
     
     // Store user in localStorage (in a real app, you'd use a proper auth system)
     localStorage.setItem("currentUser", JSON.stringify(newUser));
     
-    // In a real app, we'd redirect to a "complete your profile" page
-    // For this demo, we'll redirect to the dashboard based on user type
+    // Redirect based on user type
     if (data.userType === "provider") {
       navigate("/provider/dashboard");
+    } else if (data.userType === "owner") {
+      navigate("/owner/dashboard");
     } else {
       navigate("/client/dashboard");
     }

@@ -19,6 +19,7 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import ClientDashboardPage from "./pages/ClientDashboardPage";
 import ProviderDashboardPage from "./pages/ProviderDashboardPage";
+import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="contact" element={<ContactPage />} />
             <Route path="client/dashboard" element={<ClientDashboardPage />} />
             <Route path="provider/dashboard" element={<ProviderDashboardPage />} />
+            <Route path="owner/dashboard" element={<OwnerDashboardPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Route>

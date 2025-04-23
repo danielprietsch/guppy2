@@ -1,4 +1,3 @@
-
 import { User, Location, Cabin, Service, Booking, Appointment, Review } from "./types";
 
 // Usuários mantêm informações gerais, só alterando cidade se for apresentada explicitamente — usuários são genéricos.
@@ -46,6 +45,24 @@ export const users: User[] = [
     userType: "client",
     phoneNumber: "(71) 97777-6666",
     avatarUrl: "https://randomuser.me/api/portraits/women/5.jpg"
+  },
+  {
+    id: "6",
+    name: "Roberto Almeida",
+    email: "roberto.almeida@example.com",
+    userType: "owner",
+    phoneNumber: "(71) 96666-5555",
+    avatarUrl: "https://randomuser.me/api/portraits/men/6.jpg",
+    ownedLocationIds: ["1", "2"]
+  },
+  {
+    id: "7",
+    name: "Patricia Gomes",
+    email: "patricia.gomes@example.com",
+    userType: "owner",
+    phoneNumber: "(71) 95555-4444",
+    avatarUrl: "https://randomuser.me/api/portraits/women/7.jpg",
+    ownedLocationIds: ["3", "4"]
   }
 ];
 

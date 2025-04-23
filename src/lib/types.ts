@@ -1,12 +1,12 @@
-
 export interface User {
   id: string;
   name: string;
   email: string;
-  userType: "client" | "provider";
+  userType: "client" | "provider" | "owner";
   phoneNumber?: string;
   avatarUrl?: string;
   specialties?: string[];
+  ownedLocationIds?: string[]; // For owners to track which locations they own
 }
 
 export interface Location {
