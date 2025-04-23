@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
-import { LogOut, UserCircle } from "lucide-react";
+import { LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,16 +33,19 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
       ? "/owner/profile"
       : "/client/profile";
 
+  // Extract first letter of name for avatar fallback
+  const firstLetter = currentUser.name ? currentUser.name.charAt(0) : '?';
+
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
-          <Avatar className="size-8">
+          <Avatar className="h-8 w-8">
             {currentUser.avatarUrl ? (
               <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
             ) : (
               <AvatarFallback className="bg-primary/10 text-primary font-bold uppercase">
-                {currentUser.name.charAt(0)}
+                {firstLetter}
               </AvatarFallback>
             )}
           </Avatar>

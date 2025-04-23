@@ -24,18 +24,22 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   React.useEffect(() => {
     if (propUser) {
       setCurrentUser(propUser);
-    } else {
-      const storedUser = localStorage.getItem("currentUser");
-      if (storedUser) {
-        try {
-          const user = JSON.parse(storedUser) as User;
-          setCurrentUser(user);
-        } catch (error) {
-          console.error("Error parsing user data:", error);
-          localStorage.removeItem("currentUser");
-          setCurrentUser(null);
-        }
+      return;
+    }
+    
+    const storedUser = localStorage.getItem("currentUser");
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+        console.log("User loaded from localStorage:", parsedUser);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+        localStorage.removeItem("currentUser");
+        setCurrentUser(null);
       }
+    } else {
+      setCurrentUser(null);
     }
   }, [propUser]);
 
