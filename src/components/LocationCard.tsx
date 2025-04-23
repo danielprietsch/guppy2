@@ -31,24 +31,25 @@ const LocationCard = ({ location }: LocationCardProps) => {
   return (
     <Link to={`/locations/${location.id}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
-        <div className="aspect-[16/9] overflow-hidden relative">
+        <div className="aspect-[16/9] overflow-hidden">
           <img
             src={beautySalonImage}
             alt="Salão de beleza"
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
-          {/* Mini mapa flutuante na base direita da imagem */}
-          <div className="absolute bottom-3 right-3 w-28 h-20 rounded-lg shadow-lg overflow-hidden border border-white bg-white">
-            <iframe
-              title={`${location.name} Mapa`}
-              src={googleMapEmbedUrl}
-              width="100%"
-              height="100%"
-              style={{ minHeight: 60, border: 0, borderRadius: '0.5rem' }}
-              allowFullScreen
-              loading="lazy"
-            />
-          </div>
+        </div>
+        {/* Mini mapa agora vai abaixo da imagem principal */}
+        <div className="w-full h-28 bg-white border-t flex items-center justify-center">
+          <iframe
+            title={`${location.name} Mapa`}
+            src={googleMapEmbedUrl}
+            width="100%"
+            height="100%"
+            className="border-0 w-full h-full rounded-b-lg"
+            allowFullScreen
+            loading="lazy"
+            style={{ minHeight: 60, borderRadius: '0 0 0.75rem 0.75rem' }}
+          />
         </div>
         <CardContent className="p-4">
           <h3 className="font-semibold text-lg">{location.name}</h3>
@@ -78,3 +79,4 @@ const LocationCard = ({ location }: LocationCardProps) => {
 };
 
 export default LocationCard;
+
