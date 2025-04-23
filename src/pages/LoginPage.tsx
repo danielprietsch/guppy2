@@ -1,4 +1,3 @@
-
 import AuthForm from "@/components/AuthForm";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -13,7 +12,6 @@ const LoginPage = () => {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
-    // Verificar se já há sessão ativa
     const checkCurrentSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -31,7 +29,6 @@ const LoginPage = () => {
     
     checkCurrentSession();
     
-    // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("LoginPage: Auth state changed:", event, session);
@@ -40,7 +37,6 @@ const LoginPage = () => {
           console.log("LoginPage: User signed in successfully");
           setIsLoggingIn(false);
           
-          // Verificar ou criar perfil de usuário
           if (session) {
             navigateBasedOnUserType(session.user);
           }
@@ -60,7 +56,15 @@ const LoginPage = () => {
     console.log("LoginPage: Navigating based on user type:", user);
     
     try {
-      // Buscar perfil do usuário
+      if (!user) {
+        toast({
+          title: "Erro de autenticação",
+          description: "Informações do usuário não encontradas.",
+          variant: "destructive"
+        });
+        return;
+      }
+
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -70,7 +74,6 @@ const LoginPage = () => {
       if (error) {
         console.error("Error fetching user profile:", error);
         
-        // Tentar criar perfil baseado nos metadados, caso seja necessário
         if (user.user_metadata) {
           const userType = user.user_metadata.userType || "client";
           const name = user.user_metadata.name || (user.email ? user.email.split('@')[0] : "Usuário");
@@ -97,7 +100,6 @@ const LoginPage = () => {
             return;
           }
           
-          // Redirecionar com base no tipo dos metadados
           redirectBasedOnUserType(userType);
         } else {
           toast({
@@ -109,11 +111,9 @@ const LoginPage = () => {
         return;
       }
       
-      // Verificar o tipo de usuário
       const userType = profile?.user_type || "client";
       console.log("LoginPage: Detected user type:", userType);
       
-      // Mostrar toast de sucesso
       toast({
         title: "Login realizado com sucesso",
         description: `Bem-vindo, ${profile?.name || (user.email ? user.email.split('@')[0] : "Usuário")}!`,
@@ -129,9 +129,8 @@ const LoginPage = () => {
       });
     }
   };
-  
+
   const redirectBasedOnUserType = (userType: string) => {
-    // Redirecionar com base no tipo
     if (userType === "provider") {
       navigate("/provider/dashboard");
     } else if (userType === "owner") {
@@ -165,10 +164,8 @@ const LoginPage = () => {
         return Promise.reject(error);
       }
       
-      // Success will be handled by auth state change listener
       console.log("Login successful, waiting for auth state change...", authData);
       
-      // Double-check para garantir que o evento de auth state change será disparado
       if (authData?.session) {
         setTimeout(() => {
           navigateBasedOnUserType(authData.session?.user);
@@ -200,7 +197,6 @@ const LoginPage = () => {
       
       console.log("Resetting password for test user:", testEmail);
       
-      // Primeiro, verificamos se o usuário existe
       const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
       
       if (userError) {
@@ -219,7 +215,6 @@ const LoginPage = () => {
       if (!testUser) {
         console.log("Test user not found, creating one...");
         
-        // Criar usuário teste caso não exista
         const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
           email: testEmail,
           password: newPassword,
@@ -245,7 +240,6 @@ const LoginPage = () => {
           });
         }
       } else {
-        // Usuário existe, atualizar senha
         console.log("Test user exists, updating password...");
         
         const { error: resetError } = await supabase.auth.admin.updateUserById(
@@ -278,7 +272,7 @@ const LoginPage = () => {
       setIsResettingPassword(false);
     }
   };
-  
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       {authError && (
