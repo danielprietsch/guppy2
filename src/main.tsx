@@ -9,17 +9,10 @@ const rootElement = document.getElementById("root");
 if (!rootElement) {
   console.error("Failed to find the root element");
   document.body.innerHTML = '<div id="root"></div>';
-  const newRoot = document.getElementById("root");
-  createRoot(newRoot!).render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  const newRootElement = document.getElementById("root");
+  if (newRootElement) {
+    createRoot(newRootElement).render(<App />);
+  }
 } else {
-  const root = createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
+  createRoot(rootElement).render(<App />);
 }
