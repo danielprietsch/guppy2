@@ -1,15 +1,14 @@
-
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
-// Lista de imagens reais de salões de beleza para adicionar variedade
+// Updated list of beauty salon interior and workspace images
 const beautySalonImages = [
-  "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1520880867055-1e30d1cb001c?auto=format&fit=crop&w=800&q=80",
-  "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=800&q=80"
-  // pode adicionar mais se desejar
+  "https://images.unsplash.com/photo-1519823551089-5d6f7ea4f91b?auto=format&fit=crop&w=800&q=80", // Modern salon interior
+  "https://images.unsplash.com/photo-1622374812598-2dde6d9eeafb?auto=format&fit=crop&w=800&q=80", // Salon workstations
+  "https://images.unsplash.com/photo-1519985176146-9ff4a5f5a6d1?auto=format&fit=crop&w=800&q=80", // Stylish salon space
+  "https://images.unsplash.com/photo-1493612276216-9820ee2a5b1b?auto=format&fit=crop&w=800&q=80", // Professional salon setting
+  "https://images.unsplash.com/photo-1499155286265-79a9dc9c6380?auto=format&fit=crop&w=800&q=80", // Elegant salon interior
 ];
 
 function formatAddressForMaps(address: string, city: string, state: string) {
@@ -22,7 +21,7 @@ interface LocationCardProps {
 }
 
 const LocationCard = ({ location }: LocationCardProps) => {
-  // Seleciona uma imagem baseada no id do local para garantir variedade
+  // Selects a beauty salon image based on the location's id
   const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
   const beautySalonImage = beautySalonImages[imageIndex];
 
@@ -79,4 +78,3 @@ const LocationCard = ({ location }: LocationCardProps) => {
 };
 
 export default LocationCard;
-

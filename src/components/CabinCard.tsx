@@ -1,8 +1,15 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+
+const cabinImages = [
+  "https://images.unsplash.com/photo-1580130544977-da0c765f90d4?auto=format&fit=crop&w=800&q=80", // Professional hair station
+  "https://images.unsplash.com/photo-1519823551089-5d6f7ea4f91b?auto=format&fit=crop&w=800&q=80", // Modern salon workstation
+  "https://images.unsplash.com/photo-1622374812598-2dde6d9eeafb?auto=format&fit=crop&w=800&q=80", // Beauty cabin interior
+  "https://images.unsplash.com/photo-1497366811353-6870989d8005?auto=format&fit=crop&w=800&q=80", // Stylish salon workspace
+  "https://images.unsplash.com/photo-1615228402326-7adf9a257f2b?auto=format&fit=crop&w=800&q=80", // Professional beauty cabin
+];
 
 interface CabinCardProps {
   cabin: Cabin;
@@ -10,6 +17,11 @@ interface CabinCardProps {
 }
 
 const CabinCard = ({ cabin, location }: CabinCardProps) => {
+  const imageIndex = parseInt(cabin.id.replace(/\D/g, ""), 10) % cabinImages.length;
+  const cabinImage = cabinImages[imageIndex];
+
+  const displayImage = cabinImage;
+
   const formatShiftStatus = (isAvailable: boolean) => {
     return isAvailable ? (
       <span className="text-green-600">Disponível</span>
@@ -22,7 +34,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     <Card className="overflow-hidden">
       <div className="aspect-video overflow-hidden">
         <img
-          src={cabin.imageUrl}
+          src={displayImage}
           alt={cabin.name}
           className="h-full w-full object-cover"
         />
