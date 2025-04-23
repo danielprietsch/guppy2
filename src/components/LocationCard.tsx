@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -23,7 +24,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
   const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
   const beautySalonImage = beautySalonImages[imageIndex];
 
-  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&output=embed&z=17`;
+  // URL para o mapa navegável (embed padrão, sem 'output=embed&z=17')
+  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}`;
 
   return (
     <Link to={`/locations/${location.id}`}>
