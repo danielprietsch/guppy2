@@ -4,8 +4,8 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "@/hooks/use-toast";
+import { Scissors, User, Briefcase } from "lucide-react";
 
 type AuthFormMode = "login" | "register";
 
@@ -13,6 +13,30 @@ interface AuthFormProps {
   mode: AuthFormMode;
   onSubmit: (data: any) => void;
 }
+
+const userTypes = [
+  {
+    key: "client",
+    label: "Cliente",
+    desc: "Estou procurando profissionais",
+    img: "https://images.unsplash.com/photo-1582562124811-c09040d0a901?auto=format&fit=crop&w=300&q=80", // Gato relaxado
+    icon: <User className="w-8 h-8 text-purple-400" />,
+  },
+  {
+    key: "provider",
+    label: "Prestador",
+    desc: "Cabeleireiro, barbeiro, manicure etc.",
+    img: null,
+    icon: <Scissors className="w-8 h-8 text-pink-400" />,
+  },
+  {
+    key: "owner",
+    label: "Dono/Franqueado",
+    desc: "Local de serviços ou franquia",
+    img: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=300&q=80", // Prato empresarial
+    icon: <Briefcase className="w-8 h-8 text-blue-400" />,
+  },
+];
 
 const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
   const [email, setEmail] = useState("");
@@ -26,7 +50,6 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
     setIsLoading(true);
 
     try {
-      // In a real application, this would call an authentication service
       if (mode === "login") {
         await onSubmit({ email, password });
       } else {
@@ -94,27 +117,43 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
             onChange={(e) => setPassword(e.target.value)}
           />
         </div>
-        
+
         {mode === "register" && (
           <div className="space-y-2">
             <Label>Tipo de Usuário</Label>
-            <RadioGroup value={userType} onValueChange={(value) => setUserType(value as "client" | "provider" | "owner")}>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="client" id="client" />
-                <Label htmlFor="client">Cliente (estou procurando profissionais)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="provider" id="provider" />
-                <Label htmlFor="provider">Prestador de Serviço (cabeleireiro/barbeiro/manicure/etc)</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="owner" id="owner" />
-                <Label htmlFor="owner">Dono de Local/Franqueado</Label>
-              </div>
-            </RadioGroup>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {userTypes.map(type => (
+                <button
+                  type="button"
+                  key={type.key}
+                  onClick={() => setUserType(type.key as "client" | "provider" | "owner")}
+                  className={[
+                    "flex flex-col items-center ring-1 ring-muted p-3 rounded-lg transition shadow-sm group",
+                    userType === type.key
+                      ? "border-2 border-primary ring-2 ring-primary bg-muted"
+                      : "hover:ring-primary hover:border-primary/20 bg-background"
+                  ].join(" ")}
+                  aria-pressed={userType === type.key}
+                >
+                  <div className="mb-2">
+                    {type.img ? (
+                      <img
+                        src={type.img}
+                        alt={type.label}
+                        className="w-12 h-12 object-cover rounded-full border shadow"
+                      />
+                    ) : (
+                      type.icon
+                    )}
+                  </div>
+                  <span className="font-semibold text-md">{type.label}</span>
+                  <span className="text-xs text-muted-foreground mt-0.5 text-center">{type.desc}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
-        
+
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Aguarde..." : mode === "login" ? "Entrar" : "Cadastrar"}
         </Button>
@@ -137,7 +176,7 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
           </>
         )}
       </div>
-      
+
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t"></div>
@@ -148,7 +187,7 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
           </span>
         </div>
       </div>
-      
+
       <div className="grid grid-cols-3 gap-2">
         <Button variant="outline" className="w-full">
           Google
