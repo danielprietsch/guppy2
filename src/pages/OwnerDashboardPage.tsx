@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -195,6 +194,13 @@ const OwnerDashboardPage = () => {
     });
   };
 
+  const handleCreateLocation = () => {
+    toast({
+      title: "Funcionalidade em breve!",
+      description: "O cadastro de locais será implementado nas próximas etapas.",
+    });
+  };
+
   if (!currentUser) {
     return (
       <div className="container py-12">
@@ -233,6 +239,13 @@ const OwnerDashboardPage = () => {
                   ))}
                 </SelectContent>
               </Select>
+              <Button
+                variant="secondary"
+                className="w-full mt-4"
+                onClick={handleCreateLocation}
+              >
+                + Cadastrar Local
+              </Button>
             </CardContent>
           </Card>
 
