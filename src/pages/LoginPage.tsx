@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AuthChangeEvent } from "@supabase/supabase-js";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -25,11 +26,11 @@ const LoginPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event: AuthChangeEvent, session) => {
         console.log("Auth state changed:", event);
         
-        // Using string comparison instead of type checking
-        if (event === "SIGNED_IN") {
+        // Compare as strings to fix the type error
+        if (event.toString() === "SIGNED_IN") {
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário
