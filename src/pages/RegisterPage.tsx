@@ -4,7 +4,7 @@ import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Session, AuthChangeEvent } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -27,11 +27,11 @@ const RegisterPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
+      (event, session) => {
         console.log("Auth state changed:", event, session);
         
-        // Correctly compare enum values from AuthChangeEvent
-        if (event === AuthChangeEvent.SIGNED_UP || event === AuthChangeEvent.SIGNED_IN) {
+        // Use string literals for event comparisons since AuthChangeEvent is not exported
+        if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
           console.log("User signed up/in successfully");
           setIsRegistering(false);
           
