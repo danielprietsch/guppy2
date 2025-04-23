@@ -168,7 +168,7 @@ const ProviderDashboardPage = () => {
       providerId: currentUser.id,
       date: dt,
       shift: calendarTurn,
-      status: "confirmed", // Agora usando um valor específico do tipo
+      status: "confirmed", // Using a specific value from the type
       price: 100, // apenas simulação, valor fixo
     }));
     setProviderBookings([...providerBookings, ...newBookings]);

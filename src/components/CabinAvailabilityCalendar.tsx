@@ -29,16 +29,19 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   // Helper to format date to yyyy-mm-dd
   const fmtDate = (date: Date) => format(date, "yyyy-MM-dd");
 
-  // Função para verificar disponibilidade e cor no calendário
+  // Function to check availability and color in calendar
   const modifiers = {
     booked: (date: Date) =>
       daysBooked[fmtDate(date)] && daysBooked[fmtDate(date)][selectedTurn],
     selected: (date: Date) => selectedDates.includes(fmtDate(date)),
+    available: (date: Date) => 
+      !selectedDates.includes(fmtDate(date)) && 
+      !(daysBooked[fmtDate(date)] && daysBooked[fmtDate(date)][selectedTurn])
   };
 
   const handleDayClick = (date: Date) => {
     const d = fmtDate(date);
-    // Não permite selecionar datas já reservadas
+    // Don't allow selecting already booked dates
     if (daysBooked[d] && daysBooked[d][selectedTurn]) {
       return;
     }
@@ -48,20 +51,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       onSelectDates([...selectedDates, d]);
     }
   };
-
-  // Renderização customizada para colorir os dias
-  function dayClassName(date: Date) {
-    const d = fmtDate(date);
-    let base = "h-9 w-9 p-0 font-normal";
-    if (daysBooked[d] && daysBooked[d][selectedTurn]) {
-      base += " bg-red-500 text-white opacity-80";
-    } else if (selectedDates.includes(d)) {
-      base += " bg-primary text-white";
-    } else {
-      base += " bg-green-500 text-white opacity-80";
-    }
-    return base;
-  }
 
   return (
     <div>
@@ -77,8 +66,10 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         onMonthChange={setViewMonth}
         modifiers={modifiers}
         className="pointer-events-auto"
-        classNames={{
-          day: (date) => dayClassName(date),
+        modifiersClassNames={{
+          booked: "bg-red-500 text-white opacity-80",
+          selected: "bg-primary text-white",
+          available: "bg-green-500 text-white opacity-80"
         }}
       />
       <div className="flex items-center gap-4 mt-4">
