@@ -4,11 +4,24 @@ import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
 
+// Fotos de profissionais visualmente profissionais e bem arrumados
+const professionalAvatars = [
+  "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+  "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+  "https://images.unsplash.com/photo-1552058544-f2b08422138a?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+  "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+];
+
 interface ProviderCardProps {
   provider: User;
 }
 
 const ProviderCard = ({ provider }: ProviderCardProps) => {
+  // Garante variedade para cada provider na lista
+  const imageIndex = parseInt(provider.id.replace(/\D/g, ""), 10) % professionalAvatars.length;
+  const avatarUrl = professionalAvatars[imageIndex];
+
   // This would normally be calculated from reviews
   const rating = 4.5;
 
@@ -17,7 +30,7 @@ const ProviderCard = ({ provider }: ProviderCardProps) => {
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
         <div className="aspect-square overflow-hidden">
           <img
-            src={provider.avatarUrl}
+            src={avatarUrl}
             alt={provider.name}
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
