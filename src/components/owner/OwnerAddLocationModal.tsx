@@ -15,6 +15,7 @@ const formSchema = z.object({
   endereco: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres"),
   cidade: z.string().min(2, "Cidade deve ser preenchida"),
   estado: z.string().min(2, "Estado deve ser preenchido"),
+  cep: z.string().optional(),
 });
 
 interface Props {
@@ -35,19 +36,20 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       endereco: "",
       cidade: "",
       estado: "",
+      cep: "",
     },
   });
 
   const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Criação "mock" de local, sem preços ou quantidade de cabines
+    // Criação do novo local
     const novoLocation: Location = {
       id: Math.random().toString(36).slice(2),
       name: values.nome,
       address: values.endereco,
       city: values.cidade,
       state: values.estado,
-      zipCode: "",
-      cabinsCount: 0, // valor padrão zero, já que não será inserido agora
+      zipCode: values.cep || "",
+      cabinsCount: 0,
       openingHours: { open: "08:00", close: "20:00" },
       amenities: [],
       imageUrl: "",
@@ -129,6 +131,19 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
                 )}
               />
             </div>
+            <FormField
+              control={form.control}
+              name="cep"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CEP (opcional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="CEP" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <DialogFooter className="gap-2 mt-2 flex-row justify-end">
               <DialogClose asChild>
                 <Button type="button" variant="outline">Cancelar</Button>
