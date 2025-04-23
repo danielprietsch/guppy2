@@ -10,23 +10,13 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Check if user is logged in from localStorage
-    try {
-      const storedUser = localStorage.getItem("currentUser");
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
-        console.log("Index: User loaded from localStorage:", parsedUser);
-        setCurrentUser(parsedUser);
-      }
-    } catch (error) {
-      console.error("Error loading user from localStorage:", error);
-    }
-  }, [location.pathname]); // Re-check on route changes
+    // Remove autenticação automática do localStorage
+    localStorage.removeItem("currentUser");
+    setCurrentUser(null);
+  }, []); // Executar apenas uma vez na montagem
 
   const handleLogout = () => {
-    // Clear user from localStorage
     localStorage.removeItem("currentUser");
-    // Reset user state
     setCurrentUser(null);
   };
 
