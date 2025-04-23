@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Location, Cabin } from "@/lib/types";
-import { cabins } from "@/lib/mock-data";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -23,65 +22,126 @@ const OwnerDashboardPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in with Supabase
-    async function checkAndLoadUser() {
-      setLoading(true);
+    // Verificar se o usuário está autenticado
+    const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        console.log("Checking auth status...");
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!user) {
-          console.log("No authenticated user found, redirecting to login");
+        if (!session) {
+          console.log("No session found, redirecting to login");
           toast.error("Faça login para acessar esta página");
           navigate("/login");
           return;
         }
 
+        console.log("Session found:", session);
+        
         // Get user profile
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .single();
         
-        if (!profile) {
-          toast.error("Perfil não encontrado");
-          navigate("/login");
-          return;
+        if (error) {
+          console.error("Error fetching profile:", error);
+          
+          // Tentar criar um perfil a partir dos metadados do usuário
+          if (session.user.user_metadata) {
+            const userType = session.user.user_metadata.userType || "owner";
+            
+            if (userType !== "owner") {
+              toast.error("Você não tem permissão para acessar esta página.");
+              navigate("/");
+              return;
+            }
+            
+            const newProfile = {
+              id: session.user.id,
+              name: session.user.user_metadata.name || session.user.email?.split('@')[0] || "Usuário",
+              email: session.user.email,
+              user_type: userType,
+              avatar_url: session.user.user_metadata.avatar_url || ""
+            };
+            
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert(newProfile);
+              
+            if (insertError) {
+              console.error("Error creating profile:", insertError);
+              toast.error("Erro ao criar perfil");
+              navigate("/login");
+              return;
+            }
+            
+            setCurrentUser({
+              id: session.user.id,
+              name: newProfile.name,
+              email: newProfile.email || "",
+              userType: userType as "client" | "provider" | "owner",
+              avatarUrl: newProfile.avatar_url
+            });
+          } else {
+            toast.error("Perfil não encontrado");
+            navigate("/login");
+            return;
+          }
+        } else if (profile) {
+          // Check if user is owner type
+          if (profile.user_type !== "owner") {
+            toast.error("Você não tem permissão para acessar esta página.");
+            navigate("/");
+            return;
+          }
+          
+          // Set current user
+          setCurrentUser({
+            id: session.user.id,
+            name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+            email: profile.email || session.user.email || "",
+            userType: profile.user_type as "client" | "provider" | "owner",
+            avatarUrl: profile.avatar_url,
+            phoneNumber: profile.phone_number
+          });
         }
-
-        // Check if user is owner type
-        if (profile.user_type !== "owner") {
-          navigate("/");
-          toast.error("Você não tem permissão para acessar esta página.");
-          return;
-        }
         
-        // Set current user
-        const currentUser: User = {
-          id: user.id,
-          name: profile.name || user.email?.split('@')[0] || "Usuário",
-          email: profile.email || user.email || "",
-          userType: profile.user_type as "client" | "provider" | "owner",
-          avatarUrl: profile.avatar_url,
-          phoneNumber: profile.phone_number
-        };
+        setAuthChecked(true);
         
-        setCurrentUser(currentUser);
-        
-        // Load user locations from database
-        await loadUserLocations(user.id);
+        // Load user locations
+        await loadUserLocations(session.user.id);
       } catch (error) {
-        console.error("Error checking user:", error);
+        console.error("Error checking authentication:", error);
         toast.error("Erro ao verificar autenticação");
         navigate("/login");
       } finally {
         setLoading(false);
       }
-    }
+    };
     
-    checkAndLoadUser();
+    checkAuth();
+    
+    // Configurar listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event);
+        
+        if (event === "SIGNED_OUT") {
+          navigate("/login");
+        } else if (event === "SIGNED_IN" && session) {
+          // Se o usuário acabou de fazer login, recarregar a página
+          window.location.reload();
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   const loadUserLocations = async (userId: string) => {
@@ -251,11 +311,17 @@ const OwnerDashboardPage = () => {
     );
   }
 
-  if (!currentUser) {
+  if (authChecked && !currentUser) {
     return (
       <div className="container py-12">
         <h1 className="text-2xl font-bold mb-4">Erro de autenticação</h1>
         <p className="text-muted-foreground">Você precisa estar logado para acessar esta página.</p>
+        <button 
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded"
+          onClick={() => navigate("/login")}
+        >
+          Ir para página de login
+        </button>
       </div>
     );
   }

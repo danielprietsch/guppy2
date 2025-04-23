@@ -19,6 +19,7 @@ interface NavBarProps {
 const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
   const navigate = useNavigate();
 
   // Sincronizar com o estado de autenticação do Supabase
@@ -27,6 +28,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
     if (propUser) {
       console.log("NavBar: Using propUser:", propUser);
       setCurrentUser(propUser);
+      setIsLoading(false);
       return;
     }
     
@@ -34,52 +36,60 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
     
     // Verificar autenticação no Supabase
     const checkSupabaseAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        console.log("NavBar: Session found, loading user profile");
-        // Buscar perfil do usuário
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profile) {
-          const userData: User = {
-            id: session.user.id,
-            name: profile.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
-            email: profile.email || session.user.email || "",
-            userType: profile.user_type as "client" | "provider" | "owner",
-            avatarUrl: profile.avatar_url,
-            phoneNumber: profile.phone_number
-          };
-          
-          console.log("NavBar: User authenticated via Supabase:", userData);
-          setCurrentUser(userData);
-        } else {
-          console.log("NavBar: Session found but no profile for user:", session.user.id);
-          if (error) {
-            console.error("NavBar: Error fetching profile:", error);
-          }
-          
-          // Se não houver perfil mas houver metadados, criamos um usuário temporário para exibição
-          if (session.user.user_metadata) {
-            const tempUser: User = {
+      setIsLoading(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          console.log("NavBar: Session found, loading user profile");
+          // Buscar perfil do usuário
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profile) {
+            const userData: User = {
               id: session.user.id,
-              name: session.user.user_metadata.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
-              email: session.user.email || "",
-              userType: (session.user.user_metadata.userType as "client" | "provider" | "owner") || "client",
-              avatarUrl: session.user.user_metadata.avatar_url
+              name: profile.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
+              email: profile.email || session.user.email || "",
+              userType: profile.user_type as "client" | "provider" | "owner",
+              avatarUrl: profile.avatar_url,
+              phoneNumber: profile.phone_number
             };
-            setCurrentUser(tempUser);
+            
+            console.log("NavBar: User authenticated via Supabase:", userData);
+            setCurrentUser(userData);
           } else {
-            setCurrentUser(null);
+            console.log("NavBar: Session found but no profile for user:", session.user.id);
+            if (error) {
+              console.error("NavBar: Error fetching profile:", error);
+            }
+            
+            // Se não houver perfil mas houver metadados, criamos um usuário temporário para exibição
+            if (session.user.user_metadata) {
+              const tempUser: User = {
+                id: session.user.id,
+                name: session.user.user_metadata.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
+                email: session.user.email || "",
+                userType: (session.user.user_metadata.userType as "client" | "provider" | "owner") || "client",
+                avatarUrl: session.user.user_metadata.avatar_url
+              };
+              setCurrentUser(tempUser);
+            } else {
+              setCurrentUser(null);
+            }
           }
+        } else {
+          console.log("NavBar: No user authenticated in Supabase");
+          setCurrentUser(null);
         }
-      } else {
-        console.log("NavBar: No user authenticated in Supabase");
+      } catch (error) {
+        console.error("NavBar: Error checking auth:", error);
         setCurrentUser(null);
+      } finally {
+        setIsLoading(false);
       }
     };
     
@@ -126,7 +136,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   };
 
   // Debug output for NavBar render
-  console.log("NavBar rendering with currentUser:", currentUser);
+  console.log("NavBar rendering with currentUser:", currentUser, "isLoading:", isLoading);
 
   return (
     <header className="border-b">
@@ -154,7 +164,9 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
             </Link>
           </div>
 
-          {currentUser ? (
+          {isLoading ? (
+            <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
+          ) : currentUser ? (
             <UserMenu currentUser={currentUser} onLogout={handleLogout} />
           ) : (
             <div className="flex items-center gap-2">
