@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,33 +6,26 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Scissors, User, Briefcase } from "lucide-react";
 
-type AuthFormMode = "login" | "register";
-
-interface AuthFormProps {
-  mode: AuthFormMode;
-  onSubmit: (data: any) => void;
-}
-
 const userTypes = [
   {
     key: "client",
     label: "Cliente",
     desc: "Estou procurando profissionais",
-    img: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", // Professional woman working on laptop
+    img: "/icons/client-icon.svg", // Clean, minimalist icon representing a client
     icon: <User className="w-8 h-8 text-purple-400" />,
   },
   {
     key: "provider",
     label: "Prestador",
     desc: "Cabeleireiro, barbeiro, manicure etc.",
-    img: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7", // Person with professional equipment
+    img: "/icons/scissors-icon.svg", // Scissors icon representing service providers
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
   },
   {
     key: "owner",
     label: "Dono/Franqueado",
     desc: "Local de serviços ou franquia",
-    img: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d", // Professional workspace with laptop
+    img: "/icons/business-icon.svg", // Minimalist business/building icon
     icon: <Briefcase className="w-8 h-8 text-blue-400" />,
   },
 ];
