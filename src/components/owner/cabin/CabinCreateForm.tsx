@@ -3,18 +3,49 @@ import * as React from "react";
 import { DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CabinForm } from "./CabinForm";
-import { CabinFormProps } from "./types/cabinTypes";
+import { CabinFormState } from "./types/cabinTypes";
 
-export const CabinCreateForm: React.FC<CabinFormProps> = ({
+interface CabinCreateFormProps extends CabinFormState {
+  onSubmit: (formState: CabinFormState) => Promise<void>;
+  isSubmitting: boolean;
+  onCancel: () => void;
+  setName: (name: string) => void;
+  setDescription: (description: string) => void;
+  setEquipment: React.Dispatch<React.SetStateAction<string[]>>;
+  setPrecosPorDia: React.Dispatch<React.SetStateAction<any>>;
+  setPrecosPorDiaSemana: React.Dispatch<React.SetStateAction<any>>;
+  valorDiasUteis: string;
+  setValorDiasUteis: (value: string) => void;
+  valorFimSemana: string;
+  setValorFimSemana: (value: string) => void;
+  turnoInputs: any;
+  setTurnoInputs: React.Dispatch<React.SetStateAction<any>>;
+  setTurnoDisponibilidade: React.Dispatch<React.SetStateAction<any>>;
+  selectedDate: Date | undefined;
+  setSelectedDate: (date: Date | undefined) => void;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+}
+
+export const CabinCreateForm: React.FC<CabinCreateFormProps> = ({
   name,
+  setName,
   description,
+  setDescription,
   equipment,
+  setEquipment,
   precosPorDia,
+  setPrecosPorDia,
   precosPorDiaSemana,
+  setPrecosPorDiaSemana,
   valorDiasUteis,
   setValorDiasUteis,
   valorFimSemana,
   setValorFimSemana,
+  turnoInputs,
+  setTurnoInputs,
+  turnoDisponibilidade,
+  setTurnoDisponibilidade,
   selectedDate,
   setSelectedDate,
   activeTab,
@@ -22,7 +53,6 @@ export const CabinCreateForm: React.FC<CabinFormProps> = ({
   onSubmit,
   isSubmitting,
   onCancel,
-  ...props
 }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +62,7 @@ export const CabinCreateForm: React.FC<CabinFormProps> = ({
       equipment,
       precosPorDia,
       precosPorDiaSemana,
-      turnoDisponibilidade: props.turnoDisponibilidade,
+      turnoDisponibilidade,
     });
   };
 
@@ -40,23 +70,23 @@ export const CabinCreateForm: React.FC<CabinFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-4">
       <CabinForm
         name={name}
-        setName={(name) => props.setName?.(name)}
+        setName={setName}
         description={description}
-        setDescription={(desc) => props.setDescription?.(desc)}
+        setDescription={setDescription}
         equipment={equipment}
-        setEquipment={props.setEquipment}
+        setEquipment={setEquipment}
         precosPorDia={precosPorDia}
-        setPrecosPorDia={props.setPrecosPorDia}
+        setPrecosPorDia={setPrecosPorDia}
         precosPorDiaSemana={precosPorDiaSemana}
-        setPrecosPorDiaSemana={props.setPrecosPorDiaSemana}
+        setPrecosPorDiaSemana={setPrecosPorDiaSemana}
         valorDiasUteis={valorDiasUteis}
         setValorDiasUteis={setValorDiasUteis}
         valorFimSemana={valorFimSemana}
         setValorFimSemana={setValorFimSemana}
-        turnoInputs={props.turnoInputs}
-        setTurnoInputs={props.setTurnoInputs}
-        turnoDisponibilidade={props.turnoDisponibilidade}
-        setTurnoDisponibilidade={props.setTurnoDisponibilidade}
+        turnoInputs={turnoInputs}
+        setTurnoInputs={setTurnoInputs}
+        turnoDisponibilidade={turnoDisponibilidade}
+        setTurnoDisponibilidade={setTurnoDisponibilidade}
         selectedDate={selectedDate}
         setSelectedDate={setSelectedDate}
         activeTab={activeTab}
