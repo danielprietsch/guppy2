@@ -53,7 +53,6 @@ const App = () => {
                 <Route path="client/profile" element={<ClientProfilePage />} />
                 <Route path="provider/profile" element={<ProviderProfilePage />} />
                 <Route path="owner/profile" element={<OwnerProfilePage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
