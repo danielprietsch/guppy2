@@ -19,8 +19,8 @@ const RegisterPage = () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         console.log("Found existing session:", data.session);
-        // Usuário já está logado, redirecionar
-        navigateBasedOnUserType(data.session.user);
+        // O redirecionamento será gerenciado pelo componente Index
+        return;
       }
     };
     
@@ -41,15 +41,7 @@ const RegisterPage = () => {
             description: "Sua conta foi criada com sucesso.",
           });
           
-          // O redirecionamento será tratado no evento SIGNED_IN que vem em seguida
-        }
-
-        // Add debug for SIGNED_IN event
-        if (event === "SIGNED_IN") {
-          console.log("User signed in after registration");
-          if (session?.user) {
-            navigateBasedOnUserType(session.user);
-          }
+          // O redirecionamento será gerenciado pelo componente Index
         }
       }
     );
@@ -59,33 +51,6 @@ const RegisterPage = () => {
       subscription.unsubscribe();
     };
   }, [navigate]);
-  
-  const navigateBasedOnUserType = (user: any) => {
-    console.log("Navigating based on user type:", user);
-    
-    // Verificar se o usuário existe
-    if (!user) {
-      toast({
-        title: "Erro de autenticação",
-        description: "Informações do usuário não encontradas.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    // Verificar o tipo de usuário (do metadata ou padrão)
-    const userType = user.user_metadata?.userType || "client";
-    console.log("Detected user type:", userType);
-    
-    // Redirecionar com base no tipo
-    if (userType === "provider") {
-      navigate("/provider/dashboard");
-    } else if (userType === "owner") {
-      navigate("/owner/dashboard");
-    } else {
-      navigate("/client/dashboard");
-    }
-  };
 
   const handleRegister = async (data: {
     name: string;
