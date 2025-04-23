@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { Cabin } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
+import { CabinEquipmentInput } from "./CabinEquipmentInput";
 
 type Turno = "morning" | "afternoon" | "evening";
 
@@ -53,9 +53,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [equipment, setEquipment] = React.useState<string[]>([]);
-  const [equipmentInput, setEquipmentInput] = React.useState("");
 
-  // Pricing states
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [precosPorDia, setPrecosPorDia] = React.useState<PrecosPorDia>({});
   const [activeTab, setActiveTab] = React.useState<string>("individual");
@@ -81,7 +79,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     evening: true
   });
 
-  // Equipment add/remove
   const handleAddEquipment = () => {
     if (!equipmentInput.trim()) return;
     setEquipment([...equipment, equipmentInput.trim()]);
@@ -92,7 +89,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     setEquipment(equipment.filter((_, i) => i !== index));
   };
 
-  // Compose pricing object to match Cabin interface
   const getPricesFromCalendar = () => ({
     defaultPricing: {
       ...precosPorDiaSemana
@@ -102,7 +98,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     }
   });
 
-  // Form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) {
@@ -128,7 +123,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     toast({ title: "Cabine adicionada com sucesso!" });
     onOpenChange(false);
 
-    // Reset form
     setName("");
     setDescription("");
     setEquipment([]);
@@ -167,43 +161,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
                 rows={3}
               />
             </div>
-            <div>
-              <Label>Equipamentos</Label>
-              <div className="flex gap-2 mb-2">
-                <Input
-                  value={equipmentInput}
-                  onChange={(e) => setEquipmentInput(e.target.value)}
-                  placeholder="Adicionar equipamento"
-                  className="flex-1"
-                />
-                <Button type="button" onClick={handleAddEquipment}>
-                  <PlusCircle className="h-4 w-4 mr-2" />
-                  Adicionar
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {equipment.map((item, index) => (
-                  <span
-                    key={index}
-                    className="bg-secondary text-secondary-foreground px-2 py-1 rounded-md text-sm flex items-center"
-                  >
-                    {item}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5 ml-1 text-red-500"
-                      onClick={() => handleRemoveEquipment(index)}
-                    >
-                      <PlusCircle className="h-3 w-3" />
-                    </Button>
-                  </span>
-                ))}
-                {equipment.length === 0 && (
-                  <span className="text-muted-foreground text-sm">Nenhum equipamento adicionado</span>
-                )}
-              </div>
-            </div>
+            <CabinEquipmentInput equipment={equipment} setEquipment={setEquipment} />
           </div>
           <div className="border-t pt-4">
             <h3 className="font-medium mb-2">Configuração de Preços</h3>

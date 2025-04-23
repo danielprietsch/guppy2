@@ -1,15 +1,13 @@
-
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { Cabin } from "@/lib/types";
 import { CabinEquipmentInput } from "@/components/owner/CabinEquipmentInput";
 import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
+import { Label } from "@/components/ui/label";
 
 type Turno = "morning" | "afternoon" | "evening";
 
@@ -259,7 +257,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <label htmlFor="name">Nome da Cabine</label>
+              <Label htmlFor="name">Nome da Cabine</Label>
               <Input
                 id="name"
                 value={name}
@@ -269,7 +267,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
               />
             </div>
             <div>
-              <label htmlFor="description">Descrição</label>
+              <Label htmlFor="description">Descrição</Label>
               <Textarea
                 id="description"
                 value={description}

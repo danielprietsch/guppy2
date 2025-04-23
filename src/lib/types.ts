@@ -63,6 +63,23 @@ export interface Cabin {
   };
 }
 
+// Adding new global system equipment interface
+export interface SystemEquipment {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+// Adding list of predefined equipment
+export const PREDEFINED_EQUIPMENT: SystemEquipment[] = [
+  { id: "1", name: "Pia de lavar cabelo", description: "Pia profissional para lavagem de cabelo" },
+  { id: "2", name: "Kit tesouras", description: "Kit completo de tesouras profissionais" },
+  { id: "3", name: "Secador de cabelo", description: "Secador profissional de cabelo" },
+  { id: "4", name: "Cadeira", description: "Cadeira de corte principal" },
+  { id: "5", name: "Espelhos", description: "Espelhos para visualização do cliente" },
+  { id: "6", name: "Cadeira extra", description: "Cadeira adicional para acompanhantes" }
+];
+
 export interface Booking {
   id: string;
   cabinId: string;

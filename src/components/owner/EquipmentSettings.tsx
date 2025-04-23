@@ -9,11 +9,10 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
-import { Location, Cabin } from "@/lib/types";
-import { Plus, Trash2 } from "lucide-react";
+import { Location, Cabin, PREDEFINED_EQUIPMENT } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 interface EquipmentSettingsProps {
   selectedLocation: Location | null;
@@ -32,49 +31,28 @@ export const EquipmentSettings = ({
     return initialEquipment;
   });
   
-  const [newEquipment, setNewEquipment] = useState<Record<string, string>>(() => {
-    const initialNewEquipment: Record<string, string> = {};
-    locationCabins.forEach((cabin) => {
-      initialNewEquipment[cabin.id] = "";
+  const handleToggleEquipment = (cabinId: string, equipmentName: string, isChecked: boolean) => {
+    setCabinEquipment(prev => {
+      const cabinItems = [...(prev[cabinId] || [])];
+      
+      if (isChecked) {
+        // Add equipment if not already in array
+        if (!cabinItems.includes(equipmentName)) {
+          cabinItems.push(equipmentName);
+        }
+      } else {
+        // Remove equipment
+        const index = cabinItems.indexOf(equipmentName);
+        if (index !== -1) {
+          cabinItems.splice(index, 1);
+        }
+      }
+      
+      return {
+        ...prev,
+        [cabinId]: cabinItems
+      };
     });
-    return initialNewEquipment;
-  });
-
-  const handleNewEquipmentChange = (cabinId: string, value: string) => {
-    setNewEquipment((prev) => ({
-      ...prev,
-      [cabinId]: value,
-    }));
-  };
-  
-  const handleAddEquipment = (cabinId: string) => {
-    const equipmentToAdd = newEquipment[cabinId]?.trim();
-    
-    if (!equipmentToAdd) {
-      toast({
-        title: "Campo vazio",
-        description: "Por favor, insira o nome do equipamento.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setCabinEquipment((prev) => ({
-      ...prev,
-      [cabinId]: [...(prev[cabinId] || []), equipmentToAdd],
-    }));
-    
-    setNewEquipment((prev) => ({
-      ...prev,
-      [cabinId]: "",
-    }));
-  };
-  
-  const handleRemoveEquipment = (cabinId: string, indexToRemove: number) => {
-    setCabinEquipment((prev) => ({
-      ...prev,
-      [cabinId]: (prev[cabinId] || []).filter((_, index) => index !== indexToRemove),
-    }));
   };
   
   const handleSaveEquipment = () => {
@@ -89,55 +67,38 @@ export const EquipmentSettings = ({
       <CardHeader>
         <CardTitle>Equipamentos das Cabines - {selectedLocation?.name}</CardTitle>
         <CardDescription>
-          Cadastre os equipamentos disponíveis em cada cabine
+          Selecione os equipamentos disponíveis em cada cabine
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-8">
           {locationCabins.map((cabin) => (
             <div key={cabin.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-              <h3 className="font-medium text-lg mb-2">{cabin.name}</h3>
+              <h3 className="font-medium text-lg mb-4">{cabin.name}</h3>
               
-              <div className="mb-4">
-                <Label htmlFor={`equipment-list-${cabin.id}`}>Equipamentos Cadastrados</Label>
-                {cabinEquipment[cabin.id]?.length > 0 ? (
-                  <div className="mt-2 space-y-2">
-                    {cabinEquipment[cabin.id].map((equipment, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                        <span>{equipment}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemoveEquipment(cabin.id, index)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {PREDEFINED_EQUIPMENT.map((item) => (
+                  <div key={item.id} className="flex items-center space-x-2 rounded-md border p-3">
+                    <Checkbox 
+                      id={`equipment-${cabin.id}-${item.id}`}
+                      checked={(cabinEquipment[cabin.id] || []).includes(item.name)}
+                      onCheckedChange={(checked) => 
+                        handleToggleEquipment(cabin.id, item.name, checked === true)
+                      }
+                    />
+                    <div>
+                      <Label 
+                        htmlFor={`equipment-${cabin.id}-${item.id}`}
+                        className="font-medium cursor-pointer"
+                      >
+                        {item.name}
+                      </Label>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Nenhum equipamento cadastrado.
-                  </p>
-                )}
-              </div>
-              
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Label htmlFor={`new-equipment-${cabin.id}`}>Adicionar Equipamento</Label>
-                  <Input
-                    id={`new-equipment-${cabin.id}`}
-                    value={newEquipment[cabin.id] || ""}
-                    onChange={(e) => handleNewEquipmentChange(cabin.id, e.target.value)}
-                    placeholder="Nome do equipamento"
-                  />
-                </div>
-                <Button 
-                  className="mt-auto"
-                  onClick={() => handleAddEquipment(cabin.id)}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar
-                </Button>
+                ))}
               </div>
             </div>
           ))}
