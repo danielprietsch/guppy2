@@ -15,8 +15,10 @@ const RegisterPage = () => {
   useEffect(() => {
     // Verificar se já existe uma sessão ativa
     const checkSession = async () => {
+      console.log("Checking for existing session...");
       const { data } = await supabase.auth.getSession();
       if (data.session) {
+        console.log("Found existing session:", data.session);
         // Usuário já está logado, redirecionar
         navigateBasedOnUserType(data.session.user);
       }
@@ -27,10 +29,11 @@ const RegisterPage = () => {
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session) => {
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, session);
         
         // Compare as strings to fix the type error
         if (event.toString() === "SIGNED_UP") {
+          console.log("User signed up successfully");
           setIsRegistering(false);
           
           // Exibir toast de sucesso
@@ -41,17 +44,28 @@ const RegisterPage = () => {
           
           // O redirecionamento será tratado no evento SIGNED_IN que vem em seguida
         }
+
+        // Add debug for SIGNED_IN event
+        if (event.toString() === "SIGNED_IN") {
+          console.log("User signed in after registration");
+          if (session?.user) {
+            navigateBasedOnUserType(session.user);
+          }
+        }
       }
     );
     
     return () => {
+      console.log("Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, [navigate]);
   
   const navigateBasedOnUserType = (user: any) => {
+    console.log("Navigating based on user type:", user);
     // Verificar o tipo de usuário (do metadata ou padrão)
     const userType = user.user_metadata?.userType || "client";
+    console.log("Detected user type:", userType);
     
     // Redirecionar com base no tipo
     if (userType === "provider") {
@@ -69,10 +83,16 @@ const RegisterPage = () => {
     password: string;
     userType: "client" | "provider" | "owner";
   }) => {
+    console.log("Starting registration process...");
     setIsRegistering(true);
     setAuthError(null);
     
     try {
+      console.log("Attempting to register with:", { 
+        email: data.email, 
+        userType: data.userType 
+      });
+      
       // Cadastrar usuário no Supabase
       const { error } = await supabase.auth.signUp({
         email: data.email,
@@ -87,7 +107,7 @@ const RegisterPage = () => {
       });
       
       if (error) {
-        console.error("Erro no cadastro:", error);
+        console.error("Registration error:", error);
         setAuthError(error.message);
         toast({
           title: "Erro no cadastro",
@@ -98,11 +118,11 @@ const RegisterPage = () => {
         return Promise.reject(error);
       }
       
-      // O redirecionamento e confirmação serão tratados pelo listener onAuthStateChange
+      console.log("Registration successful, waiting for auth state change...");
       return Promise.resolve();
       
     } catch (error: any) {
-      console.error("Erro ao processar cadastro:", error);
+      console.error("Error processing registration:", error);
       setAuthError(error.message);
       toast({
         title: "Erro no cadastro",

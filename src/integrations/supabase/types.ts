@@ -9,7 +9,313 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          date: string
+          id: string
+          price: number
+          provider_id: string | null
+          service_id: string | null
+          status: string | null
+          time: string
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          price: number
+          provider_id?: string | null
+          service_id?: string | null
+          status?: string | null
+          time: string
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          price?: number
+          provider_id?: string | null
+          service_id?: string | null
+          status?: string | null
+          time?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          cabin_id: string | null
+          created_at: string | null
+          date: string
+          id: string
+          price: number
+          provider_id: string | null
+          shift: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          cabin_id?: string | null
+          created_at?: string | null
+          date: string
+          id?: string
+          price: number
+          provider_id?: string | null
+          shift: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          cabin_id?: string | null
+          created_at?: string | null
+          date?: string
+          id?: string
+          price?: number
+          provider_id?: string | null
+          shift?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_cabin_id_fkey"
+            columns: ["cabin_id"]
+            isOneToOne: false
+            referencedRelation: "cabins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cabins: {
+        Row: {
+          availability: Json | null
+          created_at: string | null
+          description: string | null
+          equipment: string[] | null
+          id: string
+          image_url: string | null
+          location_id: string | null
+          name: string
+          pricing: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          availability?: Json | null
+          created_at?: string | null
+          description?: string | null
+          equipment?: string[] | null
+          id?: string
+          image_url?: string | null
+          location_id?: string | null
+          name: string
+          pricing?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          availability?: Json | null
+          created_at?: string | null
+          description?: string | null
+          equipment?: string[] | null
+          id?: string
+          image_url?: string | null
+          location_id?: string | null
+          name?: string
+          pricing?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cabins_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          address: string
+          amenities: string[] | null
+          cabins_count: number | null
+          city: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          opening_hours: Json | null
+          owner_id: string
+          state: string
+          updated_at: string | null
+          zip_code: string
+        }
+        Insert: {
+          address: string
+          amenities?: string[] | null
+          cabins_count?: number | null
+          city: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          opening_hours?: Json | null
+          owner_id: string
+          state: string
+          updated_at?: string | null
+          zip_code: string
+        }
+        Update: {
+          address?: string
+          amenities?: string[] | null
+          cabins_count?: number | null
+          city?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          opening_hours?: Json | null
+          owner_id?: string
+          state?: string
+          updated_at?: string | null
+          zip_code?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+          phone_number: string | null
+          updated_at: string | null
+          user_type: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+          user_type?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone_number?: string | null
+          updated_at?: string | null
+          user_type?: string | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          client_id: string | null
+          comment: string | null
+          created_at: string | null
+          date: string | null
+          id: string
+          provider_id: string | null
+          rating: number
+          updated_at: string | null
+        }
+        Insert: {
+          client_id?: string | null
+          comment?: string | null
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          provider_id?: string | null
+          rating: number
+          updated_at?: string | null
+        }
+        Update: {
+          client_id?: string | null
+          comment?: string | null
+          created_at?: string | null
+          date?: string | null
+          id?: string
+          provider_id?: string | null
+          rating?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          duration: number
+          id: string
+          name: string
+          price: number
+          provider_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          duration: number
+          id?: string
+          name: string
+          price: number
+          provider_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          duration?: number
+          id?: string
+          name?: string
+          price?: number
+          provider_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      system_equipment: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

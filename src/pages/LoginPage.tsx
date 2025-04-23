@@ -15,8 +15,10 @@ const LoginPage = () => {
   useEffect(() => {
     // Verificar se já existe uma sessão ativa
     const checkSession = async () => {
+      console.log("Checking for existing session...");
       const { data } = await supabase.auth.getSession();
       if (data.session) {
+        console.log("Found existing session:", data.session);
         // Usuário já está logado, redirecionar
         navigateBasedOnUserType(data.session.user);
       }
@@ -27,10 +29,11 @@ const LoginPage = () => {
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session) => {
-        console.log("Auth state changed:", event);
+        console.log("Auth state changed:", event, session);
         
         // Compare as strings to fix the type error
         if (event.toString() === "SIGNED_IN") {
+          console.log("User signed in successfully");
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário
@@ -49,6 +52,7 @@ const LoginPage = () => {
               avatarUrl: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`,
             };
             
+            console.log("Saving user data to localStorage:", userData);
             localStorage.setItem("currentUser", JSON.stringify(userData));
             
             // Mostrar toast de sucesso
@@ -65,11 +69,13 @@ const LoginPage = () => {
     );
     
     return () => {
+      console.log("Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, [navigate]);
   
   const navigateBasedOnUserType = (user: any) => {
+    console.log("Navigating based on user type:", user);
     // Verificar o tipo de usuário (do localStorage ou definido como padrão)
     const storedUserData = localStorage.getItem("currentUser");
     let userType = "client"; // Tipo padrão
@@ -78,11 +84,13 @@ const LoginPage = () => {
       try {
         const parsedUser = JSON.parse(storedUserData);
         userType = parsedUser.userType;
+        console.log("User type from localStorage:", userType);
       } catch (error) {
-        console.error("Erro ao analisar dados do usuário:", error);
+        console.error("Error parsing user data:", error);
       }
     } else if (user.user_metadata?.userType) {
       userType = user.user_metadata.userType;
+      console.log("User type from metadata:", userType);
     }
     
     // Redirecionar com base no tipo
@@ -96,17 +104,19 @@ const LoginPage = () => {
   };
 
   const handleLogin = async (data: { email: string; password: string }) => {
+    console.log("Starting login process...");
     setIsLoggingIn(true);
     setAuthError(null);
     
     try {
+      console.log("Attempting to login with email:", data.email);
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
       
       if (error) {
-        console.error("Erro no login:", error);
+        console.error("Login error:", error);
         setAuthError(error.message);
         toast({
           title: "Erro no login",
@@ -117,11 +127,11 @@ const LoginPage = () => {
         return Promise.reject(error);
       }
       
-      // O redirecionamento será tratado pelo listener onAuthStateChange
+      console.log("Login successful, waiting for auth state change...");
       return Promise.resolve();
       
     } catch (error: any) {
-      console.error("Erro ao processar login:", error);
+      console.error("Error processing login:", error);
       setAuthError(error.message);
       toast({
         title: "Erro no login",
