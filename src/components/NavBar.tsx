@@ -143,7 +143,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
                   </span>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Minha conta</DropdownMenuLabel>
+                  <DropdownMenuLabel>Conta</DropdownMenuLabel>
                   <DropdownMenuItem asChild>
                     <Link
                       to={
@@ -154,7 +154,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
                           : "/client/dashboard"
                       }
                     >
-                      Perfil
+                      Meu Dashboard
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
@@ -167,7 +167,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
                           : "/client/dashboard/editar-perfil"
                       }
                     >
-                      Editar Perfil
+                      Meu Perfil
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
