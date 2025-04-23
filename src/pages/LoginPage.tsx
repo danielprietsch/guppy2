@@ -32,20 +32,16 @@ const LoginPage = () => {
         description: `Bem-vindo, ${foundUser.name}!`,
       });
       
-      // Force a window reload to ensure all components can access the updated user data
-      setTimeout(() => {
-        // Redirect based on user type
-        if (foundUser.userType === "provider") {
-          navigate("/provider/dashboard");
-        } else if (foundUser.userType === "owner") {
-          navigate("/owner/dashboard");
-        } else {
-          navigate("/client/dashboard");
-        }
-        
-        setIsLoggingIn(false);
-      }, 100);
+      // Redirect based on user type and inform navigation bar of user change
+      if (foundUser.userType === "provider") {
+        navigate("/provider/dashboard");
+      } else if (foundUser.userType === "owner") {
+        navigate("/owner/dashboard");
+      } else {
+        navigate("/client/dashboard");
+      }
       
+      setIsLoggingIn(false);
       return Promise.resolve();
     } else {
       toast({

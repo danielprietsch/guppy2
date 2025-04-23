@@ -53,26 +53,23 @@ const RegisterPage = () => {
     // Store user in localStorage (in a real app, you'd use a proper auth system)
     localStorage.setItem("currentUser", JSON.stringify(newUser));
     
-    // Force a window reload to ensure all components can access the updated user data
-    setTimeout(() => {
-      // Redirect based on user type
-      if (data.userType === "provider") {
-        navigate("/provider/dashboard");
-      } else if (data.userType === "owner") {
-        navigate("/owner/dashboard");
-      } else {
-        navigate("/client/dashboard");
-      }
+    // Redirect based on user type and inform navigation bar of user change
+    if (data.userType === "provider") {
+      navigate("/provider/dashboard");
+    } else if (data.userType === "owner") {
+      navigate("/owner/dashboard");
+    } else {
+      navigate("/client/dashboard");
+    }
       
-      // Add small delay to ensure navigation completes before showing toast
-      setTimeout(() => {
-        toast({
-          title: "Cadastro realizado com sucesso!",
-          description: "Sua conta foi criada com sucesso.",
-        });
+    // Add small delay to ensure navigation completes before showing toast
+    setTimeout(() => {
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Sua conta foi criada com sucesso.",
+      });
         
-        setIsRegistering(false);
-      }, 100);
+      setIsRegistering(false);
     }, 100);
     
     return Promise.resolve();

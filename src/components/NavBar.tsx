@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const navigate = useNavigate();
 
-  // Check local storage for user data on component mount
+  // Use propUser directly if available or check localStorage
   React.useEffect(() => {
     // First priority: use propUser if available
     if (propUser) {
@@ -32,7 +31,6 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
     // Otherwise try to load from localStorage
     try {
       const storedUserJson = localStorage.getItem("currentUser");
-      console.log("NavBar found stored user JSON:", storedUserJson);
       
       if (storedUserJson) {
         const parsedUser = JSON.parse(storedUserJson);

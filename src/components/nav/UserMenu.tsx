@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
@@ -42,11 +43,6 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
 
   // Extract first letter of name for avatar fallback
   const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
-  
-  // Debug output
-  console.log("Avatar URL:", currentUser.avatarUrl);
-  console.log("User name:", currentUser.name);
-  console.log("First letter for avatar:", firstLetter);
 
   return (
     <div className="flex items-center gap-4">
@@ -73,6 +69,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Conta</DropdownMenuLabel>
+          <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to={dashboardRoute}>
               Meu Dashboard
@@ -91,7 +88,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         className="text-gray-500 hover:text-gray-700 flex items-center gap-2"
       >
         <LogOut className="h-5 w-5" />
-        <span>Sair</span>
+        <span className="hidden md:inline">Sair</span>
       </Button>
     </div>
   );
