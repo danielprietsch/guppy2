@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Location } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
+import { OwnerAddLocationModal } from "./OwnerAddLocationModal";
 
 interface LocationSelectorProps {
   userLocations: Location[];
@@ -17,17 +18,12 @@ interface LocationSelectorProps {
   onLocationChange: (locationId: string) => void;
 }
 
-export const LocationSelector = ({ 
-  userLocations, 
-  selectedLocation, 
-  onLocationChange 
+export const LocationSelector = ({
+  userLocations,
+  selectedLocation,
+  onLocationChange
 }: LocationSelectorProps) => {
-  const handleCreateLocation = () => {
-    toast({
-      title: "Funcionalidade em breve!",
-      description: "O cadastro de locais será implementado nas próximas etapas.",
-    });
-  };
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   return (
     <Card>
@@ -53,10 +49,14 @@ export const LocationSelector = ({
         <Button
           variant="secondary"
           className="w-full mt-4"
-          onClick={handleCreateLocation}
+          onClick={() => setAddModalOpen(true)}
         >
           + Cadastrar Local
         </Button>
+        <OwnerAddLocationModal
+          open={addModalOpen}
+          onOpenChange={setAddModalOpen}
+        />
       </CardContent>
     </Card>
   );
