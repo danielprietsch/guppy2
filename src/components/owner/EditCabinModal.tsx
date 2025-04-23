@@ -1,20 +1,13 @@
+
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
 import { Cabin } from "@/lib/types";
-import { CalendarIcon, CalendarCheck, PlusCircle, Trash } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { cn } from "@/lib/utils";
 import { CabinEquipmentInput } from "@/components/owner/CabinEquipmentInput";
 import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
 
@@ -96,16 +89,6 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
       setValorFimSemana(String(cabin.pricing.defaultPricing[0]?.morning || 150));
     }
   }, [cabin]);
-
-  const handleAddEquipment = () => {
-    if (!equipmentInput.trim()) return;
-    setEquipment([...equipment, equipmentInput.trim()]);
-    setEquipmentInput("");
-  };
-
-  const handleRemoveEquipment = (index: number) => {
-    setEquipment(equipment.filter((_, i) => i !== index));
-  };
 
   const handleUpdatePriceByDay = () => {
     if (!selectedDate) {
@@ -211,9 +194,9 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
 
   const handleApplyDefaultPrices = () => {
     const valorUteis = parseFloat(valorDiasUteis);
-    const valorFimSemana = parseFloat(valorFimSemana);
+    const valorFimDeSemana = parseFloat(valorFimSemana);
     
-    if (isNaN(valorUteis) || isNaN(valorFimSemana)) {
+    if (isNaN(valorUteis) || isNaN(valorFimDeSemana)) {
       toast({ title: "Valores inválidos", description: "Verifique os valores informados", variant: "destructive" });
       return;
     }
@@ -228,8 +211,8 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
       };
     }
     
-    novosPrecos[0] = { morning: valorFimSemana, afternoon: valorFimSemana, evening: valorFimSemana };
-    novosPrecos[6] = { morning: valorFimSemana, afternoon: valorFimSemana, evening: valorFimSemana };
+    novosPrecos[0] = { morning: valorFimDeSemana, afternoon: valorFimDeSemana, evening: valorFimDeSemana };
+    novosPrecos[6] = { morning: valorFimDeSemana, afternoon: valorFimDeSemana, evening: valorFimDeSemana };
     
     setPrecosPorDiaSemana(novosPrecos);
     toast({ title: "Preços padrão definidos", description: "Os preços padrão foram atualizados" });
@@ -263,35 +246,6 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
     onOpenChange(false);
   };
 
-  const renderPrecos = () => {
-    if (Object.keys(precosPorDia).length === 0) {
-      return <span className="text-muted-foreground text-xs">Nenhum preço específico definido</span>;
-    }
-    
-    return Object.entries(precosPorDia).map(([date, turnos]: [string, any]) => (
-      <div key={date} className="mb-2 border-b pb-2">
-        <span className="font-semibold">{format(new Date(date), "dd/MM/yyyy (EEEE)", { locale: ptBR })}</span>
-        <div className="flex flex-wrap gap-2 ml-2 mt-1 mb-1">
-          {TURNOS.map(turno => {
-            const disponivel = turnos.availability?.[turno.key] !== false;
-            return (
-              <span 
-                key={turno.key} 
-                className={`px-2 py-0.5 rounded text-xs ${
-                  disponivel 
-                    ? 'bg-primary text-primary-foreground' 
-                    : 'bg-destructive text-destructive-foreground'
-                }`}
-              >
-                {turno.label}: {disponivel ? `R$ ${turnos[turno.key].toFixed(2)}` : 'Indisponível'}
-              </span>
-            );
-          })}
-        </div>
-      </div>
-    ));
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl">
@@ -305,7 +259,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 gap-4">
             <div>
-              <Label htmlFor="name">Nome da Cabine</Label>
+              <label htmlFor="name">Nome da Cabine</label>
               <Input
                 id="name"
                 value={name}
@@ -315,7 +269,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="description">Descrição</Label>
+              <label htmlFor="description">Descrição</label>
               <Textarea
                 id="description"
                 value={description}
