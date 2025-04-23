@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Location, Cabin } from "@/lib/types";
 import { users, locations, cabins } from "@/lib/mock-data";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
 
 // Import components
 import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
@@ -37,11 +37,7 @@ const OwnerDashboardPage = () => {
       // Check if user is owner type
       if (user.userType !== "owner") {
         navigate("/");
-        toast({
-          title: "Acesso restrito",
-          description: "Você não tem permissão para acessar esta página.",
-          variant: "destructive",
-        });
+        toast.error("Você não tem permissão para acessar esta página.");
         return;
       }
       
@@ -100,10 +96,7 @@ const OwnerDashboardPage = () => {
     setSelectedLocation(location);
     setLocationCabins([]);
     
-    toast({
-      title: "Local criado com sucesso",
-      description: `${location.name} foi adicionado à sua lista de locais.`
-    });
+    toast.success(`${location.name} foi adicionado à sua lista de locais.`);
   };
   
   const handleCabinAdded = (cabin: Cabin) => {
