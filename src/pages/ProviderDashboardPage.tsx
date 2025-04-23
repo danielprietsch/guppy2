@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Booking, Appointment, Service } from "@/lib/types";
@@ -10,7 +9,6 @@ import { Calendar, Clock, DollarSign, Plus, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 
-// Corrige o erro de build, pois 'users' não está importado; vamos importar os usuários dos mock-data.
 import { users } from "@/lib/mock-data";
 
 const ProviderDashboardPage = () => {
@@ -29,13 +27,11 @@ const ProviderDashboardPage = () => {
   });
   
   useEffect(() => {
-    // Check if user is logged in
     const storedUser = localStorage.getItem("currentUser");
     
     if (storedUser) {
       const user = JSON.parse(storedUser) as User;
       
-      // Check if user is a provider
       if (user.userType !== "provider") {
         toast({
           title: "Acesso negado",
@@ -48,19 +44,16 @@ const ProviderDashboardPage = () => {
       
       setCurrentUser(user);
       
-      // Filter bookings for this provider
       const userBookings = bookings.filter(
         (booking) => booking.providerId === user.id
       );
       setProviderBookings(userBookings);
       
-      // Filter appointments for this provider
       const userAppointments = appointments.filter(
         (appointment) => appointment.providerId === user.id
       );
       setProviderAppointments(userAppointments);
       
-      // Filter services for this provider
       const userServices = services.filter(
         (service) => service.providerId === user.id
       );
@@ -75,7 +68,6 @@ const ProviderDashboardPage = () => {
     }
   }, [navigate]);
 
-  // Helper function to get cabin name from ID
   const getCabinInfo = (cabinId: string) => {
     const cabin = cabins.find((cabin) => cabin.id === cabinId);
     if (!cabin) return { name: "Desconhecido", location: "Desconhecido" };
@@ -86,8 +78,7 @@ const ProviderDashboardPage = () => {
       location: location ? location.name : "Desconhecido",
     };
   };
-  
-  // Helper function to format date
+
   const formatDate = (dateString: string) => {
     const options: Intl.DateTimeFormatOptions = {
       year: "numeric",
@@ -128,7 +119,6 @@ const ProviderDashboardPage = () => {
       category: newService.category || "Outros",
     };
     
-    // In a real app, we would make an API call here
     setProviderServices([...providerServices, service]);
     
     toast({
@@ -136,7 +126,6 @@ const ProviderDashboardPage = () => {
       description: "O serviço foi adicionado com sucesso.",
     });
     
-    // Reset form
     setNewService({
       name: "",
       description: "",
@@ -147,10 +136,8 @@ const ProviderDashboardPage = () => {
     setIsAddingService(false);
   };
 
-  // Novos estados para disponibilidade e seleção
   const [calendarTurn, setCalendarTurn] = useState<"morning" | "afternoon" | "evening">("morning");
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  // Simulação: bookings para cada cabine do prestador atual
   const cabinBookings: { [date: string]: { [turn: string]: boolean } } = {};
 
   providerBookings.forEach((booking) => {
@@ -158,18 +145,18 @@ const ProviderDashboardPage = () => {
     cabinBookings[booking.date][booking.shift] = booking.status === "confirmed";
   });
 
-  // Handler para reservar múltiplos dias e turnos de uma vez (apenas simulação local!)
+  const [showMultiReserve, setShowMultiReserve] = useState(false);
+
   const handleMultiDayBooking = () => {
     if (!currentUser) return;
-    // Adiciona reservas fictícias para as datas selecionadas
     const newBookings: Booking[] = selectedDates.map((dt, i) => ({
       id: `${providerBookings.length + i + 1}`,
       cabinId: providerBookings[0]?.cabinId ?? "1",
       providerId: currentUser.id,
       date: dt,
       shift: calendarTurn,
-      status: "confirmed", // Using a specific value from the type
-      price: 100, // apenas simulação, valor fixo
+      status: "confirmed",
+      price: 100,
     }));
     setProviderBookings([...providerBookings, ...newBookings]);
     setSelectedDates([]);
@@ -177,6 +164,7 @@ const ProviderDashboardPage = () => {
       title: "Reservas realizadas",
       description: `Foram reservados ${newBookings.length} dias para o turno de ${calendarTurn === "morning" ? "Manhã" : calendarTurn === "afternoon" ? "Tarde" : "Noite"}.`,
     });
+    setShowMultiReserve(false);
   };
 
   if (!currentUser) {
@@ -199,51 +187,6 @@ const ProviderDashboardPage = () => {
         >
           Sair
         </Button>
-      </div>
-      
-      {/* Novo calendário de disponibilidade de cabines para reservas múltiplas */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold mb-2">Reservar Múltiplos Dias para o Mesmo Turno</h2>
-        <div className="flex items-center gap-4 mb-4">
-          <span className="font-medium">Selecione o turno:</span>
-          <Button
-            variant={calendarTurn === "morning" ? "default" : "outline"}
-            onClick={() => setCalendarTurn("morning")}
-          >
-            Manhã
-          </Button>
-          <Button
-            variant={calendarTurn === "afternoon" ? "default" : "outline"}
-            onClick={() => setCalendarTurn("afternoon")}
-          >
-            Tarde
-          </Button>
-          <Button
-            variant={calendarTurn === "evening" ? "default" : "outline"}
-            onClick={() => setCalendarTurn("evening")}
-          >
-            Noite
-          </Button>
-        </div>
-        <CabinAvailabilityCalendar
-          selectedTurn={calendarTurn}
-          daysBooked={cabinBookings}
-          onSelectDates={setSelectedDates}
-          selectedDates={selectedDates}
-        />
-        <div className="flex mt-4 gap-4">
-          <Button
-            disabled={selectedDates.length === 0}
-            onClick={handleMultiDayBooking}
-          >
-            Reservar dias selecionados
-          </Button>
-          {selectedDates.length > 0 && (
-            <Button variant="outline" onClick={() => setSelectedDates([])}>
-              Limpar seleção
-            </Button>
-          )}
-        </div>
       </div>
       
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -296,11 +239,60 @@ const ProviderDashboardPage = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Minhas Reservas de Cabines</CardTitle>
-                <Button onClick={() => navigate("/locations")}>
-                  Reservar Nova Cabine
+                <Button
+                  onClick={() => setShowMultiReserve((prev) => !prev)}
+                  variant={showMultiReserve ? "outline" : "default"}
+                >
+                  {showMultiReserve ? "Fechar Reserva Múltipla" : "Reservar Nova Cabine"}
                 </Button>
               </CardHeader>
               <CardContent>
+                {showMultiReserve && (
+                  <div className="mb-8 border rounded-lg p-4 bg-muted">
+                    <h2 className="text-xl font-bold mb-2">Reservar Múltiplos Dias para o Mesmo Turno</h2>
+                    <div className="flex items-center gap-4 mb-4">
+                      <span className="font-medium">Selecione o turno:</span>
+                      <Button
+                        variant={calendarTurn === "morning" ? "default" : "outline"}
+                        onClick={() => setCalendarTurn("morning")}
+                      >
+                        Manhã
+                      </Button>
+                      <Button
+                        variant={calendarTurn === "afternoon" ? "default" : "outline"}
+                        onClick={() => setCalendarTurn("afternoon")}
+                      >
+                        Tarde
+                      </Button>
+                      <Button
+                        variant={calendarTurn === "evening" ? "default" : "outline"}
+                        onClick={() => setCalendarTurn("evening")}
+                      >
+                        Noite
+                      </Button>
+                    </div>
+                    <CabinAvailabilityCalendar
+                      selectedTurn={calendarTurn}
+                      daysBooked={cabinBookings}
+                      onSelectDates={setSelectedDates}
+                      selectedDates={selectedDates}
+                    />
+                    <div className="flex mt-4 gap-4">
+                      <Button
+                        disabled={selectedDates.length === 0}
+                        onClick={handleMultiDayBooking}
+                      >
+                        Reservar dias selecionados
+                      </Button>
+                      {selectedDates.length > 0 && (
+                        <Button variant="outline" onClick={() => setSelectedDates([])}>
+                          Limpar seleção
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {providerBookings.length > 0 ? (
                   <div className="space-y-4">
                     {providerBookings.map((booking) => {
@@ -354,7 +346,7 @@ const ProviderDashboardPage = () => {
                     </p>
                     <Button
                       className="mt-4"
-                      onClick={() => navigate("/locations")}
+                      onClick={() => setShowMultiReserve(true)}
                     >
                       Reservar Cabine
                     </Button>
