@@ -108,6 +108,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
         } else if (event === "SIGNED_OUT") {
           console.log("NavBar: User signed out");
           setCurrentUser(null);
+          setIsLoading(false); // Importante: garantir que isLoading seja false após signout
         } else if (event === "USER_UPDATED") {
           console.log("NavBar: User updated, reloading profile");
           checkSupabaseAuth();
