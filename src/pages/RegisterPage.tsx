@@ -13,41 +13,40 @@ const RegisterPage = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Verificar se já existe uma sessão ativa
+    // Check for existing session
     const checkSession = async () => {
-      console.log("Checking for existing session...");
+      console.log("RegisterPage: Checking for existing session...");
       const { data } = await supabase.auth.getSession();
       if (data.session) {
-        console.log("Found existing session:", data.session);
-        // O redirecionamento será gerenciado pelo componente Index
+        console.log("RegisterPage: Found existing session:", data.session);
+        // Redirection will be handled by the Index component
         return;
       }
     };
     
     checkSession();
     
-    // Configurar listener para mudanças de autenticação
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: string, session: Session | null) => {
-        console.log("Auth state changed:", event, session);
+        console.log("RegisterPage: Auth state changed:", event, session);
         
         if (event === "SIGNED_UP") {
-          console.log("User signed up successfully");
+          console.log("RegisterPage: User signed up successfully");
           setIsRegistering(false);
           
-          // Exibir toast de sucesso
           toast({
             title: "Cadastro realizado com sucesso!",
             description: "Sua conta foi criada com sucesso.",
           });
           
-          // O redirecionamento será gerenciado pelo componente Index
+          // Redirection will be handled by the Index component
         }
       }
     );
     
     return () => {
-      console.log("Cleaning up auth listener");
+      console.log("RegisterPage: Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, [navigate]);
@@ -68,7 +67,7 @@ const RegisterPage = () => {
         userType: data.userType 
       });
       
-      // Cadastrar usuário no Supabase
+      // Register user with Supabase
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,

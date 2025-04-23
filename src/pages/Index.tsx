@@ -16,14 +16,17 @@ const Index = () => {
   useEffect(() => {
     console.log("Index: Initializing auth management");
     
-    // Configurar listener para mudanças de autenticação primeiro
+    // Configure auth state change listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("Index: Auth state changed:", event);
         
         if (session?.user) {
           console.log("Index: User is authenticated, loading profile");
-          await loadUserProfile(session.user.id);
+          // Use setTimeout to avoid potential race conditions
+          setTimeout(() => {
+            loadUserProfile(session.user.id);
+          }, 0);
         } else {
           console.log("Index: No user session, clearing current user");
           setCurrentUser(null);
@@ -32,7 +35,7 @@ const Index = () => {
       }
     );
     
-    // Verificar sessão atual depois
+    // Check current session afterward
     const checkSession = async () => {
       console.log("Index: Checking current session");
       setIsLoading(true);
@@ -79,6 +82,7 @@ const Index = () => {
               
             if (insertError) {
               console.error("Index: Error creating profile:", insertError);
+              setCurrentUser(null);
             } else {
               // Profile created, reload
               const { data: createdProfile } = await supabase
@@ -89,7 +93,7 @@ const Index = () => {
                 
               if (createdProfile) {
                 setUserData(createdProfile, user);
-                handleRedirection(createdProfile.user_type || user.user_metadata.userType || "client");
+                redirectToDashboard(createdProfile.user_type || user.user_metadata.userType || "client");
               } else {
                 setCurrentUser(null);
               }
@@ -106,7 +110,7 @@ const Index = () => {
           console.log("Index: Profile loaded successfully:", profile);
           const { data: { user } } = await supabase.auth.getUser();
           setUserData(profile, user);
-          handleRedirection(profile.user_type);
+          redirectToDashboard(profile.user_type);
         } else {
           console.log("Index: No profile found for user:", userId);
           setCurrentUser(null);
@@ -116,22 +120,6 @@ const Index = () => {
         setCurrentUser(null);
       } finally {
         setIsLoading(false);
-      }
-    };
-    
-    const handleRedirection = (userType: string) => {
-      // Verificar se estamos na página de login ou cadastro
-      if (location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/") {
-        console.log("Index: Redirecting to dashboard based on user type:", userType);
-        setTimeout(() => {
-          if (userType === "provider") {
-            navigate("/provider/dashboard");
-          } else if (userType === "owner") {
-            navigate("/owner/dashboard");
-          } else {
-            navigate("/client/dashboard");
-          }
-        }, 100);
       }
     };
     
@@ -147,6 +135,24 @@ const Index = () => {
       
       setCurrentUser(userData);
       console.log("Index: User data set:", userData);
+    };
+
+    const redirectToDashboard = (userType: string) => {
+      // Check if we're on the login/register/home page
+      if (location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/") {
+        console.log("Index: Redirecting to dashboard based on user type:", userType);
+        let dashboardRoute = "/client/dashboard";
+        
+        if (userType === "provider") {
+          dashboardRoute = "/provider/dashboard";
+        } else if (userType === "owner") {
+          dashboardRoute = "/owner/dashboard";
+        }
+        
+        // Use immediate navigation to avoid getting stuck
+        console.log("Index: Navigating to", dashboardRoute);
+        navigate(dashboardRoute);
+      }
     };
     
     checkSession();
@@ -174,7 +180,9 @@ const Index = () => {
     <div className="flex min-h-screen flex-col">
       <NavBar currentUser={currentUser} onLogout={handleLogout} />
       <main className="flex-1">
-        {isLoading && location.pathname.includes('/dashboard') ? (
+        {isLoading && (location.pathname.includes('/dashboard') || 
+                      location.pathname === "/login" || 
+                      location.pathname === "/register") ? (
           <div className="container py-12 flex items-center justify-center">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
