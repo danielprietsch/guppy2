@@ -67,10 +67,16 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         modifiers={modifiers}
         className="pointer-events-auto"
         modifiersClassNames={{
-          booked: "bg-red-500 text-white opacity-80",
-          selected: "bg-primary text-white",
-          available: "bg-green-500 text-white opacity-80"
+          booked: "bg-red-500 text-white opacity-80 hover:bg-red-500 hover:text-white",
+          selected: "bg-primary text-white hover:bg-primary hover:text-white",
+          available: "bg-green-500 text-white opacity-80 hover:bg-green-600 hover:text-white"
         }}
+        modifiersStyles={{
+          booked: { color: "white" },
+          selected: { color: "white" },
+          available: { color: "white" }
+        }}
+        showOutsideDays={true}
       />
       <div className="flex items-center gap-4 mt-4">
         <span className="h-4 w-4 bg-green-500 rounded-full inline-block"></span>
