@@ -9,6 +9,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 const formSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -29,6 +31,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
   onOpenChange,
   onLocationCreated
 }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,30 +43,77 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
     },
   });
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    // Criação do novo local
-    const novoLocation: Location = {
-      id: Math.random().toString(36).slice(2),
-      name: values.nome,
-      address: values.endereco,
-      city: values.cidade,
-      state: values.estado,
-      zipCode: values.cep || "",
-      cabinsCount: 0,
-      openingHours: { open: "08:00", close: "20:00" },
-      amenities: [],
-      imageUrl: "",
-      description: ""
-    };
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      setIsSubmitting(true);
+      console.log("Criando novo local...", values);
 
-    toast.success("Local cadastrado com sucesso!");
-    
-    if (onLocationCreated) {
-      onLocationCreated(novoLocation);
+      // Obtém o usuário atual
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Usuário não autenticado");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Insere o novo local no banco de dados
+      const { data, error } = await supabase
+        .from('locations')
+        .insert({
+          owner_id: user.id,
+          name: values.nome,
+          address: values.endereco,
+          city: values.cidade,
+          state: values.estado,
+          zip_code: values.cep || "",
+          opening_hours: { open: "08:00", close: "20:00" },
+          amenities: [],
+          cabins_count: 0,
+          image_url: "",
+          description: ""
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Erro ao cadastrar local:", error);
+        toast.error("Erro ao cadastrar local: " + error.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log("Local cadastrado com sucesso:", data);
+
+      // Transforma para o formato da interface Location
+      const novoLocation: Location = {
+        id: data.id,
+        name: data.name,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zip_code,
+        cabinsCount: data.cabins_count,
+        openingHours: data.opening_hours,
+        amenities: data.amenities,
+        imageUrl: data.image_url || "",
+        description: data.description || ""
+      };
+
+      toast.success("Local cadastrado com sucesso!");
+      
+      if (onLocationCreated) {
+        onLocationCreated(novoLocation);
+      }
+      
+      onOpenChange(false);
+      form.reset();
+    } catch (error: any) {
+      console.error("Erro ao processar cadastro:", error);
+      toast.error("Erro ao cadastrar local: " + error.message);
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    onOpenChange(false);
-    form.reset();
   };
 
   return (
@@ -146,9 +196,11 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
             />
             <DialogFooter className="gap-2 mt-2 flex-row justify-end">
               <DialogClose asChild>
-                <Button type="button" variant="outline">Cancelar</Button>
+                <Button type="button" variant="outline" disabled={isSubmitting}>Cancelar</Button>
               </DialogClose>
-              <Button type="submit">Cadastrar Local</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Cadastrando..." : "Cadastrar Local"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

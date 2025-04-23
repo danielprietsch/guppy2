@@ -10,6 +10,8 @@ import { Cabin } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
 import { CabinEquipmentInput } from "./CabinEquipmentInput";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 type Turno = "morning" | "afternoon" | "evening";
 
@@ -54,6 +56,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [equipment, setEquipment] = React.useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [precosPorDia, setPrecosPorDia] = React.useState<PrecosPorDia>({});
@@ -80,8 +83,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     evening: true
   });
 
-  // Removed handleAddEquipment and handleRemoveEquipment methods since they're not needed anymore with CabinEquipmentInput component
-
   const getPricesFromCalendar = () => ({
     defaultPricing: {
       ...precosPorDiaSemana
@@ -91,36 +92,88 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     }
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (!name) {
       toast({ title: "Nome da cabine é obrigatório", variant: "destructive" });
       return;
     }
-    const novaCabine: Cabin = {
-      id: Math.random().toString(36).slice(2),
-      locationId,
-      name,
-      description,
-      equipment,
-      imageUrl: "",
-      availability: {
-        morning: true,
-        afternoon: true,
-        evening: true
-      },
-      price: 100, // Preço base
-      pricing: getPricesFromCalendar()
-    };
-    onCabinCreated?.(novaCabine);
-    toast({ title: "Cabine adicionada com sucesso!" });
-    onOpenChange(false);
+    
+    setIsSubmitting(true);
+    
+    try {
+      console.log("Criando nova cabine para o local:", locationId);
+      
+      // Definir os dados da cabine
+      const cabinData = {
+        location_id: locationId,
+        name,
+        description,
+        equipment,
+        image_url: "",
+        availability: {
+          morning: true,
+          afternoon: true,
+          evening: true
+        },
+        price: 100, // Preço base
+        pricing: getPricesFromCalendar()
+      };
+      
+      // Inserir no banco de dados
+      const { data, error } = await supabase
+        .from('cabins')
+        .insert(cabinData)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Erro ao adicionar cabine:", error);
+        toast({ title: "Erro ao adicionar cabine", description: error.message, variant: "destructive" });
+        return;
+      }
+      
+      console.log("Cabine adicionada com sucesso:", data);
+      
+      // Transformar para o formato da interface Cabin
+      const novaCabine: Cabin = {
+        id: data.id,
+        locationId: data.location_id,
+        name: data.name,
+        description: data.description || "",
+        equipment: data.equipment || [],
+        imageUrl: data.image_url || "",
+        availability: data.availability || {
+          morning: true,
+          afternoon: true,
+          evening: true
+        },
+        price: data.price || 100,
+        pricing: data.pricing
+      };
+      
+      onCabinCreated?.(novaCabine);
+      toast({ title: "Cabine adicionada com sucesso!" });
+      onOpenChange(false);
 
-    setName("");
-    setDescription("");
-    setEquipment([]);
-    setPrecosPorDia({});
-    setSelectedDate(undefined);
+      // Limpar formulário
+      setName("");
+      setDescription("");
+      setEquipment([]);
+      setPrecosPorDia({});
+      setSelectedDate(undefined);
+      
+    } catch (error: any) {
+      console.error("Erro ao processar adição de cabine:", error);
+      toast({ 
+        title: "Erro ao adicionar cabine", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -183,15 +236,16 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
           </div>
           <DialogFooter className="flex justify-end gap-2 flex-wrap sm:flex-nowrap">
             <DialogClose asChild>
-              <Button type="button" variant="outline" className="w-full sm:w-auto">
+              <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={isSubmitting}>
                 Cancelar
               </Button>
             </DialogClose>
             <Button 
               type="submit" 
               className="w-full sm:w-auto bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary"
+              disabled={isSubmitting}
             >
-              Adicionar Cabine
+              {isSubmitting ? "Adicionando..." : "Adicionar Cabine"}
             </Button>
           </DialogFooter>
         </form>

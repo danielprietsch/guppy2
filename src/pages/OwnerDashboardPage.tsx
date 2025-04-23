@@ -2,8 +2,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Location, Cabin } from "@/lib/types";
-import { users, locations, cabins } from "@/lib/mock-data";
+import { cabins } from "@/lib/mock-data";
 import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 // Import components
 import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
@@ -21,110 +22,235 @@ const OwnerDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("locations");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (!storedUser) {
-      navigate("/login");
-      return;
+    // Check if user is logged in with Supabase
+    async function checkAndLoadUser() {
+      setLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          navigate("/login");
+          return;
+        }
+
+        // Get user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+        
+        if (!profile) {
+          toast.error("Perfil não encontrado");
+          navigate("/login");
+          return;
+        }
+
+        // Check if user is owner type
+        if (profile.user_type !== "owner") {
+          navigate("/");
+          toast.error("Você não tem permissão para acessar esta página.");
+          return;
+        }
+        
+        // Set current user
+        const currentUser: User = {
+          id: user.id,
+          name: profile.name || user.email?.split('@')[0] || "Usuário",
+          email: profile.email || user.email || "",
+          userType: profile.user_type as "client" | "provider" | "owner",
+          avatarUrl: profile.avatar_url,
+          phoneNumber: profile.phone_number
+        };
+        
+        setCurrentUser(currentUser);
+        
+        // Load user locations from database
+        await loadUserLocations(user.id);
+      } catch (error) {
+        console.error("Error checking user:", error);
+        navigate("/login");
+      } finally {
+        setLoading(false);
+      }
     }
     
+    checkAndLoadUser();
+  }, [navigate]);
+
+  const loadUserLocations = async (userId: string) => {
     try {
-      const user = JSON.parse(storedUser) as User;
+      console.log("Loading locations for user:", userId);
       
-      // Check if user is owner type
-      if (user.userType !== "owner") {
-        navigate("/");
-        toast.error("Você não tem permissão para acessar esta página.");
+      // Get owned locations from database
+      const { data: locations, error } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('owner_id', userId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Loaded locations:", locations);
+      
+      if (!locations || locations.length === 0) {
+        console.log("No locations found for user");
+        setUserLocations([]);
+        setSelectedLocation(null);
+        setLocationCabins([]);
         return;
       }
       
-      setCurrentUser(user);
+      // Transform to match Location interface
+      const formattedLocations: Location[] = locations.map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        address: loc.address,
+        city: loc.city,
+        state: loc.state,
+        zipCode: loc.zip_code,
+        cabinsCount: loc.cabins_count,
+        openingHours: loc.opening_hours,
+        amenities: loc.amenities,
+        imageUrl: loc.image_url || "",
+        description: loc.description || ""
+      }));
       
-      // Get owned locations
-      const ownedLocations = locations.filter((location) => 
-        user.ownedLocationIds?.includes(location.id)
-      );
-      
-      setUserLocations(ownedLocations);
+      setUserLocations(formattedLocations);
       
       // Set default selected location if there are any
-      if (ownedLocations.length > 0) {
-        setSelectedLocation(ownedLocations[0]);
+      if (formattedLocations.length > 0) {
+        setSelectedLocation(formattedLocations[0]);
         
-        // Get cabins for selected location
-        const locationCabins = cabins.filter(
-          (cabin) => cabin.locationId === ownedLocations[0].id
-        );
-        
-        setLocationCabins(locationCabins);
+        // Load cabins for selected location
+        await loadLocationCabins(formattedLocations[0].id);
       }
     } catch (error) {
-      console.error("Error parsing user data:", error);
-      localStorage.removeItem("currentUser");
-      navigate("/login");
+      console.error("Error loading locations:", error);
+      toast.error("Erro ao carregar locais");
     }
-  }, [navigate]);
+  };
+  
+  const loadLocationCabins = async (locationId: string) => {
+    try {
+      console.log("Loading cabins for location:", locationId);
+      
+      const { data: cabins, error } = await supabase
+        .from('cabins')
+        .select('*')
+        .eq('location_id', locationId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      console.log("Loaded cabins:", cabins);
+      
+      // Transform to match Cabin interface
+      const formattedCabins: Cabin[] = cabins ? cabins.map(cabin => ({
+        id: cabin.id,
+        locationId: cabin.location_id,
+        name: cabin.name,
+        description: cabin.description || "",
+        equipment: cabin.equipment || [],
+        imageUrl: cabin.image_url || "",
+        availability: cabin.availability || {
+          morning: true,
+          afternoon: true,
+          evening: true
+        },
+        price: cabin.price,
+        pricing: cabin.pricing
+      })) : [];
+      
+      setLocationCabins(formattedCabins);
+    } catch (error) {
+      console.error("Error loading cabins:", error);
+      toast.error("Erro ao carregar cabines");
+    }
+  };
 
-  const handleLocationChange = (locationId: string) => {
+  const handleLocationChange = async (locationId: string) => {
     console.log("Changing location to:", locationId);
     const location = userLocations.find((loc) => loc.id === locationId);
     if (location) {
       setSelectedLocation(location);
-      
-      // Get cabins for selected location
-      const locCabins = cabins.filter((cabin) => cabin.locationId === locationId);
-      setLocationCabins(locCabins);
+      await loadLocationCabins(locationId);
     }
   };
   
-  const handleLocationCreated = (location: Location) => {
-    // Update user in localStorage with new ownedLocationIds
+  const handleLocationCreated = async (location: Location) => {
+    console.log("Location created:", location);
+    
+    // Reload locations to get the fresh data
     if (currentUser) {
-      const updatedUser = {
-        ...currentUser,
-        ownedLocationIds: [...(currentUser.ownedLocationIds || []), location.id]
-      };
-      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-      setCurrentUser(updatedUser);
+      await loadUserLocations(currentUser.id);
+      toast.success(`${location.name} foi adicionado à sua lista de locais.`);
     }
-    
-    // Add to userLocations
-    setUserLocations([...userLocations, location]);
-    setSelectedLocation(location);
-    setLocationCabins([]);
-    
-    toast.success(`${location.name} foi adicionado à sua lista de locais.`);
   };
   
-  const handleCabinAdded = (cabin: Cabin) => {
-    // In a real app, we would add to the backend
-    // For this example, we'll just update our local state
-    setLocationCabins([...locationCabins, cabin]);
+  const handleCabinAdded = async (cabin: Cabin) => {
+    console.log("Cabin added:", cabin);
+    
+    // Reload cabins to get fresh data
+    if (selectedLocation) {
+      await loadLocationCabins(selectedLocation.id);
+    }
   };
   
-  const handleCabinUpdated = (updatedCabin: Cabin) => {
-    // In a real app, we would update in the backend
-    // For this example, we'll just update our local state
-    const updatedCabins = locationCabins.map(
-      cabin => cabin.id === updatedCabin.id ? updatedCabin : cabin
+  const handleCabinUpdated = async (updatedCabin: Cabin) => {
+    console.log("Cabin updated:", updatedCabin);
+    
+    // Reload cabins to get fresh data
+    if (selectedLocation) {
+      await loadLocationCabins(selectedLocation.id);
+    }
+  };
+  
+  const handleCabinDeleted = async (cabinId: string) => {
+    try {
+      console.log("Deleting cabin:", cabinId);
+      
+      const { error } = await supabase
+        .from('cabins')
+        .delete()
+        .eq('id', cabinId);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Reload cabins to get fresh data
+      if (selectedLocation) {
+        await loadLocationCabins(selectedLocation.id);
+      }
+      
+    } catch (error) {
+      console.error("Error deleting cabin:", error);
+      toast.error("Erro ao excluir cabine");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+          <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
+        </div>
+      </div>
     );
-    setLocationCabins(updatedCabins);
-  };
-  
-  const handleCabinDeleted = (cabinId: string) => {
-    // In a real app, we would delete from the backend
-    // For this example, we'll just update our local state
-    const filteredCabins = locationCabins.filter(cabin => cabin.id !== cabinId);
-    setLocationCabins(filteredCabins);
-  };
+  }
 
   if (!currentUser) {
     return (
       <div className="container py-12">
-        <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+        <h1 className="text-2xl font-bold mb-4">Erro de autenticação</h1>
+        <p className="text-muted-foreground">Você precisa estar logado para acessar esta página.</p>
       </div>
     );
   }

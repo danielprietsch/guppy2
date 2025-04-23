@@ -10,6 +10,8 @@ import { CabinEquipmentInput } from "@/components/owner/CabinEquipmentInput";
 import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 type Turno = "morning" | "afternoon" | "evening";
 
@@ -39,6 +41,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
   const [name, setName] = React.useState(cabin.name);
   const [description, setDescription] = React.useState(cabin.description);
   const [equipment, setEquipment] = React.useState<string[]>(cabin.equipment);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [precosPorDia, setPrecosPorDia] = React.useState<any>(cabin.pricing?.specificDates || {});
@@ -54,11 +57,11 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
     6: { morning: 150, afternoon: 150, evening: 150 },
   });
 
-  const initialValorDiasUteis = cabDayNum =>
+  const initialValorDiasUteis = (cabDayNum: number) =>
     cabin.pricing?.defaultPricing?.[cabDayNum]
       ? String(cabin.pricing.defaultPricing[cabDayNum].morning || 100)
       : "100";
-  const initialValorFimSemana = cabDayNum =>
+  const initialValorFimSemana = (cabDayNum: number) =>
     cabin.pricing?.defaultPricing?.[cabDayNum]
       ? String(cabin.pricing.defaultPricing[cabDayNum].morning || 150)
       : "150";
@@ -225,7 +228,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
     };
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!name) {
@@ -233,17 +236,57 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
       return;
     }
     
-    const cabineAtualizada: Cabin = {
-      ...cabin,
-      name,
-      description,
-      equipment,
-      pricing: getPricesFromCalendar()
-    };
+    setIsSubmitting(true);
     
-    onCabinUpdated?.(cabineAtualizada);
-    toast({ title: "Cabine atualizada com sucesso!" });
-    onOpenChange(false);
+    try {
+      console.log("Atualizando cabine:", cabin.id);
+      
+      const cabinData = {
+        name,
+        description,
+        equipment,
+        pricing: getPricesFromCalendar()
+      };
+      
+      // Atualizar no banco de dados
+      const { data, error } = await supabase
+        .from('cabins')
+        .update(cabinData)
+        .eq('id', cabin.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error("Erro ao atualizar cabine:", error);
+        toast({ title: "Erro ao atualizar cabine", description: error.message, variant: "destructive" });
+        return;
+      }
+      
+      console.log("Cabine atualizada com sucesso:", data);
+      
+      // Transformar para o formato da interface Cabin
+      const cabineAtualizada: Cabin = {
+        ...cabin,
+        name: data.name,
+        description: data.description || "",
+        equipment: data.equipment || [],
+        pricing: data.pricing
+      };
+      
+      onCabinUpdated?.(cabineAtualizada);
+      toast({ title: "Cabine atualizada com sucesso!" });
+      onOpenChange(false);
+      
+    } catch (error: any) {
+      console.error("Erro ao processar atualização de cabine:", error);
+      toast({ 
+        title: "Erro ao atualizar cabine", 
+        description: error.message, 
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -303,12 +346,16 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
           </div>
           <DialogFooter className="flex justify-end gap-2">
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" disabled={isSubmitting}>
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit" className="bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary">
-              Salvar Alterações
+            <Button 
+              type="submit" 
+              className="bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </DialogFooter>
         </form>
