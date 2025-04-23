@@ -50,6 +50,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
             .single();
             
           if (profile) {
+            console.log("NavBar: Profile found:", profile);
             const userData: User = {
               id: session.user.id,
               name: profile.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
@@ -69,6 +70,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
             
             // Se não houver perfil mas houver metadados, criamos um usuário temporário para exibição
             if (session.user.user_metadata) {
+              console.log("NavBar: Creating temporary user from metadata:", session.user.user_metadata);
               const tempUser: User = {
                 id: session.user.id,
                 name: session.user.user_metadata.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
@@ -106,6 +108,9 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
         } else if (event === "SIGNED_OUT") {
           console.log("NavBar: User signed out");
           setCurrentUser(null);
+        } else if (event === "USER_UPDATED") {
+          console.log("NavBar: User updated, reloading profile");
+          checkSupabaseAuth();
         }
       }
     );
