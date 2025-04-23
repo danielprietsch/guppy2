@@ -31,19 +31,22 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser }) => {
             className="h-8 w-8 text-guppy-primary"
           >
             <path 
-              d="M50 20 Q30 50, 50 80 Q70 50, 50 20" 
+              d="M20 50 Q40 30, 60 40 Q80 50, 60 60 Q40 70, 20 50" 
               fill="#9b87f5" 
               stroke="#7E69AB" 
               strokeWidth="3"
             />
             <path 
-              d="M30 50 Q40 40, 50 50 Q60 60, 70 50" 
+              d="M70 40 L80 30 L85 40 Z" 
+              fill="#7E69AB" 
+            />
+            <circle cx="35" cy="45" r="3" fill="#1A1F2C" />
+            <path 
+              d="M15 50 Q5 50, 10 40 Q15 30, 20 50" 
               fill="none" 
               stroke="#1A1F2C" 
               strokeWidth="2"
             />
-            <circle cx="45" cy="40" r="3" fill="#1A1F2C" />
-            <circle cx="55" cy="40" r="3" fill="#1A1F2C" />
           </svg>
           <span className="text-xl font-bold text-guppy-tertiary">Guppy</span>
         </Link>
