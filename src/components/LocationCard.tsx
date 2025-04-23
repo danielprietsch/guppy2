@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -23,11 +24,14 @@ const LocationCard = ({ location }: LocationCardProps) => {
   const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
   const beautySalonImage = beautySalonImages[imageIndex];
 
-  const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&hl=pt-BR&z=18&output=embed`;
+  // Usando o Google Maps embed com navegação, removendo borda
+  // viewport maior para navegação agradável e controles habilitados
+  // Pegue a coordenada aproximada apenas pelo endereço, mas mantém estrutura
+  const googleMapsEmbedUrl = `https://www.google.com/maps?&q=${formatAddressForMaps(location.address, location.city, location.state)}&z=18&output=embed`;
 
   return (
     <Link to={`/locations/${location.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow border-2 border-primary/20">
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
         <div className="aspect-[16/9] overflow-hidden">
           <img
             src={beautySalonImage}
@@ -35,16 +39,17 @@ const LocationCard = ({ location }: LocationCardProps) => {
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
         </div>
-        <div className="w-full h-48 bg-white border-t flex items-center justify-center">
+        <div className="w-full h-60 bg-white flex items-center justify-center">
           <iframe
             title={`${location.name} Mapa`}
             src={googleMapsEmbedUrl}
             width="100%"
             height="100%"
-            className="border-0 w-full h-full rounded-b-lg"
+            className="w-full h-full rounded-b-lg"
             style={{
-              minHeight: 120,
-              borderRadius: '0 0 0.75rem 0.75rem',
+              minHeight: 180,
+              border: "none",
+              borderRadius: "0 0 0.75rem 0.75rem",
               pointerEvents: 'auto'
             }}
             allowFullScreen
