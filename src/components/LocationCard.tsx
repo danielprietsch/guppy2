@@ -24,8 +24,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
   const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
   const beautySalonImage = beautySalonImages[imageIndex];
 
-  // URL para o mapa navegável (embed padrão, sem 'output=embed&z=17')
-  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&output=embed`;
+  // Generate a Google Maps URL that allows navigation
+  const googleMapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${formatAddressForMaps(location.address, location.city, location.state)}`;
 
   return (
     <Link to={`/locations/${location.id}`}>
@@ -40,12 +40,13 @@ const LocationCard = ({ location }: LocationCardProps) => {
         <div className="w-full h-28 bg-white border-t flex items-center justify-center">
           <iframe
             title={`${location.name} Mapa`}
-            src={googleMapEmbedUrl}
+            src={googleMapUrl}
             width="100%"
             height="100%"
             className="border-0 w-full h-full rounded-b-lg"
             allowFullScreen
             loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
             style={{ minHeight: 60, borderRadius: '0 0 0.75rem 0.75rem' }}
           />
         </div>
