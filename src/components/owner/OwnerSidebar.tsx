@@ -9,6 +9,7 @@ interface OwnerSidebarProps {
   userLocations: Location[];
   selectedLocation: Location | null;
   onLocationChange: (locationId: string) => void;
+  onLocationCreated?: (location: Location) => void; 
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
@@ -17,6 +18,7 @@ export const OwnerSidebar = ({
   userLocations,
   selectedLocation,
   onLocationChange,
+  onLocationCreated,
   activeTab,
   setActiveTab
 }: OwnerSidebarProps) => {
@@ -26,6 +28,7 @@ export const OwnerSidebar = ({
         userLocations={userLocations}
         selectedLocation={selectedLocation}
         onLocationChange={onLocationChange}
+        onLocationCreated={onLocationCreated}
       />
 
       <Card>

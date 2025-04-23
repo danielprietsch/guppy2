@@ -73,7 +73,8 @@ const OwnerDashboardPage = () => {
   }, [navigate]);
 
   const handleLocationChange = (locationId: string) => {
-    const location = locations.find((loc) => loc.id === locationId);
+    console.log("Changing location to:", locationId);
+    const location = userLocations.find((loc) => loc.id === locationId);
     if (location) {
       setSelectedLocation(location);
       
@@ -84,11 +85,25 @@ const OwnerDashboardPage = () => {
   };
   
   const handleLocationCreated = (location: Location) => {
-    // In a real app, we would add to the backend
-    // For this example, we'll just update our local state
+    // Update user in localStorage with new ownedLocationIds
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        ownedLocationIds: [...(currentUser.ownedLocationIds || []), location.id]
+      };
+      localStorage.setItem("currentUser", JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+    }
+    
+    // Add to userLocations
     setUserLocations([...userLocations, location]);
     setSelectedLocation(location);
     setLocationCabins([]);
+    
+    toast({
+      title: "Local criado com sucesso",
+      description: `${location.name} foi adicionado à sua lista de locais.`
+    });
   };
   
   const handleCabinAdded = (cabin: Cabin) => {
@@ -134,6 +149,7 @@ const OwnerDashboardPage = () => {
           userLocations={userLocations}
           selectedLocation={selectedLocation}
           onLocationChange={handleLocationChange}
+          onLocationCreated={handleLocationCreated}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
         />

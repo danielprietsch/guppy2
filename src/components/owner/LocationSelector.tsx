@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Location } from "@/lib/types";
-import { toast } from "@/hooks/use-toast";
 import { OwnerAddLocationModal } from "./OwnerAddLocationModal";
 import { PlusCircle } from "lucide-react";
 
