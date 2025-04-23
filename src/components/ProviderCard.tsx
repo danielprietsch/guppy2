@@ -4,25 +4,52 @@ import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star } from "lucide-react";
 
-// Fotos de profissionais visualmente profissionais e bem arrumados
-const professionalAvatars = [
-  "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  "https://images.unsplash.com/photo-1552058544-f2b08422138a?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-];
+// Fotos profissionais com visual moderno e bem arrumado, separadas por gênero
+const professionalAvatars = {
+  female: [
+    "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+  ],
+  male: [
+    "https://images.unsplash.com/photo-1519340333755-c6eb8f2aaa9b?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80", // neutra moderna
+    "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
+  ],
+};
+
+// Função simples para detectar gênero baseado no nome
+function detectGender(name: string): "male" | "female" {
+  const femaleNames = [
+    "ana", "mariana", "fernanda", "silva", "santos", "lima"
+    // Pode adicionar mais casos aqui para melhorar a lógica
+  ];
+  // Se o nome contém um nome feminino comum ou termina com 'a'
+  if (
+    femaleNames.some((f) => name.toLowerCase().includes(f)) ||
+    name.trim().toLowerCase().split(" ")[0].endsWith("a")
+  ) {
+    return "female";
+  }
+  return "male";
+}
 
 interface ProviderCardProps {
   provider: User;
 }
 
 const ProviderCard = ({ provider }: ProviderCardProps) => {
-  // Garante variedade para cada provider na lista
-  const imageIndex = parseInt(provider.id.replace(/\D/g, ""), 10) % professionalAvatars.length;
-  const avatarUrl = professionalAvatars[imageIndex];
+  // Detecta gênero e seleciona uma imagem baseada no índice do id
+  const gender = detectGender(provider.name);
+  const avatars = professionalAvatars[gender];
+  const imageIndex = parseInt(provider.id.replace(/\D/g, ""), 10) % avatars.length;
+  const avatarUrl = avatars[imageIndex];
 
-  // This would normally be calculated from reviews
+  // Rating fictício, real viria dos reviews
   const rating = 4.5;
 
   return (
