@@ -12,7 +12,7 @@ const beautySalonImages = [
 ];
 
 function formatAddressForMaps(address: string, city: string, state: string) {
-  const full = `${address}, ${city}, ${state}`.replace(/\s/g, "+");
+  const full = `${address}, ${city}, ${state}`;
   return encodeURIComponent(full);
 }
 
@@ -24,8 +24,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
   const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
   const beautySalonImage = beautySalonImages[imageIndex];
 
-  // Generate a Google Maps URL that allows navigation
-  const googleMapUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${formatAddressForMaps(location.address, location.city, location.state)}`;
+  // Novo embed tradicional do Google Maps, zoom alto (18), controles habilitados
+  const googleMapsEmbedUrl = `https://maps.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&hl=pt-BR&z=18&output=embed`;
 
   return (
     <Link to={`/locations/${location.id}`}>
@@ -40,14 +40,16 @@ const LocationCard = ({ location }: LocationCardProps) => {
         <div className="w-full h-28 bg-white border-t flex items-center justify-center">
           <iframe
             title={`${location.name} Mapa`}
-            src={googleMapUrl}
+            src={googleMapsEmbedUrl}
             width="100%"
             height="100%"
             className="border-0 w-full h-full rounded-b-lg"
+            style={{
+              minHeight: 60,
+              borderRadius: '0 0 0.75rem 0.75rem',
+              pointerEvents: 'auto'
+            }}
             allowFullScreen
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-            style={{ minHeight: 60, borderRadius: '0 0 0.75rem 0.75rem' }}
           />
         </div>
         <CardContent className="p-4">
@@ -78,3 +80,4 @@ const LocationCard = ({ location }: LocationCardProps) => {
 };
 
 export default LocationCard;
+
