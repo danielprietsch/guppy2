@@ -178,7 +178,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
             <div className="flex items-center gap-2">
               <Link to="/login">
                 <Button variant="outline" size="sm">
-                  Login
+                  Entrar
                 </Button>
               </Link>
               <Link to="/register">

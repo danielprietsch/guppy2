@@ -31,7 +31,7 @@ const RegisterPage = () => {
       (event: AuthChangeEvent, session: Session | null) => {
         console.log("Auth state changed:", event, session);
         
-        // Use type checking to handle events
+        // Use proper type checking for auth events
         if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
           console.log("User signed up/in successfully");
           setIsRegistering(false);

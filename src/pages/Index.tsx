@@ -43,6 +43,7 @@ const Index = () => {
         await loadUserProfile(session.user.id);
       } else {
         console.log("Index: No active session found");
+        setCurrentUser(null);
         setIsLoading(false);
       }
     };
@@ -108,11 +109,11 @@ const Index = () => {
         } else {
           console.log("Index: No profile found for user:", userId);
           setCurrentUser(null);
+          setIsLoading(false);
         }
       } catch (error) {
         console.error("Index: Error in loadUserProfile:", error);
         setCurrentUser(null);
-      } finally {
         setIsLoading(false);
       }
     };
@@ -143,6 +144,8 @@ const Index = () => {
           navigate("/client/dashboard");
         }
       }
+      
+      setIsLoading(false);
     };
     
     checkSession();
