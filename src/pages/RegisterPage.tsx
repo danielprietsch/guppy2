@@ -28,7 +28,7 @@ const RegisterPage = () => {
       (event: AuthChangeEvent, session) => {
         console.log("Auth state changed:", event);
         
-        if (event === "SIGNED_UP" && session) {
+        if (event === "SIGNED_UP" as AuthChangeEvent && session) {
           setIsRegistering(false);
           
           // Exibir toast de sucesso

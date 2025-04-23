@@ -29,7 +29,7 @@ const LoginPage = () => {
       async (event: AuthChangeEvent, session) => {
         console.log("Auth state changed:", event);
         
-        if (event === "SIGNED_IN" && session) {
+        if (event === "SIGNED_IN" as AuthChangeEvent && session) {
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário
