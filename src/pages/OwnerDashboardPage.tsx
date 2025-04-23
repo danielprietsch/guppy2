@@ -1,22 +1,17 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
 import { User, Location, Cabin } from "@/lib/types";
 import { users, locations, cabins } from "@/lib/mock-data";
-import { Settings, Users, Calendar, DollarSign, Building, Plus, Trash2 } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+
+// Import components
+import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
+import { LocationsOverview } from "@/components/owner/LocationsOverview";
+import { PricingSettings } from "@/components/owner/PricingSettings";
+import { EquipmentSettings } from "@/components/owner/EquipmentSettings";
+import { AvailabilitySettings } from "@/components/owner/AvailabilitySettings";
+import { LocationSettings } from "@/components/owner/LocationSettings";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -25,13 +20,6 @@ const OwnerDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("locations");
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
-
-  // Pricing form state
-  const [cabinPrice, setCabinPrice] = useState<Record<string, number>>({});
-  
-  // Equipment form state
-  const [cabinEquipment, setCabinEquipment] = useState<Record<string, string[]>>({});
-  const [newEquipment, setNewEquipment] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Check if user is logged in
@@ -75,21 +63,6 @@ const OwnerDashboardPage = () => {
         );
         
         setLocationCabins(locationCabins);
-        
-        // Initialize cabin prices
-        const initialPrices: Record<string, number> = {};
-        const initialEquipment: Record<string, string[]> = {};
-        const initialNewEquipment: Record<string, string> = {};
-        
-        locationCabins.forEach((cabin) => {
-          initialPrices[cabin.id] = cabin.price || 100; // Use cabin price or default to 100
-          initialEquipment[cabin.id] = cabin.equipment || [];
-          initialNewEquipment[cabin.id] = "";
-        });
-        
-        setCabinPrice(initialPrices);
-        setCabinEquipment(initialEquipment);
-        setNewEquipment(initialNewEquipment);
       }
     } catch (error) {
       console.error("Error parsing user data:", error);
@@ -106,99 +79,7 @@ const OwnerDashboardPage = () => {
       // Get cabins for selected location
       const locCabins = cabins.filter((cabin) => cabin.locationId === locationId);
       setLocationCabins(locCabins);
-      
-      // Initialize cabin prices and equipment
-      const initialPrices: Record<string, number> = {};
-      const initialEquipment: Record<string, string[]> = {};
-      const initialNewEquipment: Record<string, string> = {};
-      
-      locCabins.forEach((cabin) => {
-        initialPrices[cabin.id] = cabin.price || 100;
-        initialEquipment[cabin.id] = cabin.equipment || [];
-        initialNewEquipment[cabin.id] = "";
-      });
-      
-      setCabinPrice(initialPrices);
-      setCabinEquipment(initialEquipment);
-      setNewEquipment(initialNewEquipment);
     }
-  };
-
-  const handlePriceChange = (cabinId: string, price: string) => {
-    setCabinPrice((prev) => ({
-      ...prev,
-      [cabinId]: parseInt(price) || 0,
-    }));
-  };
-
-  const handleSavePricing = () => {
-    // In a real app, this would update the database
-    toast({
-      title: "Preços atualizados",
-      description: "Os preços das cabines foram atualizados com sucesso.",
-    });
-  };
-  
-  const handleToggleCabinAvailability = (cabinId: string, period: "morning" | "afternoon" | "evening") => {
-    // In a real app, this would update the database
-    toast({
-      title: "Disponibilidade atualizada",
-      description: `A disponibilidade da cabine foi atualizada para o período: ${
-        period === "morning" ? "Manhã" : period === "afternoon" ? "Tarde" : "Noite"
-      }`,
-    });
-  };
-  
-  const handleNewEquipmentChange = (cabinId: string, value: string) => {
-    setNewEquipment((prev) => ({
-      ...prev,
-      [cabinId]: value,
-    }));
-  };
-  
-  const handleAddEquipment = (cabinId: string) => {
-    const equipmentToAdd = newEquipment[cabinId]?.trim();
-    
-    if (!equipmentToAdd) {
-      toast({
-        title: "Campo vazio",
-        description: "Por favor, insira o nome do equipamento.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setCabinEquipment((prev) => ({
-      ...prev,
-      [cabinId]: [...(prev[cabinId] || []), equipmentToAdd],
-    }));
-    
-    setNewEquipment((prev) => ({
-      ...prev,
-      [cabinId]: "",
-    }));
-  };
-  
-  const handleRemoveEquipment = (cabinId: string, indexToRemove: number) => {
-    setCabinEquipment((prev) => ({
-      ...prev,
-      [cabinId]: (prev[cabinId] || []).filter((_, index) => index !== indexToRemove),
-    }));
-  };
-  
-  const handleSaveEquipment = () => {
-    // In a real app, this would update the database
-    toast({
-      title: "Equipamentos atualizados",
-      description: "Os equipamentos das cabines foram atualizados com sucesso.",
-    });
-  };
-
-  const handleCreateLocation = () => {
-    toast({
-      title: "Funcionalidade em breve!",
-      description: "O cadastro de locais será implementado nas próximas etapas.",
-    });
   };
 
   if (!currentUser) {
@@ -218,331 +99,34 @@ const OwnerDashboardPage = () => {
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Sidebar */}
-        <aside className="w-full md:w-64 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Meus Locais</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Select
-                value={selectedLocation?.id}
-                onValueChange={handleLocationChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um local" />
-                </SelectTrigger>
-                <SelectContent>
-                  {userLocations.map((location) => (
-                    <SelectItem key={location.id} value={location.id}>
-                      {location.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="secondary"
-                className="w-full mt-4"
-                onClick={handleCreateLocation}
-              >
-                + Cadastrar Local
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Menu</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-0">
-              <Button
-                variant={activeTab === "locations" ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("locations")}
-              >
-                <Building className="mr-2 h-4 w-4" />
-                Visão geral
-              </Button>
-              <Button
-                variant={activeTab === "pricing" ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("pricing")}
-              >
-                <DollarSign className="mr-2 h-4 w-4" />
-                Preços
-              </Button>
-              <Button
-                variant={activeTab === "equipment" ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("equipment")}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Equipamentos
-              </Button>
-              <Button
-                variant={activeTab === "availability" ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("availability")}
-              >
-                <Calendar className="mr-2 h-4 w-4" />
-                Disponibilidade
-              </Button>
-              <Button
-                variant={activeTab === "settings" ? "default" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => setActiveTab("settings")}
-              >
-                <Settings className="mr-2 h-4 w-4" />
-                Configurações
-              </Button>
-            </CardContent>
-          </Card>
-        </aside>
+        <OwnerSidebar 
+          userLocations={userLocations}
+          selectedLocation={selectedLocation}
+          onLocationChange={handleLocationChange}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
 
         {/* Main Content */}
         <div className="flex-1">
           {activeTab === "locations" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selectedLocation?.name}</CardTitle>
-                <CardDescription>
-                  {selectedLocation?.address}, {selectedLocation?.city}-{selectedLocation?.state}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Cabines</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">{locationCabins.length}</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Reservas Hoje</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">0</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg">Receita (Mês)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-3xl font-bold">R$ 0</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </CardContent>
-            </Card>
+            <LocationsOverview selectedLocation={selectedLocation} locationCabins={locationCabins} />
           )}
 
           {activeTab === "pricing" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuração de Preços - {selectedLocation?.name}</CardTitle>
-                <CardDescription>
-                  Defina os preços das cabines para aluguel
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {locationCabins.map((cabin) => (
-                    <div key={cabin.id} className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <Label htmlFor={`price-${cabin.id}`}>{cabin.name}</Label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">R$</span>
-                          <Input
-                            id={`price-${cabin.id}`}
-                            type="number"
-                            value={cabinPrice[cabin.id] || ""}
-                            onChange={(e) => handlePriceChange(cabin.id, e.target.value)}
-                            className="max-w-[100px]"
-                          />
-                          <span className="text-muted-foreground">por período</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button onClick={handleSavePricing}>Salvar Preços</Button>
-              </CardFooter>
-            </Card>
+            <PricingSettings selectedLocation={selectedLocation} locationCabins={locationCabins} />
           )}
           
           {activeTab === "equipment" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Equipamentos das Cabines - {selectedLocation?.name}</CardTitle>
-                <CardDescription>
-                  Cadastre os equipamentos disponíveis em cada cabine
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-8">
-                  {locationCabins.map((cabin) => (
-                    <div key={cabin.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-                      <h3 className="font-medium text-lg mb-2">{cabin.name}</h3>
-                      
-                      <div className="mb-4">
-                        <Label htmlFor={`equipment-list-${cabin.id}`}>Equipamentos Cadastrados</Label>
-                        {cabinEquipment[cabin.id]?.length > 0 ? (
-                          <div className="mt-2 space-y-2">
-                            {cabinEquipment[cabin.id].map((equipment, index) => (
-                              <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                                <span>{equipment}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleRemoveEquipment(cabin.id, index)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            Nenhum equipamento cadastrado.
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        <div className="flex-1">
-                          <Label htmlFor={`new-equipment-${cabin.id}`}>Adicionar Equipamento</Label>
-                          <Input
-                            id={`new-equipment-${cabin.id}`}
-                            value={newEquipment[cabin.id] || ""}
-                            onChange={(e) => handleNewEquipmentChange(cabin.id, e.target.value)}
-                            placeholder="Nome do equipamento"
-                          />
-                        </div>
-                        <Button 
-                          className="mt-auto"
-                          onClick={() => handleAddEquipment(cabin.id)}
-                        >
-                          <Plus className="h-4 w-4 mr-1" /> Adicionar
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button onClick={handleSaveEquipment}>Salvar Equipamentos</Button>
-              </CardFooter>
-            </Card>
+            <EquipmentSettings selectedLocation={selectedLocation} locationCabins={locationCabins} />
           )}
 
           {activeTab === "availability" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Configuração de Disponibilidade - {selectedLocation?.name}</CardTitle>
-                <CardDescription>
-                  Defina a disponibilidade das cabines por período
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <table className="w-full">
-                  <thead>
-                    <tr>
-                      <th className="text-left">Cabine</th>
-                      <th className="text-center">Manhã</th>
-                      <th className="text-center">Tarde</th>
-                      <th className="text-center">Noite</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {locationCabins.map((cabin) => (
-                      <tr key={cabin.id} className="border-t">
-                        <td className="py-3">{cabin.name}</td>
-                        <td className="text-center">
-                          <Button
-                            variant={cabin.availability.morning ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleToggleCabinAvailability(cabin.id, "morning")}
-                          >
-                            {cabin.availability.morning ? "Disponível" : "Indisponível"}
-                          </Button>
-                        </td>
-                        <td className="text-center">
-                          <Button
-                            variant={cabin.availability.afternoon ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleToggleCabinAvailability(cabin.id, "afternoon")}
-                          >
-                            {cabin.availability.afternoon ? "Disponível" : "Indisponível"}
-                          </Button>
-                        </td>
-                        <td className="text-center">
-                          <Button
-                            variant={cabin.availability.evening ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => handleToggleCabinAvailability(cabin.id, "evening")}
-                          >
-                            {cabin.availability.evening ? "Disponível" : "Indisponível"}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </CardContent>
-              <CardFooter>
-                <Button>Salvar Disponibilidade</Button>
-              </CardFooter>
-            </Card>
+            <AvailabilitySettings selectedLocation={selectedLocation} locationCabins={locationCabins} />
           )}
 
           {activeTab === "settings" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Configurações - {selectedLocation?.name}</CardTitle>
-                <CardDescription>
-                  Gerencie as configurações do seu estabelecimento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="location-name">Nome do Local</Label>
-                    <Input id="location-name" defaultValue={selectedLocation?.name} />
-                  </div>
-                  <div>
-                    <Label htmlFor="location-address">Endereço</Label>
-                    <Input id="location-address" defaultValue={selectedLocation?.address} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="opening-time">Horário de Abertura</Label>
-                      <Input id="opening-time" defaultValue={selectedLocation?.openingHours.open} />
-                    </div>
-                    <div>
-                      <Label htmlFor="closing-time">Horário de Fechamento</Label>
-                      <Input id="closing-time" defaultValue={selectedLocation?.openingHours.close} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="location-description">Descrição</Label>
-                    <Textarea 
-                      id="location-description" 
-                      defaultValue={selectedLocation?.description} 
-                      placeholder="Descreva seu estabelecimento"
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button>Salvar Configurações</Button>
-              </CardFooter>
-            </Card>
+            <LocationSettings selectedLocation={selectedLocation} />
           )}
         </div>
       </div>
