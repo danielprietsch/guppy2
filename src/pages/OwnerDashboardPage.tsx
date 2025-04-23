@@ -13,11 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { User, Location, Cabin } from "@/lib/types";
 import { users, locations, cabins } from "@/lib/mock-data";
-import { Settings, Users, Calendar, DollarSign, Building } from "lucide-react";
+import { Settings, Users, Calendar, DollarSign, Building, Plus, Trash2 } from "lucide-react";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -29,6 +29,10 @@ const OwnerDashboardPage = () => {
 
   // Pricing form state
   const [cabinPrice, setCabinPrice] = useState<Record<string, number>>({});
+  
+  // Equipment form state
+  const [cabinEquipment, setCabinEquipment] = useState<Record<string, string[]>>({});
+  const [newEquipment, setNewEquipment] = useState<Record<string, string>>({});
 
   useEffect(() => {
     // Check if user is logged in
@@ -39,48 +43,59 @@ const OwnerDashboardPage = () => {
       return;
     }
     
-    const user = JSON.parse(storedUser) as User;
-    
-    // Check if user is owner type
-    if (user.userType !== "owner") {
-      navigate("/");
-      toast({
-        title: "Acesso restrito",
-        description: "Você não tem permissão para acessar esta página.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setCurrentUser(user);
-    
-    // Get owned locations
-    const ownedLocations = locations.filter((location) => 
-      user.ownedLocationIds?.includes(location.id)
-    );
-    
-    setUserLocations(ownedLocations);
-    
-    // Set default selected location
-    if (ownedLocations.length > 0) {
-      setSelectedLocation(ownedLocations[0]);
+    try {
+      const user = JSON.parse(storedUser) as User;
       
-      // Get cabins for selected location
-      const locationCabins = cabins.filter(
-        (cabin) => cabin.locationId === ownedLocations[0].id
+      // Check if user is owner type
+      if (user.userType !== "owner") {
+        navigate("/");
+        toast({
+          title: "Acesso restrito",
+          description: "Você não tem permissão para acessar esta página.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setCurrentUser(user);
+      
+      // Get owned locations
+      const ownedLocations = locations.filter((location) => 
+        user.ownedLocationIds?.includes(location.id)
       );
       
-      setLocationCabins(locationCabins);
+      setUserLocations(ownedLocations);
       
-      // Initialize cabin prices
-      const initialPrices: Record<string, number> = {};
-      locationCabins.forEach((cabin) => {
-        // Find a booking for this cabin and use its price
-        const cabinBooking = cabins.find((b) => b.id === cabin.id);
-        initialPrices[cabin.id] = 100; // Default price
-      });
-      
-      setCabinPrice(initialPrices);
+      // Set default selected location if there are any
+      if (ownedLocations.length > 0) {
+        setSelectedLocation(ownedLocations[0]);
+        
+        // Get cabins for selected location
+        const locationCabins = cabins.filter(
+          (cabin) => cabin.locationId === ownedLocations[0].id
+        );
+        
+        setLocationCabins(locationCabins);
+        
+        // Initialize cabin prices
+        const initialPrices: Record<string, number> = {};
+        const initialEquipment: Record<string, string[]> = {};
+        const initialNewEquipment: Record<string, string> = {};
+        
+        locationCabins.forEach((cabin) => {
+          initialPrices[cabin.id] = cabin.price || 100; // Use cabin price or default to 100
+          initialEquipment[cabin.id] = cabin.equipment || [];
+          initialNewEquipment[cabin.id] = "";
+        });
+        
+        setCabinPrice(initialPrices);
+        setCabinEquipment(initialEquipment);
+        setNewEquipment(initialNewEquipment);
+      }
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      localStorage.removeItem("currentUser");
+      navigate("/login");
     }
   }, [navigate]);
 
@@ -93,13 +108,20 @@ const OwnerDashboardPage = () => {
       const locCabins = cabins.filter((cabin) => cabin.locationId === locationId);
       setLocationCabins(locCabins);
       
-      // Initialize cabin prices
+      // Initialize cabin prices and equipment
       const initialPrices: Record<string, number> = {};
+      const initialEquipment: Record<string, string[]> = {};
+      const initialNewEquipment: Record<string, string> = {};
+      
       locCabins.forEach((cabin) => {
-        initialPrices[cabin.id] = 100; // Default price
+        initialPrices[cabin.id] = cabin.price || 100;
+        initialEquipment[cabin.id] = cabin.equipment || [];
+        initialNewEquipment[cabin.id] = "";
       });
       
       setCabinPrice(initialPrices);
+      setCabinEquipment(initialEquipment);
+      setNewEquipment(initialNewEquipment);
     }
   };
 
@@ -127,8 +149,53 @@ const OwnerDashboardPage = () => {
       }`,
     });
   };
+  
+  const handleNewEquipmentChange = (cabinId: string, value: string) => {
+    setNewEquipment((prev) => ({
+      ...prev,
+      [cabinId]: value,
+    }));
+  };
+  
+  const handleAddEquipment = (cabinId: string) => {
+    const equipmentToAdd = newEquipment[cabinId]?.trim();
+    
+    if (!equipmentToAdd) {
+      toast({
+        title: "Campo vazio",
+        description: "Por favor, insira o nome do equipamento.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setCabinEquipment((prev) => ({
+      ...prev,
+      [cabinId]: [...(prev[cabinId] || []), equipmentToAdd],
+    }));
+    
+    setNewEquipment((prev) => ({
+      ...prev,
+      [cabinId]: "",
+    }));
+  };
+  
+  const handleRemoveEquipment = (cabinId: string, indexToRemove: number) => {
+    setCabinEquipment((prev) => ({
+      ...prev,
+      [cabinId]: (prev[cabinId] || []).filter((_, index) => index !== indexToRemove),
+    }));
+  };
+  
+  const handleSaveEquipment = () => {
+    // In a real app, this would update the database
+    toast({
+      title: "Equipamentos atualizados",
+      description: "Os equipamentos das cabines foram atualizados com sucesso.",
+    });
+  };
 
-  if (!currentUser || userLocations.length === 0) {
+  if (!currentUser) {
     return (
       <div className="container py-12">
         <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
@@ -189,6 +256,14 @@ const OwnerDashboardPage = () => {
               >
                 <DollarSign className="mr-2 h-4 w-4" />
                 Preços
+              </Button>
+              <Button
+                variant={activeTab === "equipment" ? "default" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => setActiveTab("equipment")}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Equipamentos
               </Button>
               <Button
                 variant={activeTab === "availability" ? "default" : "ghost"}
@@ -286,6 +361,71 @@ const OwnerDashboardPage = () => {
               </CardFooter>
             </Card>
           )}
+          
+          {activeTab === "equipment" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Equipamentos das Cabines - {selectedLocation?.name}</CardTitle>
+                <CardDescription>
+                  Cadastre os equipamentos disponíveis em cada cabine
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-8">
+                  {locationCabins.map((cabin) => (
+                    <div key={cabin.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                      <h3 className="font-medium text-lg mb-2">{cabin.name}</h3>
+                      
+                      <div className="mb-4">
+                        <Label htmlFor={`equipment-list-${cabin.id}`}>Equipamentos Cadastrados</Label>
+                        {cabinEquipment[cabin.id]?.length > 0 ? (
+                          <div className="mt-2 space-y-2">
+                            {cabinEquipment[cabin.id].map((equipment, index) => (
+                              <div key={index} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                                <span>{equipment}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleRemoveEquipment(cabin.id, index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Nenhum equipamento cadastrado.
+                          </p>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <Label htmlFor={`new-equipment-${cabin.id}`}>Adicionar Equipamento</Label>
+                          <Input
+                            id={`new-equipment-${cabin.id}`}
+                            value={newEquipment[cabin.id] || ""}
+                            onChange={(e) => handleNewEquipmentChange(cabin.id, e.target.value)}
+                            placeholder="Nome do equipamento"
+                          />
+                        </div>
+                        <Button 
+                          className="mt-auto"
+                          onClick={() => handleAddEquipment(cabin.id)}
+                        >
+                          <Plus className="h-4 w-4 mr-1" /> Adicionar
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Button onClick={handleSaveEquipment}>Salvar Equipamentos</Button>
+              </CardFooter>
+            </Card>
+          )}
 
           {activeTab === "availability" && (
             <Card>
@@ -374,6 +514,15 @@ const OwnerDashboardPage = () => {
                       <Label htmlFor="closing-time">Horário de Fechamento</Label>
                       <Input id="closing-time" defaultValue={selectedLocation?.openingHours.close} />
                     </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="location-description">Descrição</Label>
+                    <Textarea 
+                      id="location-description" 
+                      defaultValue={selectedLocation?.description} 
+                      placeholder="Descreva seu estabelecimento"
+                      className="min-h-[100px]"
+                    />
                   </div>
                 </div>
               </CardContent>

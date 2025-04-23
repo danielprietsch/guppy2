@@ -20,14 +20,22 @@ const LoginPage = () => {
       // Store user info in localStorage (in a real app, you'd use a proper auth system)
       localStorage.setItem("currentUser", JSON.stringify(foundUser));
       
+      // Show success toast
+      toast({
+        title: "Login realizado com sucesso",
+        description: `Bem-vindo, ${foundUser.name}!`,
+      });
+      
       // Redirect based on user type
-      if (foundUser.userType === "provider") {
-        navigate("/provider/dashboard");
-      } else if (foundUser.userType === "owner") {
-        navigate("/owner/dashboard");
-      } else {
-        navigate("/client/dashboard");
-      }
+      setTimeout(() => {
+        if (foundUser.userType === "provider") {
+          navigate("/provider/dashboard");
+        } else if (foundUser.userType === "owner") {
+          navigate("/owner/dashboard");
+        } else {
+          navigate("/client/dashboard");
+        }
+      }, 100); // Small timeout to ensure toast appears and navigation happens smoothly
       
       return Promise.resolve();
     } else {
