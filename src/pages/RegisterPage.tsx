@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -31,8 +30,8 @@ const RegisterPage = () => {
       (event: AuthChangeEvent, session: Session | null) => {
         console.log("Auth state changed:", event, session);
         
-        // Use proper type checking for auth events
-        if (event === "SIGNED_UP" || event === "SIGNED_IN") {
+        // Correctly compare string values of AuthChangeEvent
+        if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
           console.log("User signed up/in successfully");
           setIsRegistering(false);
           
