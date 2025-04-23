@@ -29,8 +29,8 @@ import OwnerProfilePage from "./pages/OwnerProfilePage";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <React.StrictMode>
+const App = () => {
+  return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
@@ -63,7 +63,7 @@ const App = () => (
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
-  </React.StrictMode>
-);
+  );
+};
 
 export default App;
