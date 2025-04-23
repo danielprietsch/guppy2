@@ -51,7 +51,7 @@ export const LocationSelector = ({
         </Select>
         <Button
           variant="default"
-          className="w-full mt-4 bg-gradient-to-r from-guppy-purple-start to-guppy-purple-end hover:from-guppy-purple-end hover:to-guppy-purple-start transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
+          className="w-full mt-4 bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
           onClick={() => setAddModalOpen(true)}
         >
           <PlusCircle className="mr-2" />
