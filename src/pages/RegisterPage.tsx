@@ -30,8 +30,8 @@ const RegisterPage = () => {
       (event: AuthChangeEvent, session: Session | null) => {
         console.log("Auth state changed:", event, session);
         
-        // Use enum values directly to compare with AuthChangeEvent
-        if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
+        // Correctly compare enum values from AuthChangeEvent
+        if (event === AuthChangeEvent.SIGNED_UP || event === AuthChangeEvent.SIGNED_IN) {
           console.log("User signed up/in successfully");
           setIsRegistering(false);
           
