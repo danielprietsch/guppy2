@@ -5,7 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthChangeEvent } from "@supabase/supabase-js";
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ const RegisterPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session) => {
+      (event: AuthChangeEvent, session: Session | null) => {
         console.log("Auth state changed:", event, session);
         
         if (event === "SIGNED_UP") {
