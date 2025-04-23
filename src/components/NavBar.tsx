@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -136,12 +135,11 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
               </Link>
               <Button 
                 variant="ghost" 
-                size="icon"
                 onClick={handleLogout}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 flex items-center gap-2"
               >
                 <LogOut className="h-5 w-5" />
-                <span className="sr-only">Sair</span>
+                <span>Sair</span>
               </Button>
             </div>
           ) : (
