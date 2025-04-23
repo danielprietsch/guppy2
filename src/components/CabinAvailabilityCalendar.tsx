@@ -78,7 +78,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         modifiers={modifiers}
         className="pointer-events-auto"
         classNames={{
-          day: dayClassName,
+          day: (date) => dayClassName(date),
         }}
       />
       <div className="flex items-center gap-4 mt-4">
