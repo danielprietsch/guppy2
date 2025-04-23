@@ -44,6 +44,23 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   // Extract first letter of name for avatar fallback
   const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
 
+  // Translate user type
+  let userTypeLabel = "";
+  switch (currentUser.userType) {
+    case "client":
+      userTypeLabel = "Cliente";
+      break;
+    case "provider":
+      userTypeLabel = "Prestador";
+      break;
+    case "owner":
+      userTypeLabel = "Franqueado";
+      break;
+    default:
+      userTypeLabel = "Usuário";
+      break;
+  }
+
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
@@ -69,6 +86,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Conta</DropdownMenuLabel>
+          <div className="px-3 pb-2 text-xs text-gray-500">{userTypeLabel}</div>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to={dashboardRoute}>
