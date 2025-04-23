@@ -25,7 +25,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
   const beautySalonImage = beautySalonImages[imageIndex];
 
   // URL para o mapa navegável (embed padrão, sem 'output=embed&z=17')
-  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}`;
+  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&output=embed`;
 
   return (
     <Link to={`/locations/${location.id}`}>
