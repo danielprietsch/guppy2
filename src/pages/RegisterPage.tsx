@@ -28,11 +28,11 @@ const RegisterPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event: string, session: Session | null) => {
         console.log("Auth state changed:", event, session);
         
-        if (event === 'SIGNED_UP' || event === 'SIGNED_IN') {
-          console.log("User signed up/in successfully");
+        if (event === "SIGNED_UP") {
+          console.log("User signed up successfully");
           setIsRegistering(false);
           
           // Exibir toast de sucesso
@@ -41,11 +41,14 @@ const RegisterPage = () => {
             description: "Sua conta foi criada com sucesso.",
           });
           
-          // Redirecionamento após login/registro
+          // O redirecionamento será tratado no evento SIGNED_IN que vem em seguida
+        }
+
+        // Add debug for SIGNED_IN event
+        if (event === "SIGNED_IN") {
+          console.log("User signed in after registration");
           if (session?.user) {
-            setTimeout(() => {
-              navigateBasedOnUserType(session.user);
-            }, 500);
+            navigateBasedOnUserType(session.user);
           }
         }
       }
