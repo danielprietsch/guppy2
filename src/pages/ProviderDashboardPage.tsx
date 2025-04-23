@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import { Calendar, Clock, DollarSign, Plus, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
+import CabinBookingModal from "@/components/CabinBookingModal";
 
 import { users } from "@/lib/mock-data";
 
@@ -25,7 +26,8 @@ const ProviderDashboardPage = () => {
     price: 0,
     category: "",
   });
-  
+  const [modalReserveOpen, setModalReserveOpen] = useState(false);
+
   useEffect(() => {
     const storedUser = localStorage.getItem("currentUser");
     
@@ -136,35 +138,8 @@ const ProviderDashboardPage = () => {
     setIsAddingService(false);
   };
 
-  const [calendarTurn, setCalendarTurn] = useState<"morning" | "afternoon" | "evening">("morning");
-  const [selectedDates, setSelectedDates] = useState<string[]>([]);
-  const cabinBookings: { [date: string]: { [turn: string]: boolean } } = {};
-
-  providerBookings.forEach((booking) => {
-    if (!cabinBookings[booking.date]) cabinBookings[booking.date] = {};
-    cabinBookings[booking.date][booking.shift] = booking.status === "confirmed";
-  });
-
-  const [showMultiReserve, setShowMultiReserve] = useState(false);
-
-  const handleMultiDayBooking = () => {
-    if (!currentUser) return;
-    const newBookings: Booking[] = selectedDates.map((dt, i) => ({
-      id: `${providerBookings.length + i + 1}`,
-      cabinId: providerBookings[0]?.cabinId ?? "1",
-      providerId: currentUser.id,
-      date: dt,
-      shift: calendarTurn,
-      status: "confirmed",
-      price: 100,
-    }));
-    setProviderBookings([...providerBookings, ...newBookings]);
-    setSelectedDates([]);
-    toast({
-      title: "Reservas realizadas",
-      description: `Foram reservados ${newBookings.length} dias para o turno de ${calendarTurn === "morning" ? "Manhã" : calendarTurn === "afternoon" ? "Tarde" : "Noite"}.`,
-    });
-    setShowMultiReserve(false);
+  const handleAddBookingsFromModal = (newBookings: Booking[]) => {
+    setProviderBookings((prev) => [...prev, ...newBookings]);
   };
 
   if (!currentUser) {
@@ -240,59 +215,20 @@ const ProviderDashboardPage = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Minhas Reservas de Cabines</CardTitle>
                 <Button
-                  onClick={() => setShowMultiReserve((prev) => !prev)}
-                  variant={showMultiReserve ? "outline" : "default"}
+                  onClick={() => setModalReserveOpen(true)}
+                  variant="default"
                 >
-                  {showMultiReserve ? "Fechar Reserva Múltipla" : "Reservar Nova Cabine"}
+                  Reservar Nova Cabine
                 </Button>
               </CardHeader>
               <CardContent>
-                {showMultiReserve && (
-                  <div className="mb-8 border rounded-lg p-4 bg-muted">
-                    <h2 className="text-xl font-bold mb-2">Reservar Múltiplos Dias para o Mesmo Turno</h2>
-                    <div className="flex items-center gap-4 mb-4">
-                      <span className="font-medium">Selecione o turno:</span>
-                      <Button
-                        variant={calendarTurn === "morning" ? "default" : "outline"}
-                        onClick={() => setCalendarTurn("morning")}
-                      >
-                        Manhã
-                      </Button>
-                      <Button
-                        variant={calendarTurn === "afternoon" ? "default" : "outline"}
-                        onClick={() => setCalendarTurn("afternoon")}
-                      >
-                        Tarde
-                      </Button>
-                      <Button
-                        variant={calendarTurn === "evening" ? "default" : "outline"}
-                        onClick={() => setCalendarTurn("evening")}
-                      >
-                        Noite
-                      </Button>
-                    </div>
-                    <CabinAvailabilityCalendar
-                      selectedTurn={calendarTurn}
-                      daysBooked={cabinBookings}
-                      onSelectDates={setSelectedDates}
-                      selectedDates={selectedDates}
-                    />
-                    <div className="flex mt-4 gap-4">
-                      <Button
-                        disabled={selectedDates.length === 0}
-                        onClick={handleMultiDayBooking}
-                      >
-                        Reservar dias selecionados
-                      </Button>
-                      {selectedDates.length > 0 && (
-                        <Button variant="outline" onClick={() => setSelectedDates([])}>
-                          Limpar seleção
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
+                <CabinBookingModal
+                  open={modalReserveOpen}
+                  onClose={() => setModalReserveOpen(false)}
+                  currentUser={currentUser}
+                  providerBookings={providerBookings}
+                  onSubmitBookings={handleAddBookingsFromModal}
+                />
                 {providerBookings.length > 0 ? (
                   <div className="space-y-4">
                     {providerBookings.map((booking) => {
@@ -346,7 +282,7 @@ const ProviderDashboardPage = () => {
                     </p>
                     <Button
                       className="mt-4"
-                      onClick={() => setShowMultiReserve(true)}
+                      onClick={() => setModalReserveOpen(true)}
                     >
                       Reservar Cabine
                     </Button>
