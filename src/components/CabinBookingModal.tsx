@@ -8,7 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import { MapPin } from "lucide-react";
 
 // Função auxiliar para calcular distância entre duas lat/lng com Haversine
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+function getDistance(
+  lat1: number, lon1: number, lat2: number, lon2: number
+) {
   const toRad = (val: number) => (val * Math.PI) / 180;
   const R = 6371; // km
   const dLat = toRad(lat2 - lat1);
@@ -68,15 +70,16 @@ const CabinBookingModal: React.FC<Props> = ({
   // Ordenar cabines por proximidade quando localização estiver disponível
   useEffect(() => {
     if (userLocation) {
-      // Cabines com local valido e filtradas por menor distância
+      // Cabines com local válido e filtradas por menor distância
       const cabinsWithLoc = cabins
         .map((cabin) => {
-          const loc: Location | undefined = locations.find((l) => l.id === cabin.locationId);
-          if (!loc || !loc.lat || !loc.lng) return null;
+          const loc: any = locations.find((l) => l.id === cabin.locationId);
+          // Checar se informações de localização de latitude/longitude existem
+          if (!loc || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null;
           const dist = getDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
           return { ...cabin, _distance: dist, _location: loc };
         })
-        .filter(Boolean) as Array<Cabin & { _distance: number; _location: Location }>;
+        .filter(Boolean) as Array<Cabin & { _distance: number; _location: Location & { lat: number; lng: number } }>;
       cabinsWithLoc.sort((a, b) => a._distance - b._distance);
       setFilteredCabins(cabinsWithLoc);
     } else {
@@ -145,16 +148,24 @@ const CabinBookingModal: React.FC<Props> = ({
                   return (
                     <button
                       key={cabin.id}
-                      className="border rounded p-2 flex flex-col text-left hover:bg-primary/10"
+                      className="border rounded p-2 flex flex-row items-center text-left hover:bg-primary/10"
                       onClick={() => setSelectedCabin(cabin)}
                     >
-                      <span className="font-bold">{cabin.name}</span>
-                      <span className="text-xs text-gray-500">
-                        {loc?.name} - {loc?.city}
-                        {cabin._distance !== undefined &&
-                          <span> &bull; ~{cabin._distance.toFixed(1)} km</span>
-                        }
-                      </span>
+                      {/* Imagem à esquerda */}
+                      <img
+                        src={cabin.imageUrl}
+                        alt={cabin.name}
+                        className="w-16 h-16 rounded-md object-cover mr-3 border"
+                      />
+                      <div className="flex-1 flex flex-col">
+                        <span className="font-bold">{cabin.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {loc?.name} - {loc?.city}
+                          {cabin._distance !== undefined &&
+                            <span> &bull; ~{cabin._distance.toFixed(1)} km</span>
+                          }
+                        </span>
+                      </div>
                     </button>
                   );
                 })}
@@ -216,3 +227,5 @@ const CabinBookingModal: React.FC<Props> = ({
 };
 
 export default CabinBookingModal;
+
+// O ARQUIVO ESTÁ FICANDO MUITO GRANDE. Considere solicitar a refatoração dele!
