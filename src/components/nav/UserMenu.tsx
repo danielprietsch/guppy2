@@ -18,6 +18,8 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
+  console.log("UserMenu received user:", currentUser);
+
   // Determine dashboard and profile routes based on user type
   const dashboardRoute = 
     currentUser.userType === "provider"
@@ -34,7 +36,12 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
       : "/client/profile";
 
   // Extract first letter of name for avatar fallback
-  const firstLetter = currentUser.name ? currentUser.name.charAt(0) : '?';
+  const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+  
+  // Debug output
+  console.log("Avatar URL:", currentUser.avatarUrl);
+  console.log("User name:", currentUser.name);
+  console.log("First letter for avatar:", firstLetter);
 
   return (
     <div className="flex items-center gap-4">
@@ -42,15 +49,21 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
           <Avatar className="h-8 w-8">
             {currentUser.avatarUrl ? (
-              <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
-            ) : (
-              <AvatarFallback className="bg-primary/10 text-primary font-bold uppercase">
-                {firstLetter}
-              </AvatarFallback>
-            )}
+              <AvatarImage 
+                src={currentUser.avatarUrl} 
+                alt={currentUser.name || "User"} 
+                onError={(e) => {
+                  console.error("Avatar image failed to load");
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            ) : null}
+            <AvatarFallback className="bg-primary/10 text-primary font-bold uppercase">
+              {firstLetter}
+            </AvatarFallback>
           </Avatar>
           <span className="text-sm font-medium hover:underline hidden md:inline-block">
-            {currentUser.name}
+            {currentUser.name || "Usuário"}
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

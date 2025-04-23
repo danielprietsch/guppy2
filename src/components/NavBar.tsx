@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -17,28 +16,34 @@ interface NavBarProps {
 
 const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [currentUser, setCurrentUser] = React.useState<User | null>(propUser || null);
+  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const navigate = useNavigate();
 
   // Check local storage for user data on initial render and when propUser changes
   React.useEffect(() => {
+    // Priority: use propUser if available
     if (propUser) {
+      console.log("Using propUser:", propUser);
       setCurrentUser(propUser);
       return;
     }
     
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
+    // Otherwise try to load from localStorage
+    try {
+      const storedUserJson = localStorage.getItem("currentUser");
+      console.log("Stored user JSON:", storedUserJson);
+      
+      if (storedUserJson) {
+        const parsedUser = JSON.parse(storedUserJson);
+        console.log("Parsed user from localStorage:", parsedUser);
         setCurrentUser(parsedUser);
-        console.log("User loaded from localStorage:", parsedUser);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-        localStorage.removeItem("currentUser");
+      } else {
+        console.log("No user found in localStorage");
         setCurrentUser(null);
       }
-    } else {
+    } catch (error) {
+      console.error("Error parsing user data:", error);
+      localStorage.removeItem("currentUser");
       setCurrentUser(null);
     }
   }, [propUser]);
