@@ -74,6 +74,16 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
       
       if (error) {
         console.error("Erro ao adicionar cabine:", error);
+        
+        if (error.code === '23505') {
+          toast({ 
+            title: "Erro ao adicionar cabine", 
+            description: "Já existe uma cabine com este nome neste local. Por favor, escolha um nome diferente.", 
+            variant: "destructive" 
+          });
+          return;
+        }
+        
         toast({ title: "Erro ao adicionar cabine", description: error.message, variant: "destructive" });
         return;
       }
