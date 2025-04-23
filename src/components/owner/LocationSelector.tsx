@@ -16,12 +16,14 @@ interface LocationSelectorProps {
   userLocations: Location[];
   selectedLocation: Location | null;
   onLocationChange: (locationId: string) => void;
+  onLocationCreated?: (loc: Location) => void;
 }
 
 export const LocationSelector = ({
   userLocations,
   selectedLocation,
-  onLocationChange
+  onLocationChange,
+  onLocationCreated
 }: LocationSelectorProps) => {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
@@ -56,6 +58,7 @@ export const LocationSelector = ({
         <OwnerAddLocationModal
           open={addModalOpen}
           onOpenChange={setAddModalOpen}
+          onLocationCreated={onLocationCreated}
         />
       </CardContent>
     </Card>
