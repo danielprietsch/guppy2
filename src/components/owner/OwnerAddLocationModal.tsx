@@ -4,11 +4,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { Location } from "@/lib/types";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLocationCreated?: (locationData: any) => void;
+  onLocationCreated?: (locationData: Location) => void;
 }
 
 export const OwnerAddLocationModal: React.FC<Props> = ({
@@ -29,7 +30,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
     }
 
     // Criação "mock" de local, sem preços ou quantidade de cabines
-    const novoLocation = {
+    const novoLocation: Location = {
       id: Math.random().toString(36).slice(2),
       name: nome,
       address: endereco,
@@ -43,8 +44,12 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       description: ""
     };
 
-    toast({ title: "Local cadastrado!", description: "O local foi cadastrado apenas na interface." });
-    onLocationCreated?.(novoLocation);
+    toast({ title: "Local cadastrado!", description: "O local foi cadastrado com sucesso." });
+    
+    if (onLocationCreated) {
+      onLocationCreated(novoLocation);
+    }
+    
     onOpenChange(false);
 
     // Reset form

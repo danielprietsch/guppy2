@@ -27,6 +27,12 @@ export const LocationSelector = ({
 }: LocationSelectorProps) => {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
+  const handleLocationCreated = (newLocation: Location) => {
+    if (onLocationCreated) {
+      onLocationCreated(newLocation);
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -59,7 +65,7 @@ export const LocationSelector = ({
         <OwnerAddLocationModal
           open={addModalOpen}
           onOpenChange={setAddModalOpen}
-          onLocationCreated={onLocationCreated}
+          onLocationCreated={handleLocationCreated}
         />
       </CardContent>
     </Card>
