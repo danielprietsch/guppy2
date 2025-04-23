@@ -19,21 +19,21 @@ const userTypes = [
     key: "client",
     label: "Cliente",
     desc: "Estou procurando profissionais",
-    img: "https://images.unsplash.com/photo-1582562124811-c09040d0a901?auto=format&fit=crop&w=300&q=80", // Gato relaxado
+    img: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158", // Professional woman working on laptop
     icon: <User className="w-8 h-8 text-purple-400" />,
   },
   {
     key: "provider",
     label: "Prestador",
     desc: "Cabeleireiro, barbeiro, manicure etc.",
-    img: null,
+    img: "https://images.unsplash.com/photo-1649972904349-6e44c42644a7", // Person with professional equipment
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
   },
   {
     key: "owner",
     label: "Dono/Franqueado",
     desc: "Local de serviços ou franquia",
-    img: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?auto=format&fit=crop&w=300&q=80", // Prato empresarial
+    img: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d", // Professional workspace with laptop
     icon: <Briefcase className="w-8 h-8 text-blue-400" />,
   },
 ];
