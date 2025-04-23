@@ -15,18 +15,44 @@ interface NavBarProps {
   onLogout?: () => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
+const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState<User | null>(propUser || null);
   const navigate = useNavigate();
+
+  // Check local storage for user data on initial render and when propUser changes
+  React.useEffect(() => {
+    if (propUser) {
+      setCurrentUser(propUser);
+    } else {
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser) as User;
+          setCurrentUser(user);
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          localStorage.removeItem("currentUser");
+          setCurrentUser(null);
+        }
+      }
+    }
+  }, [propUser]);
 
   const handleLogout = () => {
     if (onLogout) {
       onLogout();
     }
+    
+    // Remove user from localStorage
+    localStorage.removeItem("currentUser");
+    setCurrentUser(null);
+    
     toast({
       title: "Logout realizado com sucesso",
       description: "Você foi desconectado do sistema",
     });
+    
     navigate("/");
   };
 
