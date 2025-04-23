@@ -89,7 +89,7 @@ const Index = () => {
                 
               if (createdProfile) {
                 setUserData(createdProfile, user);
-                redirectToDashboard(createdProfile.user_type || user.user_metadata.userType || "client");
+                handleRedirection(createdProfile.user_type || user.user_metadata.userType || "client");
               } else {
                 setCurrentUser(null);
               }
@@ -106,7 +106,7 @@ const Index = () => {
           console.log("Index: Profile loaded successfully:", profile);
           const { data: { user } } = await supabase.auth.getUser();
           setUserData(profile, user);
-          redirectToDashboard(profile.user_type);
+          handleRedirection(profile.user_type);
         } else {
           console.log("Index: No profile found for user:", userId);
           setCurrentUser(null);
@@ -119,17 +119,19 @@ const Index = () => {
       }
     };
     
-    const redirectToDashboard = (userType: string) => {
+    const handleRedirection = (userType: string) => {
       // Verificar se estamos na página de login ou cadastro
       if (location.pathname === "/login" || location.pathname === "/register" || location.pathname === "/") {
         console.log("Index: Redirecting to dashboard based on user type:", userType);
-        if (userType === "provider") {
-          navigate("/provider/dashboard");
-        } else if (userType === "owner") {
-          navigate("/owner/dashboard");
-        } else {
-          navigate("/client/dashboard");
-        }
+        setTimeout(() => {
+          if (userType === "provider") {
+            navigate("/provider/dashboard");
+          } else if (userType === "owner") {
+            navigate("/owner/dashboard");
+          } else {
+            navigate("/client/dashboard");
+          }
+        }, 100);
       }
     };
     
