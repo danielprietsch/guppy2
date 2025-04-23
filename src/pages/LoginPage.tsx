@@ -73,7 +73,7 @@ const LoginPage = () => {
         // Tentar criar perfil baseado nos metadados, caso seja necessário
         if (user.user_metadata) {
           const userType = user.user_metadata.userType || "client";
-          const name = user.user_metadata.name || user.email?.split('@')[0] || "Usuário";
+          const name = user.user_metadata.name || (user.email ? user.email.split('@')[0] : "Usuário");
           
           console.log("LoginPage: Creating profile from metadata:", { name, userType });
           
@@ -116,7 +116,7 @@ const LoginPage = () => {
       // Mostrar toast de sucesso
       toast({
         title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${profile?.name || user.email?.split('@')[0] || "Usuário"}!`,
+        description: `Bem-vindo, ${profile?.name || (user.email ? user.email.split('@')[0] : "Usuário")}!`,
       });
       
       redirectBasedOnUserType(userType);

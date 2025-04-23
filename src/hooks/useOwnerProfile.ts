@@ -30,6 +30,8 @@ export const useOwnerProfile = () => {
         }
         
         console.log("useOwnerProfile: Session found, fetching profile");
+        // Fix: Using let instead of const for profile since we need to reassign later
+        let profileData;
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
@@ -47,7 +49,10 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        if (!profile) {
+        // Use the profile data or create a new one
+        if (profile) {
+          profileData = profile;
+        } else {
           console.log("useOwnerProfile: No profile found, creating one from metadata");
           
           // Tentar criar perfil a partir dos metadados
@@ -86,7 +91,7 @@ export const useOwnerProfile = () => {
               return;
             }
             
-            profile = newProfile;
+            profileData = newProfile;
           } else {
             console.log("useOwnerProfile: No metadata available to create profile");
             navigate("/login");
@@ -94,7 +99,7 @@ export const useOwnerProfile = () => {
           }
         }
         
-        if (profile.user_type !== "owner") {
+        if (profileData.user_type !== "owner") {
           console.log("useOwnerProfile: User is not an owner, redirecting");
           toast({
             title: "Acesso restrito",
@@ -107,11 +112,11 @@ export const useOwnerProfile = () => {
         
         const userData: User = {
           id: session.user.id,
-          name: profile.name || session.user.email?.split('@')[0] || "Usuário",
-          email: profile.email || session.user.email || "",
-          userType: profile.user_type as "client" | "provider" | "owner",
-          avatarUrl: profile.avatar_url,
-          phoneNumber: profile.phone_number
+          name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
+          email: profileData.email || session.user.email || "",
+          userType: profileData.user_type as "client" | "provider" | "owner",
+          avatarUrl: profileData.avatar_url,
+          phoneNumber: profileData.phone_number
         };
         
         console.log("useOwnerProfile: Setting current user:", userData);
