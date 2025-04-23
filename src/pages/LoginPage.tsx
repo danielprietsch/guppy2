@@ -29,34 +29,36 @@ const LoginPage = () => {
       async (event: AuthChangeEvent, session) => {
         console.log("Auth state changed:", event);
         
-        if (event === "SIGNED_IN" && session) {
+        if (event === "SIGNED_IN" as AuthChangeEvent) {
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário
-          const userEmail = session.user.email;
-          const userName = session.user.user_metadata?.name || userEmail?.split('@')[0] || "Usuário";
+          const userEmail = session?.user.email;
+          const userName = session?.user.user_metadata?.name || userEmail?.split('@')[0] || "Usuário";
           
           // Salvar informações no localStorage para compatibilidade com a aplicação
-          const userType = session.user.user_metadata?.userType || "client";
+          const userType = session?.user.user_metadata?.userType || "client";
           
-          const userData = {
-            id: session.user.id,
-            name: userName,
-            email: userEmail,
-            userType: userType,
-            avatarUrl: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`,
-          };
-          
-          localStorage.setItem("currentUser", JSON.stringify(userData));
-          
-          // Mostrar toast de sucesso
-          toast({
-            title: "Login realizado com sucesso",
-            description: `Bem-vindo, ${userName}!`,
-          });
-          
-          // Redirecionar baseado no tipo de usuário
-          navigateBasedOnUserType(session.user);
+          if (session) {
+            const userData = {
+              id: session.user.id,
+              name: userName,
+              email: userEmail,
+              userType: userType,
+              avatarUrl: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`,
+            };
+            
+            localStorage.setItem("currentUser", JSON.stringify(userData));
+            
+            // Mostrar toast de sucesso
+            toast({
+              title: "Login realizado com sucesso",
+              description: `Bem-vindo, ${userName}!`,
+            });
+            
+            // Redirecionar baseado no tipo de usuário
+            navigateBasedOnUserType(session.user);
+          }
         }
       }
     );
