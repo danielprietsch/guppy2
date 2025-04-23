@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -23,6 +24,7 @@ export interface Location {
   };
   amenities: string[];
   imageUrl: string;
+  description?: string; // Adding the missing property
 }
 
 export interface Cabin {
@@ -37,6 +39,7 @@ export interface Cabin {
     afternoon: boolean;
     evening: boolean;
   };
+  price?: number; // Adding the missing property
 }
 
 export interface Booking {

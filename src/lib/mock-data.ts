@@ -78,7 +78,8 @@ export const locations: Location[] = [
     cabinsCount: 6,
     openingHours: { open: "08:00", close: "22:00" },
     amenities: ["Wifi", "Estacionamento", "Ar-condicionado"],
-    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
+    description: "Espaço moderno e confortável para profissionais da beleza"
   },
   {
     id: "2",
@@ -90,7 +91,8 @@ export const locations: Location[] = [
     cabinsCount: 4,
     openingHours: { open: "09:00", close: "20:00" },
     amenities: ["Café", "Recepção", "Ar-condicionado"],
-    imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
+    description: "Local aconchegante com fácil acesso"
   },
   {
     id: "3",
@@ -102,7 +104,8 @@ export const locations: Location[] = [
     cabinsCount: 2,
     openingHours: { open: "10:00", close: "21:00" },
     amenities: ["Acessibilidade", "Banheiro privativo", "Ar-condicionado"],
-    imageUrl: "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?auto=format&fit=crop&w=800&q=80",
+    description: "Ambiente privativo localizado em centro comercial"
   }
 ];
 
@@ -119,7 +122,8 @@ export const cabins: Cabin[] = [
       morning: true,
       afternoon: false,
       evening: true
-    }
+    },
+    price: 100
   },
   {
     id: "2",
@@ -132,7 +136,8 @@ export const cabins: Cabin[] = [
       morning: true,
       afternoon: true,
       evening: false
-    }
+    },
+    price: 120
   },
   {
     id: "3",
@@ -145,7 +150,8 @@ export const cabins: Cabin[] = [
       morning: false,
       afternoon: true,
       evening: true
-    }
+    },
+    price: 150
   },
   {
     id: "4",
@@ -158,7 +164,8 @@ export const cabins: Cabin[] = [
       morning: true,
       afternoon: true,
       evening: true
-    }
+    },
+    price: 90
   },
   {
     id: "5",
@@ -171,7 +178,8 @@ export const cabins: Cabin[] = [
       morning: false,
       afternoon: true,
       evening: false
-    }
+    },
+    price: 80
   }
 ];
 
