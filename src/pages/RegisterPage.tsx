@@ -1,83 +1,126 @@
 
 import AuthForm from "@/components/AuthForm";
 import { useNavigate } from "react-router-dom";
-import { users } from "@/lib/mock-data";
-import { User } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
-  const handleRegister = (data: {
+  useEffect(() => {
+    // Verificar se já existe uma sessão ativa
+    const checkSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        // Usuário já está logado, redirecionar
+        navigateBasedOnUserType(data.session.user);
+      }
+    };
+    
+    checkSession();
+    
+    // Configurar listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("Auth state changed:", event);
+        
+        if (event === 'SIGNED_UP' && session) {
+          setIsRegistering(false);
+          
+          // Exibir toast de sucesso
+          toast({
+            title: "Cadastro realizado com sucesso!",
+            description: "Sua conta foi criada com sucesso.",
+          });
+          
+          // O redirecionamento será tratado no evento SIGNED_IN que vem em seguida
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
+  
+  const navigateBasedOnUserType = (user: any) => {
+    // Verificar o tipo de usuário (do metadata ou padrão)
+    const userType = user.user_metadata?.userType || "client";
+    
+    // Redirecionar com base no tipo
+    if (userType === "provider") {
+      navigate("/provider/dashboard");
+    } else if (userType === "owner") {
+      navigate("/owner/dashboard");
+    } else {
+      navigate("/client/dashboard");
+    }
+  };
+
+  const handleRegister = async (data: {
     name: string;
     email: string;
     password: string;
     userType: "client" | "provider" | "owner";
   }) => {
     setIsRegistering(true);
-
-    // Check if email already exists
-    const emailExists = users.some((user) => user.email === data.email);
-
-    if (emailExists) {
+    setAuthError(null);
+    
+    try {
+      // Cadastrar usuário no Supabase
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            name: data.name,
+            userType: data.userType,
+            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
+          }
+        }
+      });
+      
+      if (error) {
+        console.error("Erro no cadastro:", error);
+        setAuthError(error.message);
+        toast({
+          title: "Erro no cadastro",
+          description: error.message,
+          variant: "destructive"
+        });
+        setIsRegistering(false);
+        return Promise.reject(error);
+      }
+      
+      // O redirecionamento e confirmação serão tratados pelo listener onAuthStateChange
+      return Promise.resolve();
+      
+    } catch (error: any) {
+      console.error("Erro ao processar cadastro:", error);
+      setAuthError(error.message);
       toast({
         title: "Erro no cadastro",
-        description: "Este email já está em uso.",
-        variant: "destructive",
+        description: "Ocorreu um problema ao processar o cadastro.",
+        variant: "destructive"
       });
-      setIsRegistering(false);
-      return Promise.reject(new Error("Email already in use"));
-    }
-
-    // In a real application, this would make an API call to register the user
-    // For this mock version, we'll just simulate a successful registration
-    
-    // Create a new user object
-    const newUser: User = {
-      id: `${users.length + 1}`, // Simple ID generation
-      name: data.name,
-      email: data.email,
-      userType: data.userType,
-      // Add default avatar based on name initials
-      avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`,
-      // Add default specialties if provider
-      ...(data.userType === "provider" && { specialties: [] }),
-      // Add empty owned locations array if owner
-      ...(data.userType === "owner" && { ownedLocationIds: [] }),
-    };
-    
-    console.log("Saving user to localStorage:", newUser);
-    
-    // Store user in localStorage (in a real app, you'd use a proper auth system)
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
-    
-    // Redirect based on user type and inform navigation bar of user change
-    if (data.userType === "provider") {
-      navigate("/provider/dashboard");
-    } else if (data.userType === "owner") {
-      navigate("/owner/dashboard");
-    } else {
-      navigate("/client/dashboard");
-    }
       
-    // Add small delay to ensure navigation completes before showing toast
-    setTimeout(() => {
-      toast({
-        title: "Cadastro realizado com sucesso!",
-        description: "Sua conta foi criada com sucesso.",
-      });
-        
       setIsRegistering(false);
-    }, 100);
-    
-    return Promise.resolve();
+      return Promise.reject(error);
+    }
   };
   
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
-      <AuthForm mode="register" onSubmit={handleRegister} />
+      {authError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertDescription>{authError}</AlertDescription>
+        </Alert>
+      )}
+      <AuthForm mode="register" onSubmit={handleRegister} isLoading={isRegistering} />
     </div>
   );
 };
