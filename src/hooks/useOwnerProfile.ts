@@ -30,8 +30,9 @@ export const useOwnerProfile = () => {
         }
         
         console.log("useOwnerProfile: Session found, fetching profile");
-        // Fix: Using let instead of const for profile since we need to reassign later
+        // Usando let para permitir reatribuição
         let profileData;
+        
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')

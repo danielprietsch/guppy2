@@ -31,8 +31,7 @@ const RegisterPage = () => {
       (event: AuthChangeEvent, session) => {
         console.log("Auth state changed:", event, session);
         
-        // Compare as strings to fix the type error
-        if (event.toString() === "SIGNED_UP") {
+        if (event === "SIGNED_UP") {
           console.log("User signed up successfully");
           setIsRegistering(false);
           
@@ -46,7 +45,7 @@ const RegisterPage = () => {
         }
 
         // Add debug for SIGNED_IN event
-        if (event.toString() === "SIGNED_IN") {
+        if (event === "SIGNED_IN") {
           console.log("User signed in after registration");
           if (session?.user) {
             navigateBasedOnUserType(session.user);
@@ -63,6 +62,17 @@ const RegisterPage = () => {
   
   const navigateBasedOnUserType = (user: any) => {
     console.log("Navigating based on user type:", user);
+    
+    // Verificar se o usuário existe
+    if (!user) {
+      toast({
+        title: "Erro de autenticação",
+        description: "Informações do usuário não encontradas.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Verificar o tipo de usuário (do metadata ou padrão)
     const userType = user.user_metadata?.userType || "client";
     console.log("Detected user type:", userType);

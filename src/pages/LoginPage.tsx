@@ -1,3 +1,4 @@
+
 import AuthForm from "@/components/AuthForm";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -75,8 +76,13 @@ const LoginPage = () => {
         console.error("Error fetching user profile:", error);
         
         if (user.user_metadata) {
-          const userType = user.user_metadata.userType || "client";
-          const name = user.user_metadata.name || (user.email ? user.email.split('@')[0] : "Usuário");
+          // Usando type assertion para garantir que o TypeScript saiba que user.user_metadata existe
+          const metadata = user.user_metadata as Record<string, any>;
+          
+          const userType = metadata.userType || "client";
+          // Usando encadeamento opcional com fallback para garantir a tipagem
+          const userEmail = typeof user.email === 'string' ? user.email : "";
+          const name = metadata.name || (userEmail ? userEmail.split('@')[0] : "Usuário");
           
           console.log("LoginPage: Creating profile from metadata:", { name, userType });
           
@@ -85,9 +91,9 @@ const LoginPage = () => {
             .insert({
               id: user.id,
               name: name,
-              email: user.email,
+              email: userEmail,
               user_type: userType,
-              avatar_url: user.user_metadata.avatar_url
+              avatar_url: metadata.avatar_url
             });
           
           if (insertError) {
@@ -116,7 +122,7 @@ const LoginPage = () => {
       
       toast({
         title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${profile?.name || (user.email ? user.email.split('@')[0] : "Usuário")}!`,
+        description: `Bem-vindo, ${profile?.name || (typeof user.email === 'string' ? user.email.split('@')[0] : "Usuário")}!`,
       });
       
       redirectBasedOnUserType(userType);
@@ -168,7 +174,9 @@ const LoginPage = () => {
       
       if (authData?.session) {
         setTimeout(() => {
-          navigateBasedOnUserType(authData.session?.user);
+          if (authData.session?.user) {
+            navigateBasedOnUserType(authData.session.user);
+          }
         }, 500);
       }
       
@@ -197,7 +205,7 @@ const LoginPage = () => {
       
       console.log("Resetting password for test user:", testEmail);
       
-      const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
+      const { data, error: userError } = await supabase.auth.admin.listUsers();
       
       if (userError) {
         console.error("Error listing users:", userError);
@@ -210,7 +218,9 @@ const LoginPage = () => {
         return;
       }
       
-      const testUser = users?.find(u => u.email === testEmail);
+      // Garantindo que 'users' é um array para evitar problemas de tipagem
+      const users = data?.users || [];
+      const testUser = users.find(u => u.email === testEmail);
       
       if (!testUser) {
         console.log("Test user not found, creating one...");

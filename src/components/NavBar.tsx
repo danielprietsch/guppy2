@@ -48,7 +48,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
         if (profile) {
           const userData: User = {
             id: session.user.id,
-            name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+            name: profile.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
             email: profile.email || session.user.email || "",
             userType: profile.user_type as "client" | "provider" | "owner",
             avatarUrl: profile.avatar_url,
@@ -62,7 +62,20 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
           if (error) {
             console.error("NavBar: Error fetching profile:", error);
           }
-          setCurrentUser(null);
+          
+          // Se não houver perfil mas houver metadados, criamos um usuário temporário para exibição
+          if (session.user.user_metadata) {
+            const tempUser: User = {
+              id: session.user.id,
+              name: session.user.user_metadata.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
+              email: session.user.email || "",
+              userType: (session.user.user_metadata.userType as "client" | "provider" | "owner") || "client",
+              avatarUrl: session.user.user_metadata.avatar_url
+            };
+            setCurrentUser(tempUser);
+          } else {
+            setCurrentUser(null);
+          }
         }
       } else {
         console.log("NavBar: No user authenticated in Supabase");
