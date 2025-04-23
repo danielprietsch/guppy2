@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -11,18 +10,24 @@ const Footer = () => {
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 viewBox="0 0 100 100" 
-                className="h-8 w-8 text-[#9b87f5]"
+                className="h-8 w-8 text-guppy-primary"
               >
                 <path 
-                  d="M50 10 C30 30, 20 50, 50 70 C80 50, 70 30, 50 10" 
+                  d="M50 20 Q30 50, 50 80 Q70 50, 50 20" 
                   fill="#9b87f5" 
                   stroke="#7E69AB" 
                   strokeWidth="3"
                 />
-                <circle cx="50" cy="40" r="5" fill="#1A1F2C" />
-                <circle cx="50" cy="60" r="5" fill="#1A1F2C" />
+                <path 
+                  d="M30 50 Q40 40, 50 50 Q60 60, 70 50" 
+                  fill="none" 
+                  stroke="#1A1F2C" 
+                  strokeWidth="2"
+                />
+                <circle cx="45" cy="40" r="3" fill="#1A1F2C" />
+                <circle cx="55" cy="40" r="3" fill="#1A1F2C" />
               </svg>
-              <span className="text-xl font-bold text-[#6E59A5]">Guppy</span>
+              <span className="text-xl font-bold text-guppy-tertiary">Guppy</span>
             </Link>
             <p className="mt-4 text-sm text-gray-600">
               Conectamos profissionais de beleza a espaços adequados para trabalhar.
