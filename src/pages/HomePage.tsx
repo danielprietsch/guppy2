@@ -34,6 +34,11 @@ const HomePage = () => {
                     Encontrar Profissionais
                   </Button>
                 </Link>
+                <Link to="/register?userType=owner">
+                  <Button size="lg" variant="secondary">
+                    Seja um Franqueado
+                  </Button>
+                </Link>
               </div>
             </div>
             <img
@@ -163,3 +168,4 @@ const HomePage = () => {
 };
 
 export default HomePage;
+
