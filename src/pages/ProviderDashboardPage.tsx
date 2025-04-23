@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Booking, Appointment, Service } from "@/lib/types";
@@ -152,7 +153,7 @@ const ProviderDashboardPage = () => {
         <div>
           <h1 className="text-3xl font-bold">Olá, {currentUser.name}</h1>
           <p className="mt-1 text-gray-500">
-            Bem-vindo ao seu painel de controle de prestador
+            Bem-vindo ao seu painel de controle de Prestador de Serviço
           </p>
         </div>
         <Button

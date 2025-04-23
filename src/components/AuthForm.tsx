@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -6,26 +7,34 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Scissors, User, Briefcase } from "lucide-react";
 
+type AuthFormMode = "login" | "register";
+
+interface AuthFormProps {
+  mode: AuthFormMode;
+  onSubmit: (data: any) => void;
+}
+
+// Definição de ícones em formato svg, mantendo padronização visual nos três
 const userTypes = [
   {
     key: "client",
     label: "Cliente",
     desc: "Estou procurando profissionais",
-    img: "/icons/client-icon.svg", // Clean, minimalist icon representing a client
+    img: "/icons/client-icon.svg", // Ícone minimalista padrão para cliente
     icon: <User className="w-8 h-8 text-purple-400" />,
   },
   {
     key: "provider",
-    label: "Prestador",
+    label: "Prestador de Serviço",
     desc: "Cabeleireiro, barbeiro, manicure etc.",
-    img: "/icons/scissors-icon.svg", // Scissors icon representing service providers
+    img: "/icons/scissors-icon.svg", // Ícone de tesoura para prestadores
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
   },
   {
     key: "owner",
     label: "Dono/Franqueado",
     desc: "Local de serviços ou franquia",
-    img: "/icons/business-icon.svg", // Minimalist business/building icon
+    img: "/icons/business-icon.svg", // Ícone minimalista empresarial
     icon: <Briefcase className="w-8 h-8 text-blue-400" />,
   },
 ];
