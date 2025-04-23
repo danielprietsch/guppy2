@@ -78,7 +78,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         modifiers={modifiers}
         className="pointer-events-auto"
         classNames={{
-          ...Calendar.defaultProps?.classNames,
           day: dayClassName,
         }}
       />

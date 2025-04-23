@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Booking, Appointment, Service } from "@/lib/types";
@@ -161,13 +162,13 @@ const ProviderDashboardPage = () => {
   const handleMultiDayBooking = () => {
     if (!currentUser) return;
     // Adiciona reservas fictícias para as datas selecionadas
-    const newBookings = selectedDates.map((dt, i) => ({
+    const newBookings: Booking[] = selectedDates.map((dt, i) => ({
       id: `${providerBookings.length + i + 1}`,
       cabinId: providerBookings[0]?.cabinId ?? "1",
       providerId: currentUser.id,
       date: dt,
       shift: calendarTurn,
-      status: "confirmed",
+      status: "confirmed", // Agora usando um valor específico do tipo
       price: 100, // apenas simulação, valor fixo
     }));
     setProviderBookings([...providerBookings, ...newBookings]);
