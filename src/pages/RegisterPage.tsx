@@ -28,6 +28,7 @@ const RegisterPage = () => {
       (event, session) => {
         console.log("Auth state changed:", event);
         
+        // Using string comparison instead of type checking
         if (event === "SIGNED_UP") {
           setIsRegistering(false);
           
