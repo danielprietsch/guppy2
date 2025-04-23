@@ -11,6 +11,38 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Verificar sessão atual
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            const userData: User = {
+              id: session.user.id,
+              name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+              email: profile.email || session.user.email || "",
+              userType: profile.user_type as "client" | "provider" | "owner",
+              avatarUrl: profile.avatar_url,
+              phoneNumber: profile.phone_number
+            };
+            
+            setCurrentUser(userData);
+          }
+        } catch (error) {
+          console.error("Error loading user profile:", error);
+          setCurrentUser(null);
+        }
+      }
+    };
+    
+    checkSession();
+    
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -44,38 +76,6 @@ const Index = () => {
         }
       }
     );
-    
-    // Verificar sessão atual
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profile) {
-            const userData: User = {
-              id: session.user.id,
-              name: profile.name || session.user.email?.split('@')[0] || "Usuário",
-              email: profile.email || session.user.email || "",
-              userType: profile.user_type as "client" | "provider" | "owner",
-              avatarUrl: profile.avatar_url,
-              phoneNumber: profile.phone_number
-            };
-            
-            setCurrentUser(userData);
-          }
-        } catch (error) {
-          console.error("Error loading user profile:", error);
-          setCurrentUser(null);
-        }
-      }
-    };
-    
-    checkSession();
     
     return () => {
       subscription.unsubscribe();
