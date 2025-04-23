@@ -124,8 +124,9 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
           description,
           equipment,
           image_url: "",
-          availability, 
-          pricing
+          // Convert complex objects to JSON for Supabase
+          availability: availability as unknown as Json,
+          pricing: pricing as unknown as Json
         })
         .select()
         .single();
@@ -146,27 +147,14 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
         description: data.description || "",
         equipment: data.equipment || [],
         imageUrl: data.image_url || "",
-        availability: data.availability as { morning: boolean; afternoon: boolean; evening: boolean },
-        pricing: data.pricing as {
-          defaultPricing: {
-            [dayOfWeek: string]: {
-              morning: number;
-              afternoon: number;
-              evening: number;
-            };
-          };
-          specificDates: {
-            [date: string]: {
-              morning: number;
-              afternoon: number;
-              evening: number;
-              availability?: {
-                morning: boolean;
-                afternoon: boolean;
-                evening: boolean;
-              };
-            };
-          };
+        availability: (data.availability as unknown as { morning: boolean; afternoon: boolean; evening: boolean }) || {
+          morning: true,
+          afternoon: true,
+          evening: true
+        },
+        pricing: {
+          defaultPricing: ((data.pricing as unknown as { defaultPricing: any })?.defaultPricing) || {},
+          specificDates: ((data.pricing as unknown as { specificDates: any })?.specificDates) || {}
         }
       };
       

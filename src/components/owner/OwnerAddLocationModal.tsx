@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Json } from "@/integrations/supabase/types";
 
 const formSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -70,7 +71,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
           city: values.cidade,
           state: values.estado,
           zip_code: values.cep || "",
-          opening_hours: openingHours,
+          opening_hours: openingHours as unknown as Json,
           amenities: [],
           cabins_count: 0,
           image_url: "",
@@ -97,7 +98,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         state: data.state,
         zipCode: data.zip_code,
         cabinsCount: data.cabins_count || 0,
-        openingHours: data.opening_hours as { open: string; close: string },
+        openingHours: (data.opening_hours as unknown as { open: string; close: string }) || { open: "09:00", close: "18:00" },
         amenities: data.amenities || [],
         imageUrl: data.image_url || "",
         description: data.description || ""

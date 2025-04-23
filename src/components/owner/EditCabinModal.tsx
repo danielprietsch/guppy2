@@ -247,7 +247,7 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
         name,
         description,
         equipment,
-        pricing
+        pricing: pricing as unknown as Json
       };
       
       // Atualizar no banco de dados
@@ -272,26 +272,9 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
         name: data.name,
         description: data.description || "",
         equipment: data.equipment || [],
-        pricing: data.pricing as {
-          defaultPricing: {
-            [dayOfWeek: string]: {
-              morning: number;
-              afternoon: number;
-              evening: number;
-            };
-          };
-          specificDates: {
-            [date: string]: {
-              morning: number;
-              afternoon: number;
-              evening: number;
-              availability?: {
-                morning: boolean;
-                afternoon: boolean;
-                evening: boolean;
-              };
-            };
-          };
+        pricing: {
+          defaultPricing: ((data.pricing as unknown as { defaultPricing: any })?.defaultPricing) || {},
+          specificDates: ((data.pricing as unknown as { specificDates: any })?.specificDates) || {}
         }
       };
       
