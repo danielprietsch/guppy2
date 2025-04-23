@@ -5,6 +5,7 @@ import { User, Location, Cabin } from "@/lib/types";
 import { cabins } from "@/lib/mock-data";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 // Import components
 import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
@@ -113,9 +114,9 @@ const OwnerDashboardPage = () => {
         city: loc.city,
         state: loc.state,
         zipCode: loc.zip_code,
-        cabinsCount: loc.cabins_count,
-        openingHours: loc.opening_hours,
-        amenities: loc.amenities,
+        cabinsCount: loc.cabins_count || 0,
+        openingHours: loc.opening_hours as { open: string; close: string },
+        amenities: loc.amenities || [],
         imageUrl: loc.image_url || "",
         description: loc.description || ""
       }));
@@ -158,13 +159,28 @@ const OwnerDashboardPage = () => {
         description: cabin.description || "",
         equipment: cabin.equipment || [],
         imageUrl: cabin.image_url || "",
-        availability: cabin.availability || {
-          morning: true,
-          afternoon: true,
-          evening: true
-        },
-        price: cabin.price,
-        pricing: cabin.pricing
+        availability: cabin.availability as { morning: boolean; afternoon: boolean; evening: boolean },
+        pricing: cabin.pricing as {
+          defaultPricing: {
+            [dayOfWeek: string]: {
+              morning: number;
+              afternoon: number;
+              evening: number;
+            };
+          };
+          specificDates: {
+            [date: string]: {
+              morning: number;
+              afternoon: number;
+              evening: number;
+              availability?: {
+                morning: boolean;
+                afternoon: boolean;
+                evening: boolean;
+              };
+            };
+          };
+        }
       })) : [];
       
       setLocationCabins(formattedCabins);

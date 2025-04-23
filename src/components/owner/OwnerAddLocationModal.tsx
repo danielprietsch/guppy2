@@ -57,6 +57,9 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         return;
       }
 
+      // Define os dados para inserção
+      const openingHours = { open: "08:00", close: "20:00" };
+      
       // Insere o novo local no banco de dados
       const { data, error } = await supabase
         .from('locations')
@@ -67,7 +70,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
           city: values.cidade,
           state: values.estado,
           zip_code: values.cep || "",
-          opening_hours: { open: "08:00", close: "20:00" },
+          opening_hours: openingHours,
           amenities: [],
           cabins_count: 0,
           image_url: "",
@@ -93,9 +96,9 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         city: data.city,
         state: data.state,
         zipCode: data.zip_code,
-        cabinsCount: data.cabins_count,
-        openingHours: data.opening_hours,
-        amenities: data.amenities,
+        cabinsCount: data.cabins_count || 0,
+        openingHours: data.opening_hours as { open: string; close: string },
+        amenities: data.amenities || [],
         imageUrl: data.image_url || "",
         description: data.description || ""
       };

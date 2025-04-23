@@ -12,6 +12,7 @@ import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
 import { CabinEquipmentInput } from "./CabinEquipmentInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Json } from "@/integrations/supabase/types";
 
 type Turno = "morning" | "afternoon" | "evening";
 
@@ -105,26 +106,27 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     try {
       console.log("Criando nova cabine para o local:", locationId);
       
-      // Definir os dados da cabine
-      const cabinData = {
-        location_id: locationId,
-        name,
-        description,
-        equipment,
-        image_url: "",
-        availability: {
-          morning: true,
-          afternoon: true,
-          evening: true
-        },
-        price: 100, // Preço base
-        pricing: getPricesFromCalendar()
+      // Define os dados da cabine
+      const availability = {
+        morning: true,
+        afternoon: true,
+        evening: true
       };
+      
+      const pricing = getPricesFromCalendar();
       
       // Inserir no banco de dados
       const { data, error } = await supabase
         .from('cabins')
-        .insert(cabinData)
+        .insert({
+          location_id: locationId,
+          name,
+          description,
+          equipment,
+          image_url: "",
+          availability, 
+          pricing
+        })
         .select()
         .single();
       
@@ -144,13 +146,28 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
         description: data.description || "",
         equipment: data.equipment || [],
         imageUrl: data.image_url || "",
-        availability: data.availability || {
-          morning: true,
-          afternoon: true,
-          evening: true
-        },
-        price: data.price || 100,
-        pricing: data.pricing
+        availability: data.availability as { morning: boolean; afternoon: boolean; evening: boolean },
+        pricing: data.pricing as {
+          defaultPricing: {
+            [dayOfWeek: string]: {
+              morning: number;
+              afternoon: number;
+              evening: number;
+            };
+          };
+          specificDates: {
+            [date: string]: {
+              morning: number;
+              afternoon: number;
+              evening: number;
+              availability?: {
+                morning: boolean;
+                afternoon: boolean;
+                evening: boolean;
+              };
+            };
+          };
+        }
       };
       
       onCabinCreated?.(novaCabine);

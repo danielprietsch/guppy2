@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { Json } from "@/integrations/supabase/types";
 
 type Turno = "morning" | "afternoon" | "evening";
 
@@ -241,11 +241,13 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
     try {
       console.log("Atualizando cabine:", cabin.id);
       
+      const pricing = getPricesFromCalendar();
+      
       const cabinData = {
         name,
         description,
         equipment,
-        pricing: getPricesFromCalendar()
+        pricing
       };
       
       // Atualizar no banco de dados
@@ -270,7 +272,27 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
         name: data.name,
         description: data.description || "",
         equipment: data.equipment || [],
-        pricing: data.pricing
+        pricing: data.pricing as {
+          defaultPricing: {
+            [dayOfWeek: string]: {
+              morning: number;
+              afternoon: number;
+              evening: number;
+            };
+          };
+          specificDates: {
+            [date: string]: {
+              morning: number;
+              afternoon: number;
+              evening: number;
+              availability?: {
+                morning: boolean;
+                afternoon: boolean;
+                evening: boolean;
+              };
+            };
+          };
+        }
       };
       
       onCabinUpdated?.(cabineAtualizada);
