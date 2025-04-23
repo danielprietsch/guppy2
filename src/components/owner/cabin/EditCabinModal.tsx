@@ -12,7 +12,9 @@ import {
   getInitialTurnoInputs,
   getInitialTurnoDisponibilidade,
   type TurnoInputs, 
-  type TurnoDisponibilidade 
+  type TurnoDisponibilidade,
+  type PrecosPorDiaSemana,
+  type PrecosPorDia 
 } from "./cabinUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -36,9 +38,22 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-  const [precosPorDia, setPrecosPorDia] = React.useState(cabin.pricing?.specificDates || {});
+  const [precosPorDia, setPrecosPorDia] = React.useState<PrecosPorDia>(cabin.pricing?.specificDates || {});
   const [activeTab, setActiveTab] = React.useState<string>("padrao");
-  const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState(cabin.pricing?.defaultPricing || getDefaultPricing());
+  
+  // Ensure we always use the correct PrecosPorDiaSemana type with numeric keys
+  const defaultPricing = getDefaultPricing();
+  const initialPricing: PrecosPorDiaSemana = {
+    0: cabin.pricing?.defaultPricing?.[0] || defaultPricing[0],
+    1: cabin.pricing?.defaultPricing?.[1] || defaultPricing[1],
+    2: cabin.pricing?.defaultPricing?.[2] || defaultPricing[2],
+    3: cabin.pricing?.defaultPricing?.[3] || defaultPricing[3],
+    4: cabin.pricing?.defaultPricing?.[4] || defaultPricing[4],
+    5: cabin.pricing?.defaultPricing?.[5] || defaultPricing[5],
+    6: cabin.pricing?.defaultPricing?.[6] || defaultPricing[6],
+  };
+  
+  const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState<PrecosPorDiaSemana>(initialPricing);
   const [valorDiasUteis, setValorDiasUteis] = React.useState<string>("100");
   const [valorFimSemana, setValorFimSemana] = React.useState<string>("150");
   const [turnoInputs, setTurnoInputs] = React.useState<TurnoInputs>(getInitialTurnoInputs());
@@ -158,4 +173,3 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
     </Dialog>
   );
 };
-

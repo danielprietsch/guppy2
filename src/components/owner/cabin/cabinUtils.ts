@@ -67,4 +67,3 @@ export const getInitialTurnoDisponibilidade = (): TurnoDisponibilidade => ({
   afternoon: true,
   evening: true
 });
-

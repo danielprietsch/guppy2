@@ -3,7 +3,7 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { CabinEquipmentInput } from "../CabinEquipmentInput";
+import { CabinEquipmentInput } from "../equipment/CabinEquipmentInput";
 import { CabinPricingConfigurator } from "../CabinPricingConfigurator";
 import { PrecosPorDia, PrecosPorDiaSemana, TurnoInputs, TurnoDisponibilidade } from "./cabinUtils";
 
