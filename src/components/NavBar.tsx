@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -28,49 +29,10 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
       return;
     }
     
-    // Otherwise try to load from localStorage
-    try {
-      const storedUserJson = localStorage.getItem("currentUser");
-      
-      if (storedUserJson) {
-        const parsedUser = JSON.parse(storedUserJson);
-        console.log("NavBar parsed user from localStorage:", parsedUser);
-        setCurrentUser(parsedUser);
-      } else {
-        console.log("NavBar: No user found in localStorage");
-        setCurrentUser(null);
-      }
-    } catch (error) {
-      console.error("NavBar: Error parsing user data from localStorage:", error);
-      localStorage.removeItem("currentUser");
-      setCurrentUser(null);
-    }
+    // Não carregar automaticamente do localStorage para evitar login automático
+    console.log("NavBar: Não carregando usuário automaticamente");
+    setCurrentUser(null);
   }, [propUser]);
-
-  // Force recheck of localStorage when the component mounts
-  React.useEffect(() => {
-    const checkLocalStorage = () => {
-      try {
-        const storedUserJson = localStorage.getItem("currentUser");
-        if (storedUserJson) {
-          const parsedUser = JSON.parse(storedUserJson);
-          console.log("NavBar storage check: Found user in localStorage", parsedUser);
-          setCurrentUser(parsedUser);
-        }
-      } catch (error) {
-        console.error("NavBar storage check: Error", error);
-      }
-    };
-    
-    checkLocalStorage();
-    
-    // Add event listener for storage changes (in case user logs in in another tab)
-    window.addEventListener('storage', checkLocalStorage);
-    
-    return () => {
-      window.removeEventListener('storage', checkLocalStorage);
-    };
-  }, []);
 
   const handleLogout = () => {
     if (onLogout) {

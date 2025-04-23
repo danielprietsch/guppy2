@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Location, Cabin } from "@/lib/types";
@@ -33,6 +32,8 @@ const OwnerDashboardPage = () => {
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
+          console.log("No authenticated user found, redirecting to login");
+          toast.error("Faça login para acessar esta página");
           navigate("/login");
           return;
         }
@@ -73,6 +74,7 @@ const OwnerDashboardPage = () => {
         await loadUserLocations(user.id);
       } catch (error) {
         console.error("Error checking user:", error);
+        toast.error("Erro ao verificar autenticação");
         navigate("/login");
       } finally {
         setLoading(false);

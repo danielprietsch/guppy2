@@ -13,18 +13,8 @@ const LoginPage = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Verificar se já existe uma sessão ativa
-    const checkSession = async () => {
-      console.log("Checking for existing session...");
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        console.log("Found existing session:", data.session);
-        // Usuário já está logado, redirecionar
-        navigateBasedOnUserType(data.session.user);
-      }
-    };
-    
-    checkSession();
+    // Limpar qualquer sessão anterior para evitar login automático
+    localStorage.removeItem("currentUser");
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -76,22 +66,9 @@ const LoginPage = () => {
   
   const navigateBasedOnUserType = (user: any) => {
     console.log("Navigating based on user type:", user);
-    // Verificar o tipo de usuário (do localStorage ou definido como padrão)
-    const storedUserData = localStorage.getItem("currentUser");
-    let userType = "client"; // Tipo padrão
-    
-    if (storedUserData) {
-      try {
-        const parsedUser = JSON.parse(storedUserData);
-        userType = parsedUser.userType;
-        console.log("User type from localStorage:", userType);
-      } catch (error) {
-        console.error("Error parsing user data:", error);
-      }
-    } else if (user.user_metadata?.userType) {
-      userType = user.user_metadata.userType;
-      console.log("User type from metadata:", userType);
-    }
+    // Verificar o tipo de usuário (do metadata ou padrão)
+    const userType = user.user_metadata?.userType || "client";
+    console.log("Detected user type:", userType);
     
     // Redirecionar com base no tipo
     if (userType === "provider") {
