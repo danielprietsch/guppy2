@@ -13,9 +13,9 @@ export const useOwnerProfile = () => {
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        const { data: { user: authUser } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
         
-        if (!authUser) {
+        if (!session) {
           toast({
             title: "Não autenticado",
             description: "Você precisa fazer login para acessar esta página.",
@@ -28,7 +28,7 @@ export const useOwnerProfile = () => {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', authUser.id)
+          .eq('id', session.user.id)
           .single();
           
         if (!profile) {
@@ -52,9 +52,9 @@ export const useOwnerProfile = () => {
         }
         
         const userData: User = {
-          id: authUser.id,
-          name: profile.name || authUser.email?.split('@')[0] || "Usuário",
-          email: profile.email || authUser.email || "",
+          id: session.user.id,
+          name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+          email: profile.email || session.user.email || "",
           userType: profile.user_type as "client" | "provider" | "owner",
           avatarUrl: profile.avatar_url,
           phoneNumber: profile.phone_number
@@ -74,7 +74,18 @@ export const useOwnerProfile = () => {
       }
     };
     
+    // Configurar listener para mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        navigate("/login");
+      }
+    });
+    
     checkAuthStatus();
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return { currentUser, isLoading, setCurrentUser };

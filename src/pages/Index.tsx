@@ -11,55 +11,71 @@ const Index = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Verificar se há usuário autenticado no Supabase
-    const checkAuthStatus = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        setCurrentUser(null);
-        return;
-      }
-      
-      // Se houver usuário autenticado, buscar perfil
-      try {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-        
-        if (profile) {
-          const userData: User = {
-            id: user.id,
-            name: profile.name || user.email?.split('@')[0] || "Usuário",
-            email: profile.email || user.email || "",
-            userType: profile.user_type as "client" | "provider" | "owner",
-            avatarUrl: profile.avatar_url,
-            phoneNumber: profile.phone_number
-          };
-          
-          console.log("Index: User profile loaded:", userData);
-          setCurrentUser(userData);
-        }
-      } catch (error) {
-        console.error("Error loading user profile:", error);
-        setCurrentUser(null);
-      }
-    };
-    
-    checkAuthStatus();
-    
-    // Monitorar mudanças de autenticação
+    // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("Index: Auth state changed:", event);
-        if (event === "SIGNED_IN" && session?.user) {
-          await checkAuthStatus();
-        } else if (event === "SIGNED_OUT") {
+        if (session?.user) {
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profile) {
+              const userData: User = {
+                id: session.user.id,
+                name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+                email: profile.email || session.user.email || "",
+                userType: profile.user_type as "client" | "provider" | "owner",
+                avatarUrl: profile.avatar_url,
+                phoneNumber: profile.phone_number
+              };
+              
+              setCurrentUser(userData);
+            }
+          } catch (error) {
+            console.error("Error loading user profile:", error);
+            setCurrentUser(null);
+          }
+        } else {
           setCurrentUser(null);
         }
       }
     );
+    
+    // Verificar sessão atual
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            const userData: User = {
+              id: session.user.id,
+              name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+              email: profile.email || session.user.email || "",
+              userType: profile.user_type as "client" | "provider" | "owner",
+              avatarUrl: profile.avatar_url,
+              phoneNumber: profile.phone_number
+            };
+            
+            setCurrentUser(userData);
+          }
+        } catch (error) {
+          console.error("Error loading user profile:", error);
+          setCurrentUser(null);
+        }
+      }
+    };
+    
+    checkSession();
     
     return () => {
       subscription.unsubscribe();

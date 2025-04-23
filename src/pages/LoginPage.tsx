@@ -5,7 +5,6 @@ import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuthChangeEvent } from "@supabase/supabase-js";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -13,15 +12,12 @@ const LoginPage = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Limpar qualquer sessão anterior para evitar login automático
-    localStorage.removeItem("currentUser");
-    
     // Verificar se já há sessão ativa
     const checkCurrentSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        console.log("Existing session found:", data.session);
-        navigateBasedOnUserType(data.session.user);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        console.log("Existing session found:", session);
+        navigateBasedOnUserType(session.user);
       }
     };
     
@@ -29,7 +25,7 @@ const LoginPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session) => {
+      (event, session) => {
         console.log("Auth state changed:", event, session);
         
         if (event === "SIGNED_IN") {
