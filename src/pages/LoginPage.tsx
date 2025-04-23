@@ -26,10 +26,10 @@ const LoginPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event);
         
-        if (event === "SIGNED_IN" as AuthChangeEvent) {
+        if (event === "SIGNED_IN") {
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário

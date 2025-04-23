@@ -26,10 +26,10 @@ const RegisterPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session) => {
+      (event, session) => {
         console.log("Auth state changed:", event);
         
-        if (event === "SIGNED_UP" as AuthChangeEvent) {
+        if (event === "SIGNED_UP") {
           setIsRegistering(false);
           
           // Exibir toast de sucesso
