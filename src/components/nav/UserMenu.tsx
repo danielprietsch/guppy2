@@ -17,6 +17,21 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
+  // Determine dashboard and profile routes based on user type
+  const dashboardRoute = 
+    currentUser.userType === "provider"
+      ? "/provider/dashboard"
+      : currentUser.userType === "owner"
+      ? "/owner/dashboard"
+      : "/client/dashboard";
+      
+  const profileRoute = 
+    currentUser.userType === "provider"
+      ? "/provider/profile"
+      : currentUser.userType === "owner"
+      ? "/owner/profile"
+      : "/client/profile";
+
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
@@ -41,28 +56,12 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Conta</DropdownMenuLabel>
           <DropdownMenuItem asChild>
-            <Link
-              to={
-                currentUser.userType === "provider"
-                  ? "/provider/dashboard"
-                  : currentUser.userType === "owner"
-                  ? "/owner/dashboard"
-                  : "/client/dashboard"
-              }
-            >
+            <Link to={dashboardRoute}>
               Meu Dashboard
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link
-              to={
-                currentUser.userType === "provider"
-                  ? "/provider/dashboard/editar-perfil"
-                  : currentUser.userType === "owner"
-                  ? "/owner/dashboard/editar-perfil"
-                  : "/client/dashboard/editar-perfil"
-              }
-            >
+            <Link to={profileRoute}>
               Meu Perfil
             </Link>
           </DropdownMenuItem>
