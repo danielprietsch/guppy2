@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -26,19 +25,21 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser }) => {
     <header className="border-b">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-6 w-6 text-primary"
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 100 100" 
+            className="h-8 w-8 text-[#9b87f5]"
           >
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+            <path 
+              d="M50 10 C30 30, 20 50, 50 70 C80 50, 70 30, 50 10" 
+              fill="#9b87f5" 
+              stroke="#7E69AB" 
+              strokeWidth="3"
+            />
+            <circle cx="50" cy="40" r="5" fill="#1A1F2C" />
+            <circle cx="50" cy="60" r="5" fill="#1A1F2C" />
           </svg>
-          <span className="text-xl font-bold">Guppy</span>
+          <span className="text-xl font-bold text-[#6E59A5]">Guppy</span>
         </Link>
 
         <button

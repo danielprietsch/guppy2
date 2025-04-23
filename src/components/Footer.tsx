@@ -3,24 +3,26 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-50 border-t">
+    <footer className="bg-gradient-to-br from-[#D6BCFA]/10 to-[#9b87f5]/10 border-t">
       <div className="mx-auto max-w-7xl px-4 py-10 md:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           <div>
             <Link to="/" className="flex items-center gap-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6 text-primary"
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 100 100" 
+                className="h-8 w-8 text-[#9b87f5]"
               >
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                <path 
+                  d="M50 10 C30 30, 20 50, 50 70 C80 50, 70 30, 50 10" 
+                  fill="#9b87f5" 
+                  stroke="#7E69AB" 
+                  strokeWidth="3"
+                />
+                <circle cx="50" cy="40" r="5" fill="#1A1F2C" />
+                <circle cx="50" cy="60" r="5" fill="#1A1F2C" />
               </svg>
-              <span className="text-xl font-bold">Guppy</span>
+              <span className="text-xl font-bold text-[#6E59A5]">Guppy</span>
             </Link>
             <p className="mt-4 text-sm text-gray-600">
               Conectamos profissionais de beleza a espaços adequados para trabalhar.
