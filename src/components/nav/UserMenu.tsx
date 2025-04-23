@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
@@ -85,8 +84,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Conta</DropdownMenuLabel>
-          <div className="px-3 pb-2 text-xs text-gray-500">{userTypeLabel}</div>
+          <DropdownMenuLabel>{userTypeLabel}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to={dashboardRoute}>
