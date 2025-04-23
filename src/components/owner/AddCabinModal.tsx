@@ -125,7 +125,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Nova Cabine</DialogTitle>
           <DialogDescription>
@@ -142,6 +142,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nome da cabine"
                 required
+                className="w-full"
               />
             </div>
             <div>
@@ -152,38 +153,44 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Descrição da cabine"
                 rows={3}
+                className="w-full"
               />
             </div>
             <CabinEquipmentInput equipment={equipment} setEquipment={setEquipment} />
           </div>
           <div className="border-t pt-4">
             <h3 className="font-medium mb-2">Configuração de Preços</h3>
-            <CabinPricingConfigurator
-              precosPorDia={precosPorDia}
-              setPrecosPorDia={setPrecosPorDia}
-              precosPorDiaSemana={precosPorDiaSemana}
-              setPrecosPorDiaSemana={setPrecosPorDiaSemana}
-              valorDiasUteis={valorDiasUteis}
-              setValorDiasUteis={setValorDiasUteis}
-              valorFimSemana={valorFimSemana}
-              setValorFimSemana={setValorFimSemana}
-              turnoInputs={turnoInputs}
-              setTurnoInputs={setTurnoInputs}
-              turnoDisponibilidade={turnoDisponibilidade}
-              setTurnoDisponibilidade={setTurnoDisponibilidade}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-            />
+            <div className="max-w-full overflow-x-auto pb-2">
+              <CabinPricingConfigurator
+                precosPorDia={precosPorDia}
+                setPrecosPorDia={setPrecosPorDia}
+                precosPorDiaSemana={precosPorDiaSemana}
+                setPrecosPorDiaSemana={setPrecosPorDiaSemana}
+                valorDiasUteis={valorDiasUteis}
+                setValorDiasUteis={setValorDiasUteis}
+                valorFimSemana={valorFimSemana}
+                setValorFimSemana={setValorFimSemana}
+                turnoInputs={turnoInputs}
+                setTurnoInputs={setTurnoInputs}
+                turnoDisponibilidade={turnoDisponibilidade}
+                setTurnoDisponibilidade={setTurnoDisponibilidade}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+              />
+            </div>
           </div>
-          <DialogFooter className="flex justify-end gap-2">
+          <DialogFooter className="flex justify-end gap-2 flex-wrap sm:flex-nowrap">
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" className="w-full sm:w-auto">
                 Cancelar
               </Button>
             </DialogClose>
-            <Button type="submit" className="bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary">
+            <Button 
+              type="submit" 
+              className="w-full sm:w-auto bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary"
+            >
               Adicionar Cabine
             </Button>
           </DialogFooter>
