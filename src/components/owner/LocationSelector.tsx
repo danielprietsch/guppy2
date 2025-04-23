@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Location } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
 import { OwnerAddLocationModal } from "./OwnerAddLocationModal";
+import { PlusCircle } from "lucide-react";
 
 interface LocationSelectorProps {
   userLocations: Location[];
@@ -49,11 +50,12 @@ export const LocationSelector = ({
           </SelectContent>
         </Select>
         <Button
-          variant="secondary"
-          className="w-full mt-4"
+          variant="default"
+          className="w-full mt-4 bg-gradient-to-r from-guppy-purple-start to-guppy-purple-end hover:from-guppy-purple-end hover:to-guppy-purple-start transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
           onClick={() => setAddModalOpen(true)}
         >
-          + Cadastrar Local
+          <PlusCircle className="mr-2" />
+          Cadastrar Novo Local
         </Button>
         <OwnerAddLocationModal
           open={addModalOpen}
