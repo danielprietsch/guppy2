@@ -9,6 +9,7 @@ import { Logo } from "./nav/Logo";
 import { NavigationLinks } from "./nav/NavigationLinks";
 import { UserMenu } from "./nav/UserMenu";
 import { MobileMenu } from "./nav/MobileMenu";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NavBarProps {
   currentUser?: User | null;
@@ -20,7 +21,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   const [currentUser, setCurrentUser] = React.useState<User | null>(null);
   const navigate = useNavigate();
 
-  // Use propUser directly if available or check localStorage
+  // Sincronizar com o estado de autenticação do Supabase
   React.useEffect(() => {
     // First priority: use propUser if available
     if (propUser) {
@@ -29,15 +30,68 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
       return;
     }
     
-    // Não carregar automaticamente do localStorage para evitar login automático
-    console.log("NavBar: Não carregando usuário automaticamente");
-    setCurrentUser(null);
+    // Verificar autenticação no Supabase
+    const checkSupabaseAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Buscar perfil do usuário
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (profile) {
+          const userData: User = {
+            id: user.id,
+            name: profile.name || user.email?.split('@')[0] || "Usuário",
+            email: profile.email || user.email || "",
+            userType: profile.user_type as "client" | "provider" | "owner",
+            avatarUrl: profile.avatar_url,
+            phoneNumber: profile.phone_number
+          };
+          
+          console.log("NavBar: User authenticated via Supabase:", userData);
+          setCurrentUser(userData);
+        } else {
+          console.log("NavBar: User authenticated but no profile found");
+          setCurrentUser(null);
+        }
+      } else {
+        console.log("NavBar: No user authenticated in Supabase");
+        setCurrentUser(null);
+      }
+    };
+    
+    checkSupabaseAuth();
+    
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log("NavBar: Auth state changed:", event);
+        if (event === "SIGNED_IN" && session?.user) {
+          // Recarregar dados do usuário
+          checkSupabaseAuth();
+        } else if (event === "SIGNED_OUT") {
+          console.log("NavBar: User signed out");
+          setCurrentUser(null);
+        }
+      }
+    );
+    
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [propUser]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (onLogout) {
       onLogout();
     }
+    
+    // Logout do Supabase
+    await supabase.auth.signOut();
     
     // Remove user from localStorage
     localStorage.removeItem("currentUser");

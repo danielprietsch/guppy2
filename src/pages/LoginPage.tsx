@@ -16,42 +16,28 @@ const LoginPage = () => {
     // Limpar qualquer sessão anterior para evitar login automático
     localStorage.removeItem("currentUser");
     
+    // Verificar se já há sessão ativa
+    const checkCurrentSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        console.log("Existing session found:", data.session);
+        navigateBasedOnUserType(data.session.user);
+      }
+    };
+    
+    checkCurrentSession();
+    
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session) => {
         console.log("Auth state changed:", event, session);
         
-        // Compare as strings to fix the type error
-        if (event.toString() === "SIGNED_IN") {
+        if (event === "SIGNED_IN") {
           console.log("User signed in successfully");
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário
           if (session) {
-            const userEmail = session.user.email;
-            const userName = session.user.user_metadata?.name || userEmail?.split('@')[0] || "Usuário";
-            
-            // Salvar informações no localStorage para compatibilidade com a aplicação
-            const userType = session.user.user_metadata?.userType || "client";
-            
-            const userData = {
-              id: session.user.id,
-              name: userName,
-              email: userEmail,
-              userType: userType,
-              avatarUrl: session.user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`,
-            };
-            
-            console.log("Saving user data to localStorage:", userData);
-            localStorage.setItem("currentUser", JSON.stringify(userData));
-            
-            // Mostrar toast de sucesso
-            toast({
-              title: "Login realizado com sucesso",
-              description: `Bem-vindo, ${userName}!`,
-            });
-            
-            // Redirecionar baseado no tipo de usuário
             navigateBasedOnUserType(session.user);
           }
         }
@@ -64,19 +50,49 @@ const LoginPage = () => {
     };
   }, [navigate]);
   
-  const navigateBasedOnUserType = (user: any) => {
+  const navigateBasedOnUserType = async (user: any) => {
     console.log("Navigating based on user type:", user);
-    // Verificar o tipo de usuário (do metadata ou padrão)
-    const userType = user.user_metadata?.userType || "client";
-    console.log("Detected user type:", userType);
     
-    // Redirecionar com base no tipo
-    if (userType === "provider") {
-      navigate("/provider/dashboard");
-    } else if (userType === "owner") {
-      navigate("/owner/dashboard");
-    } else {
-      navigate("/client/dashboard");
+    try {
+      // Buscar perfil do usuário
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      
+      // Verificar o tipo de usuário
+      const userType = profile?.user_type || user.user_metadata?.userType || "client";
+      console.log("Detected user type:", userType);
+      
+      // Mostrar toast de sucesso
+      toast({
+        title: "Login realizado com sucesso",
+        description: `Bem-vindo, ${profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || "Usuário"}!`,
+      });
+      
+      // Redirecionar com base no tipo
+      if (userType === "provider") {
+        navigate("/provider/dashboard");
+      } else if (userType === "owner") {
+        navigate("/owner/dashboard");
+      } else {
+        navigate("/client/dashboard");
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      
+      // Fallback para metadata
+      const userType = user.user_metadata?.userType || "client";
+      
+      // Redirecionar com base no tipo
+      if (userType === "provider") {
+        navigate("/provider/dashboard");
+      } else if (userType === "owner") {
+        navigate("/owner/dashboard");
+      } else {
+        navigate("/client/dashboard");
+      }
     }
   };
 
