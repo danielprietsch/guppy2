@@ -1,147 +1,21 @@
 
 import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
 import { Menu, Search } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
 import { Logo } from "./nav/Logo";
 import { NavigationLinks } from "./nav/NavigationLinks";
 import { UserMenu } from "./nav/UserMenu";
 import { MobileMenu } from "./nav/MobileMenu";
-import { supabase } from "@/integrations/supabase/client";
 
 interface NavBarProps {
   currentUser?: User | null;
   onLogout?: () => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
+const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [currentUser, setCurrentUser] = React.useState<User | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const navigate = useNavigate();
-
-  // Sincronizar com o estado de autenticação do Supabase
-  React.useEffect(() => {
-    // First priority: use propUser if available
-    if (propUser) {
-      console.log("NavBar: Using propUser:", propUser);
-      setCurrentUser(propUser);
-      setIsLoading(false);
-      return;
-    }
-    
-    console.log("NavBar: No propUser, checking Supabase auth");
-    
-    // Verificar autenticação no Supabase
-    const checkSupabaseAuth = async () => {
-      setIsLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          console.log("NavBar: Session found, loading user profile");
-          // Buscar perfil do usuário
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (profile) {
-            console.log("NavBar: Profile found:", profile);
-            const userData: User = {
-              id: session.user.id,
-              name: profile.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
-              email: profile.email || session.user.email || "",
-              userType: profile.user_type as "client" | "provider" | "owner",
-              avatarUrl: profile.avatar_url,
-              phoneNumber: profile.phone_number
-            };
-            
-            console.log("NavBar: User authenticated via Supabase:", userData);
-            setCurrentUser(userData);
-          } else {
-            console.log("NavBar: Session found but no profile for user:", session.user.id);
-            if (error) {
-              console.error("NavBar: Error fetching profile:", error);
-            }
-            
-            // Se não houver perfil mas houver metadados, criamos um usuário temporário para exibição
-            if (session.user.user_metadata) {
-              console.log("NavBar: Creating temporary user from metadata:", session.user.user_metadata);
-              const tempUser: User = {
-                id: session.user.id,
-                name: session.user.user_metadata.name || (typeof session.user.email === 'string' ? session.user.email.split('@')[0] : "Usuário"),
-                email: session.user.email || "",
-                userType: (session.user.user_metadata.userType as "client" | "provider" | "owner") || "client",
-                avatarUrl: session.user.user_metadata.avatar_url
-              };
-              setCurrentUser(tempUser);
-            } else {
-              setCurrentUser(null);
-            }
-          }
-        } else {
-          console.log("NavBar: No user authenticated in Supabase");
-          setCurrentUser(null);
-        }
-      } catch (error) {
-        console.error("NavBar: Error checking auth:", error);
-        setCurrentUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkSupabaseAuth();
-    
-    // Escutar mudanças de autenticação
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("NavBar: Auth state changed:", event);
-        if (event === "SIGNED_IN" && session?.user) {
-          // Recarregar dados do usuário
-          console.log("NavBar: User signed in, reloading profile");
-          checkSupabaseAuth();
-        } else if (event === "SIGNED_OUT") {
-          console.log("NavBar: User signed out");
-          setCurrentUser(null);
-        } else if (event === "USER_UPDATED") {
-          console.log("NavBar: User updated, reloading profile");
-          checkSupabaseAuth();
-        }
-      }
-    );
-    
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [propUser]);
-
-  const handleLogout = async () => {
-    console.log("NavBar: Handling logout");
-    
-    if (onLogout) {
-      onLogout();
-    }
-    
-    // Logout do Supabase
-    await supabase.auth.signOut();
-    
-    setCurrentUser(null);
-    
-    toast({
-      title: "Logout realizado com sucesso",
-      description: "Você foi desconectado do sistema",
-    });
-    
-    navigate("/");
-  };
-
-  // Debug output for NavBar render
-  console.log("NavBar rendering with currentUser:", currentUser, "isLoading:", isLoading);
 
   return (
     <header className="border-b">
@@ -169,10 +43,8 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
             </Link>
           </div>
 
-          {isLoading ? (
-            <div className="w-8 h-8 rounded-full bg-muted animate-pulse"></div>
-          ) : currentUser ? (
-            <UserMenu currentUser={currentUser} onLogout={handleLogout} />
+          {currentUser ? (
+            <UserMenu currentUser={currentUser} onLogout={onLogout} />
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/login">
