@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
-import { LogOut } from "lucide-react";
+import { LogOut, UserCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,6 +10,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface UserMenuProps {
   currentUser: User;
@@ -36,19 +37,15 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     <div className="flex items-center gap-4">
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
-          <div className="size-8 rounded-full overflow-hidden border">
+          <Avatar className="size-8">
             {currentUser.avatarUrl ? (
-              <img
-                src={currentUser.avatarUrl}
-                alt={currentUser.name}
-                className="h-full w-full object-cover"
-              />
+              <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} />
             ) : (
-              <div className="h-full w-full bg-primary/10 flex items-center justify-center text-primary font-bold uppercase">
+              <AvatarFallback className="bg-primary/10 text-primary font-bold uppercase">
                 {currentUser.name.charAt(0)}
-              </div>
+              </AvatarFallback>
             )}
-          </div>
+          </Avatar>
           <span className="text-sm font-medium hover:underline hidden md:inline-block">
             {currentUser.name}
           </span>
