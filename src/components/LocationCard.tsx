@@ -2,7 +2,6 @@
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@radix-ui/react-dropdown-menu";
 
 interface LocationCardProps {
   location: Location;
