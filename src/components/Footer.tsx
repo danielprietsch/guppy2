@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -21,6 +22,10 @@ const Footer = () => {
                 <path 
                   d="M90 40 L110 20 Q115 35, 100 50 Z" 
                   fill="#7E69AB" 
+                />
+                <path 
+                  d="M110 20 L130 10 Q140 20, 120 40 Z" 
+                  fill="#9b87f5" 
                 />
                 <circle cx="45" cy="38" r="3" fill="#1A1F2C" />
               </svg>
