@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { Cabin } from "@/lib/types";
-import { CabinEquipmentInput } from "@/components/owner/CabinEquipmentInput";
+import { CabinEquipmentInput } from "./equipment/CabinEquipmentInput";
 import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
 import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
