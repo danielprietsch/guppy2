@@ -1,4 +1,3 @@
-
 import { Json } from "@/integrations/supabase/types";
 
 export interface PrecoPorTurno {
@@ -25,6 +24,18 @@ export interface PrecosPorDiaSemana {
   5: PrecoPorTurno;
   6: PrecoPorTurno;
 }
+
+export type TurnoInputs = {
+  morning: string;
+  afternoon: string;
+  evening: string;
+};
+
+export type TurnoDisponibilidade = {
+  morning: boolean;
+  afternoon: boolean;
+  evening: boolean;
+};
 
 export const getPricesFromCalendar = (
   precosPorDiaSemana: PrecosPorDiaSemana,
