@@ -2,44 +2,14 @@
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Cabin } from "@/lib/types";
-import { Label } from "@/components/ui/label";
-import { CabinPricingConfigurator } from "./CabinPricingConfigurator";
-import { CabinEquipmentInput } from "./CabinEquipmentInput";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
+import { CabinForm } from "./cabin/CabinForm";
+import { getPricesFromCalendar, getDefaultPricing } from "./cabin/cabinUtils";
+import type { PrecosPorDia, PrecosPorDiaSemana } from "./cabin/cabinUtils";
 import { Json } from "@/integrations/supabase/types";
-
-type Turno = "morning" | "afternoon" | "evening";
-
-interface PrecoPorTurno {
-  morning: number;
-  afternoon: number;
-  evening: number;
-  availability?: {
-    morning: boolean;
-    afternoon: boolean;
-    evening: boolean;
-  };
-}
-
-interface PrecosPorDia {
-  [date: string]: PrecoPorTurno;
-}
-
-interface PrecosPorDiaSemana {
-  0: PrecoPorTurno;
-  1: PrecoPorTurno;
-  2: PrecoPorTurno;
-  3: PrecoPorTurno;
-  4: PrecoPorTurno;
-  5: PrecoPorTurno;
-  6: PrecoPorTurno;
-}
 
 interface AddCabinModalProps {
   open: boolean;
@@ -62,35 +32,18 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
   const [precosPorDia, setPrecosPorDia] = React.useState<PrecosPorDia>({});
   const [activeTab, setActiveTab] = React.useState<string>("individual");
-  const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState<PrecosPorDiaSemana>({
-    0: { morning: 150, afternoon: 150, evening: 150 }, // Domingo
-    1: { morning: 100, afternoon: 100, evening: 100 }, // Segunda
-    2: { morning: 100, afternoon: 100, evening: 100 }, // Terça
-    3: { morning: 100, afternoon: 100, evening: 100 }, // Quarta
-    4: { morning: 100, afternoon: 100, evening: 100 }, // Quinta
-    5: { morning: 100, afternoon: 100, evening: 100 }, // Sexta
-    6: { morning: 150, afternoon: 150, evening: 150 }, // Sábado
-  });
+  const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState<PrecosPorDiaSemana>(getDefaultPricing());
   const [valorDiasUteis, setValorDiasUteis] = React.useState<string>("100");
   const [valorFimSemana, setValorFimSemana] = React.useState<string>("150");
-  const [turnoInputs, setTurnoInputs] = React.useState<{ [key in Turno]: string }>({
+  const [turnoInputs, setTurnoInputs] = React.useState<{ [key: string]: string }>({
     morning: "",
     afternoon: "",
     evening: ""
   });
-  const [turnoDisponibilidade, setTurnoDisponibilidade] = React.useState<{ [key in Turno]: boolean }>({
+  const [turnoDisponibilidade, setTurnoDisponibilidade] = React.useState<{ [key: string]: boolean }>({
     morning: true,
     afternoon: true,
     evening: true
-  });
-
-  const getPricesFromCalendar = () => ({
-    defaultPricing: {
-      ...precosPorDiaSemana
-    },
-    specificDates: {
-      ...precosPorDia
-    }
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -106,16 +59,8 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
     try {
       console.log("Criando nova cabine para o local:", locationId);
       
-      // Define os dados da cabine
-      const availability = {
-        morning: true,
-        afternoon: true,
-        evening: true
-      };
+      const pricing = getPricesFromCalendar(precosPorDiaSemana, precosPorDia);
       
-      const pricing = getPricesFromCalendar();
-      
-      // Inserir no banco de dados
       const { data, error } = await supabase
         .from('cabins')
         .insert({
@@ -124,8 +69,7 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
           description,
           equipment,
           image_url: "",
-          // Convert complex objects to JSON for Supabase
-          availability: availability as unknown as Json,
+          availability: turnoDisponibilidade as unknown as Json,
           pricing: pricing as unknown as Json
         })
         .select()
@@ -139,7 +83,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
       
       console.log("Cabine adicionada com sucesso:", data);
       
-      // Transformar para o formato da interface Cabin
       const novaCabine: Cabin = {
         id: data.id,
         locationId: data.location_id,
@@ -162,7 +105,6 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
       toast({ title: "Cabine adicionada com sucesso!" });
       onOpenChange(false);
 
-      // Limpar formulário
       setName("");
       setDescription("");
       setEquipment([]);
@@ -191,54 +133,30 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="name">Nome da Cabine</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nome da cabine"
-                required
-                className="w-full"
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Descrição da cabine"
-                rows={3}
-                className="w-full"
-              />
-            </div>
-            <CabinEquipmentInput equipment={equipment} setEquipment={setEquipment} />
-          </div>
-          <div className="border-t pt-4">
-            <h3 className="font-medium mb-2">Configuração de Preços</h3>
-            <div className="max-w-full overflow-x-auto pb-2">
-              <CabinPricingConfigurator
-                precosPorDia={precosPorDia}
-                setPrecosPorDia={setPrecosPorDia}
-                precosPorDiaSemana={precosPorDiaSemana}
-                setPrecosPorDiaSemana={setPrecosPorDiaSemana}
-                valorDiasUteis={valorDiasUteis}
-                setValorDiasUteis={setValorDiasUteis}
-                valorFimSemana={valorFimSemana}
-                setValorFimSemana={setValorFimSemana}
-                turnoInputs={turnoInputs}
-                setTurnoInputs={setTurnoInputs}
-                turnoDisponibilidade={turnoDisponibilidade}
-                setTurnoDisponibilidade={setTurnoDisponibilidade}
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
-            </div>
-          </div>
+          <CabinForm
+            name={name}
+            setName={setName}
+            description={description}
+            setDescription={setDescription}
+            equipment={equipment}
+            setEquipment={setEquipment}
+            precosPorDia={precosPorDia}
+            setPrecosPorDia={setPrecosPorDia}
+            precosPorDiaSemana={precosPorDiaSemana}
+            setPrecosPorDiaSemana={setPrecosPorDiaSemana}
+            valorDiasUteis={valorDiasUteis}
+            setValorDiasUteis={setValorDiasUteis}
+            valorFimSemana={valorFimSemana}
+            setValorFimSemana={setValorFimSemana}
+            turnoInputs={turnoInputs}
+            setTurnoInputs={setTurnoInputs}
+            turnoDisponibilidade={turnoDisponibilidade}
+            setTurnoDisponibilidade={setTurnoDisponibilidade}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
           <DialogFooter className="flex justify-end gap-2 flex-wrap sm:flex-nowrap">
             <DialogClose asChild>
               <Button type="button" variant="outline" className="w-full sm:w-auto" disabled={isSubmitting}>
