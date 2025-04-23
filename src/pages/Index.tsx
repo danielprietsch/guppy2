@@ -92,13 +92,13 @@ const Index = () => {
                 setUserData(createdProfile, user);
               } else {
                 setCurrentUser(null);
+                setIsLoading(false);
               }
             }
           } else {
             setCurrentUser(null);
+            setIsLoading(false);
           }
-          
-          setIsLoading(false);
           return;
         }
         
