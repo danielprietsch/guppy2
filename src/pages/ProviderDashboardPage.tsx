@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Booking, Appointment, Service } from "@/lib/types";
@@ -8,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import { Calendar, Clock, DollarSign, Plus, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
+
+// Corrige o erro de build, pois 'users' não está importado; vamos importar os usuários dos mock-data.
+import { users } from "@/lib/mock-data";
 
 const ProviderDashboardPage = () => {
   const navigate = useNavigate();
@@ -143,6 +146,38 @@ const ProviderDashboardPage = () => {
     setIsAddingService(false);
   };
 
+  // Novos estados para disponibilidade e seleção
+  const [calendarTurn, setCalendarTurn] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  // Simulação: bookings para cada cabine do prestador atual
+  const cabinBookings: { [date: string]: { [turn: string]: boolean } } = {};
+
+  providerBookings.forEach((booking) => {
+    if (!cabinBookings[booking.date]) cabinBookings[booking.date] = {};
+    cabinBookings[booking.date][booking.shift] = booking.status === "confirmed";
+  });
+
+  // Handler para reservar múltiplos dias e turnos de uma vez (apenas simulação local!)
+  const handleMultiDayBooking = () => {
+    if (!currentUser) return;
+    // Adiciona reservas fictícias para as datas selecionadas
+    const newBookings = selectedDates.map((dt, i) => ({
+      id: `${providerBookings.length + i + 1}`,
+      cabinId: providerBookings[0]?.cabinId ?? "1",
+      providerId: currentUser.id,
+      date: dt,
+      shift: calendarTurn,
+      status: "confirmed",
+      price: 100, // apenas simulação, valor fixo
+    }));
+    setProviderBookings([...providerBookings, ...newBookings]);
+    setSelectedDates([]);
+    toast({
+      title: "Reservas realizadas",
+      description: `Foram reservados ${newBookings.length} dias para o turno de ${calendarTurn === "morning" ? "Manhã" : calendarTurn === "afternoon" ? "Tarde" : "Noite"}.`,
+    });
+  };
+
   if (!currentUser) {
     return <div>Carregando...</div>;
   }
@@ -163,6 +198,51 @@ const ProviderDashboardPage = () => {
         >
           Sair
         </Button>
+      </div>
+      
+      {/* Novo calendário de disponibilidade de cabines para reservas múltiplas */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-2">Reservar Múltiplos Dias para o Mesmo Turno</h2>
+        <div className="flex items-center gap-4 mb-4">
+          <span className="font-medium">Selecione o turno:</span>
+          <Button
+            variant={calendarTurn === "morning" ? "default" : "outline"}
+            onClick={() => setCalendarTurn("morning")}
+          >
+            Manhã
+          </Button>
+          <Button
+            variant={calendarTurn === "afternoon" ? "default" : "outline"}
+            onClick={() => setCalendarTurn("afternoon")}
+          >
+            Tarde
+          </Button>
+          <Button
+            variant={calendarTurn === "evening" ? "default" : "outline"}
+            onClick={() => setCalendarTurn("evening")}
+          >
+            Noite
+          </Button>
+        </div>
+        <CabinAvailabilityCalendar
+          selectedTurn={calendarTurn}
+          daysBooked={cabinBookings}
+          onSelectDates={setSelectedDates}
+          selectedDates={selectedDates}
+        />
+        <div className="flex mt-4 gap-4">
+          <Button
+            disabled={selectedDates.length === 0}
+            onClick={handleMultiDayBooking}
+          >
+            Reservar dias selecionados
+          </Button>
+          {selectedDates.length > 0 && (
+            <Button variant="outline" onClick={() => setSelectedDates([])}>
+              Limpar seleção
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
