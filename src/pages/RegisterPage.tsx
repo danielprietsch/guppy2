@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -27,7 +28,7 @@ const RegisterPage = () => {
     
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session: Session | null) => {
+      (event: string, session: Session | null) => {
         console.log("Auth state changed:", event, session);
         
         if (event === "SIGNED_UP") {
