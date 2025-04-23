@@ -15,10 +15,17 @@ const LoginPage = () => {
   useEffect(() => {
     // Verificar se já há sessão ativa
     const checkCurrentSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        console.log("Existing session found:", session);
-        navigateBasedOnUserType(session.user);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("LoginPage: Checking current session:", session);
+        if (session) {
+          console.log("LoginPage: Session found, user is authenticated:", session.user);
+          navigateBasedOnUserType(session.user);
+        } else {
+          console.log("LoginPage: No active session found");
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
       }
     };
     
@@ -27,92 +34,30 @@ const LoginPage = () => {
     // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Auth state changed:", event, session);
+        console.log("LoginPage: Auth state changed:", event, session);
         
         if (event === "SIGNED_IN") {
-          console.log("User signed in successfully");
+          console.log("LoginPage: User signed in successfully");
           setIsLoggingIn(false);
           
           // Verificar ou criar perfil de usuário
           if (session) {
             navigateBasedOnUserType(session.user);
           }
+        } else if (event === "SIGNED_OUT") {
+          console.log("LoginPage: User signed out");
         }
       }
     );
     
     return () => {
-      console.log("Cleaning up auth listener");
+      console.log("LoginPage: Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, [navigate]);
-  
-  useEffect(() => {
-    // Reset password for teste1@teste.com if requested
-    const resetTestUserPassword = async () => {
-      if (isResettingPassword) return;
-      
-      const testEmail = "teste1@teste.com";
-      const newPassword = "123456";
-      
-      try {
-        setIsResettingPassword(true);
-        
-        // Check if admin rights or special case is needed
-        // For demonstration purposes, we're using sign in and update
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
-          email: testEmail,
-          password: newPassword,
-        });
-        
-        if (signInError) {
-          // If can't sign in, try admin update (would require server-side code)
-          console.error("Could not sign in test user:", signInError);
-          toast({
-            title: "Notificação",
-            description: "Não foi possível redefinir a senha automaticamente. O usuário precisa usar 'Esqueci minha senha'.",
-          });
-        } else {
-          // User signed in, update password
-          const { error: updateError } = await supabase.auth.updateUser({
-            password: newPassword
-          });
-          
-          if (updateError) {
-            console.error("Could not update password:", updateError);
-            toast({
-              title: "Erro na redefinição",
-              description: "Não foi possível alterar a senha do usuário teste.",
-              variant: "destructive"
-            });
-          } else {
-            toast({
-              title: "Senha redefinida",
-              description: "A senha do usuário teste1@teste.com foi redefinida para 123456.",
-            });
-            
-            // Sign out after password reset
-            await supabase.auth.signOut();
-          }
-        }
-      } catch (error: any) {
-        console.error("Error resetting password:", error);
-        toast({
-          title: "Erro",
-          description: "Ocorreu um erro ao tentar redefinir a senha.",
-          variant: "destructive"
-        });
-      } finally {
-        setIsResettingPassword(false);
-      }
-    };
-    
-    // Commented out to avoid auto-resetting on every page load
-    // resetTestUserPassword();
-  }, []);
-  
+
   const navigateBasedOnUserType = async (user: any) => {
-    console.log("Navigating based on user type:", user);
+    console.log("LoginPage: Navigating based on user type:", user);
     
     try {
       // Buscar perfil do usuário
@@ -124,32 +69,57 @@ const LoginPage = () => {
       
       if (error) {
         console.error("Error fetching user profile:", error);
-        toast({
-          title: "Erro ao buscar perfil",
-          description: "Não foi possível carregar o perfil do usuário.",
-          variant: "destructive"
-        });
+        
+        // Tentar criar perfil baseado nos metadados, caso seja necessário
+        if (user.user_metadata) {
+          const userType = user.user_metadata.userType || "client";
+          const name = user.user_metadata.name || user.email?.split('@')[0] || "Usuário";
+          
+          console.log("LoginPage: Creating profile from metadata:", { name, userType });
+          
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: user.id,
+              name: name,
+              email: user.email,
+              user_type: userType,
+              avatar_url: user.user_metadata.avatar_url
+            });
+          
+          if (insertError) {
+            console.error("Error creating user profile:", insertError);
+            toast({
+              title: "Erro ao criar perfil",
+              description: "Não foi possível criar seu perfil. Tente novamente.",
+              variant: "destructive"
+            });
+            return;
+          }
+          
+          // Redirecionar com base no tipo dos metadados
+          redirectBasedOnUserType(userType);
+        } else {
+          toast({
+            title: "Erro ao buscar perfil",
+            description: "Não foi possível carregar o perfil do usuário.",
+            variant: "destructive"
+          });
+        }
         return;
       }
       
       // Verificar o tipo de usuário
-      const userType = profile?.user_type || user.user_metadata?.userType || "client";
-      console.log("Detected user type:", userType);
+      const userType = profile?.user_type || "client";
+      console.log("LoginPage: Detected user type:", userType);
       
       // Mostrar toast de sucesso
       toast({
         title: "Login realizado com sucesso",
-        description: `Bem-vindo, ${profile?.name || user.user_metadata?.name || user.email?.split('@')[0] || "Usuário"}!`,
+        description: `Bem-vindo, ${profile?.name || user.email?.split('@')[0] || "Usuário"}!`,
       });
       
-      // Redirecionar com base no tipo
-      if (userType === "provider") {
-        navigate("/provider/dashboard");
-      } else if (userType === "owner") {
-        navigate("/owner/dashboard");
-      } else {
-        navigate("/client/dashboard");
-      }
+      redirectBasedOnUserType(userType);
     } catch (error) {
       console.error("Error in navigation logic:", error);
       toast({
@@ -157,6 +127,17 @@ const LoginPage = () => {
         description: "Ocorreu um erro ao processar seu login.",
         variant: "destructive"
       });
+    }
+  };
+  
+  const redirectBasedOnUserType = (userType: string) => {
+    // Redirecionar com base no tipo
+    if (userType === "provider") {
+      navigate("/provider/dashboard");
+    } else if (userType === "owner") {
+      navigate("/owner/dashboard");
+    } else {
+      navigate("/client/dashboard");
     }
   };
 
@@ -185,7 +166,15 @@ const LoginPage = () => {
       }
       
       // Success will be handled by auth state change listener
-      console.log("Login successful, waiting for auth state change...");
+      console.log("Login successful, waiting for auth state change...", authData);
+      
+      // Double-check para garantir que o evento de auth state change será disparado
+      if (authData?.session) {
+        setTimeout(() => {
+          navigateBasedOnUserType(authData.session?.user);
+        }, 500);
+      }
+      
       return Promise.resolve();
       
     } catch (error: any) {
@@ -209,43 +198,77 @@ const LoginPage = () => {
     try {
       setIsResettingPassword(true);
       
-      // Using admin auth to update user (this will only work if done properly through server-side)
-      const { error } = await supabase.auth.admin.updateUserById(
-        // This is a placeholder - real implementation would require server-side code
-        'user_id_here',
-        { password: newPassword }
-      );
+      console.log("Resetting password for test user:", testEmail);
       
-      if (error) {
-        console.error("Admin password reset failed:", error);
-        // Fallback to password reset email
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-          testEmail,
-          {
-            redirectTo: window.location.origin + '/reset-password',
-          }
-        );
+      // Primeiro, verificamos se o usuário existe
+      const { data: { users }, error: userError } = await supabase.auth.admin.listUsers();
+      
+      if (userError) {
+        console.error("Error listing users:", userError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível verificar se o usuário teste existe.",
+          variant: "destructive"
+        });
+        setIsResettingPassword(false);
+        return;
+      }
+      
+      const testUser = users?.find(u => u.email === testEmail);
+      
+      if (!testUser) {
+        console.log("Test user not found, creating one...");
         
-        if (resetError) {
+        // Criar usuário teste caso não exista
+        const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
+          email: testEmail,
+          password: newPassword,
+          email_confirm: true,
+          user_metadata: {
+            name: "Usuário Teste",
+            userType: "owner",
+            avatar_url: `https://ui-avatars.com/api/?name=Usuario+Teste&background=random`
+          }
+        });
+        
+        if (signUpError) {
+          console.error("Error creating test user:", signUpError);
           toast({
             title: "Erro",
-            description: "Não foi possível enviar o email de redefinição de senha.",
+            description: "Não foi possível criar o usuário teste.",
             variant: "destructive"
           });
         } else {
           toast({
-            title: "Email enviado",
-            description: "Um email de redefinição de senha foi enviado para teste1@teste.com.",
+            title: "Usuário teste criado",
+            description: "O usuário teste1@teste.com foi criado com senha 123456.",
           });
         }
       } else {
-        toast({
-          title: "Senha redefinida",
-          description: "A senha do usuário teste1@teste.com foi redefinida para 123456.",
-        });
+        // Usuário existe, atualizar senha
+        console.log("Test user exists, updating password...");
+        
+        const { error: resetError } = await supabase.auth.admin.updateUserById(
+          testUser.id,
+          { password: newPassword, email_confirm: true }
+        );
+        
+        if (resetError) {
+          console.error("Error updating test user password:", resetError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível redefinir a senha do usuário teste.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Senha redefinida",
+            description: "A senha do usuário teste1@teste.com foi redefinida para 123456.",
+          });
+        }
       }
     } catch (error: any) {
-      console.error("Error resetting password:", error);
+      console.error("Error handling test user:", error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao tentar redefinir a senha.",

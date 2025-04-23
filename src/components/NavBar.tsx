@@ -25,28 +25,31 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   React.useEffect(() => {
     // First priority: use propUser if available
     if (propUser) {
-      console.log("NavBar using propUser:", propUser);
+      console.log("NavBar: Using propUser:", propUser);
       setCurrentUser(propUser);
       return;
     }
     
+    console.log("NavBar: No propUser, checking Supabase auth");
+    
     // Verificar autenticação no Supabase
     const checkSupabaseAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (user) {
+      if (session?.user) {
+        console.log("NavBar: Session found, loading user profile");
         // Buscar perfil do usuário
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user.id)
+          .eq('id', session.user.id)
           .single();
           
         if (profile) {
           const userData: User = {
-            id: user.id,
-            name: profile.name || user.email?.split('@')[0] || "Usuário",
-            email: profile.email || user.email || "",
+            id: session.user.id,
+            name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+            email: profile.email || session.user.email || "",
             userType: profile.user_type as "client" | "provider" | "owner",
             avatarUrl: profile.avatar_url,
             phoneNumber: profile.phone_number
@@ -55,7 +58,10 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
           console.log("NavBar: User authenticated via Supabase:", userData);
           setCurrentUser(userData);
         } else {
-          console.log("NavBar: User authenticated but no profile found");
+          console.log("NavBar: Session found but no profile for user:", session.user.id);
+          if (error) {
+            console.error("NavBar: Error fetching profile:", error);
+          }
           setCurrentUser(null);
         }
       } else {
@@ -72,6 +78,7 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
         console.log("NavBar: Auth state changed:", event);
         if (event === "SIGNED_IN" && session?.user) {
           // Recarregar dados do usuário
+          console.log("NavBar: User signed in, reloading profile");
           checkSupabaseAuth();
         } else if (event === "SIGNED_OUT") {
           console.log("NavBar: User signed out");
@@ -86,6 +93,8 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
   }, [propUser]);
 
   const handleLogout = async () => {
+    console.log("NavBar: Handling logout");
+    
     if (onLogout) {
       onLogout();
     }
@@ -93,8 +102,6 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser: propUser, onLogout }) => {
     // Logout do Supabase
     await supabase.auth.signOut();
     
-    // Remove user from localStorage
-    localStorage.removeItem("currentUser");
     setCurrentUser(null);
     
     toast({
