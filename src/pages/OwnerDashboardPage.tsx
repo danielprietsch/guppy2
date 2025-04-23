@@ -12,6 +12,7 @@ import { PricingSettings } from "@/components/owner/PricingSettings";
 import { EquipmentSettings } from "@/components/owner/EquipmentSettings";
 import { AvailabilitySettings } from "@/components/owner/AvailabilitySettings";
 import { LocationSettings } from "@/components/owner/LocationSettings";
+import { CabinManagement } from "@/components/owner/CabinManagement";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -81,6 +82,36 @@ const OwnerDashboardPage = () => {
       setLocationCabins(locCabins);
     }
   };
+  
+  const handleLocationCreated = (location: Location) => {
+    // In a real app, we would add to the backend
+    // For this example, we'll just update our local state
+    setUserLocations([...userLocations, location]);
+    setSelectedLocation(location);
+    setLocationCabins([]);
+  };
+  
+  const handleCabinAdded = (cabin: Cabin) => {
+    // In a real app, we would add to the backend
+    // For this example, we'll just update our local state
+    setLocationCabins([...locationCabins, cabin]);
+  };
+  
+  const handleCabinUpdated = (updatedCabin: Cabin) => {
+    // In a real app, we would update in the backend
+    // For this example, we'll just update our local state
+    const updatedCabins = locationCabins.map(
+      cabin => cabin.id === updatedCabin.id ? updatedCabin : cabin
+    );
+    setLocationCabins(updatedCabins);
+  };
+  
+  const handleCabinDeleted = (cabinId: string) => {
+    // In a real app, we would delete from the backend
+    // For this example, we'll just update our local state
+    const filteredCabins = locationCabins.filter(cabin => cabin.id !== cabinId);
+    setLocationCabins(filteredCabins);
+  };
 
   if (!currentUser) {
     return (
@@ -110,7 +141,18 @@ const OwnerDashboardPage = () => {
         {/* Main Content */}
         <div className="flex-1">
           {activeTab === "locations" && (
-            <LocationsOverview selectedLocation={selectedLocation} locationCabins={locationCabins} />
+            <>
+              <LocationsOverview selectedLocation={selectedLocation} locationCabins={locationCabins} />
+              <div className="mt-6">
+                <CabinManagement
+                  selectedLocation={selectedLocation}
+                  locationCabins={locationCabins}
+                  onCabinAdded={handleCabinAdded}
+                  onCabinUpdated={handleCabinUpdated}
+                  onCabinDeleted={handleCabinDeleted}
+                />
+              </div>
+            </>
           )}
 
           {activeTab === "pricing" && (

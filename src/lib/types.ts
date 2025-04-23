@@ -39,7 +39,28 @@ export interface Cabin {
     afternoon: boolean;
     evening: boolean;
   };
-  price?: number; // Adding the missing property
+  price?: number;
+  pricing?: {
+    defaultPricing: {
+      [dayOfWeek: string]: {
+        morning: number;
+        afternoon: number;
+        evening: number;
+      };
+    };
+    specificDates: {
+      [date: string]: {
+        morning: number;
+        afternoon: number;
+        evening: number;
+        availability?: {
+          morning: boolean;
+          afternoon: boolean;
+          evening: boolean;
+        };
+      };
+    };
+  };
 }
 
 export interface Booking {
