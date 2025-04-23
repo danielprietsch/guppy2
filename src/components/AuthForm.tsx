@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -20,21 +19,18 @@ const userTypes = [
     key: "client",
     label: "Cliente",
     desc: "Estou procurando profissionais",
-    img: "/icons/client-icon.svg", // Ícone minimalista padrão para cliente
     icon: <User className="w-8 h-8 text-purple-400" />,
   },
   {
     key: "provider",
     label: "Prestador de Serviço",
     desc: "Cabeleireiro, barbeiro, manicure etc.",
-    img: "/icons/scissors-icon.svg", // Ícone de tesoura para prestadores
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
   },
   {
     key: "owner",
     label: "Dono/Franqueado",
     desc: "Local de serviços ou franquia",
-    img: "/icons/business-icon.svg", // Ícone minimalista empresarial
     icon: <Briefcase className="w-8 h-8 text-blue-400" />,
   },
 ];
@@ -137,15 +133,7 @@ const AuthForm = ({ mode, onSubmit }: AuthFormProps) => {
                   aria-pressed={userType === type.key}
                 >
                   <div className="mb-2">
-                    {type.img ? (
-                      <img
-                        src={type.img}
-                        alt={type.label}
-                        className="w-12 h-12 object-cover rounded-full border shadow"
-                      />
-                    ) : (
-                      type.icon
-                    )}
+                    {type.icon}
                   </div>
                   <span className="font-semibold text-md">{type.label}</span>
                   <span className="text-xs text-muted-foreground mt-0.5 text-center">{type.desc}</span>
