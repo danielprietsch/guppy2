@@ -4,9 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { users } from "@/lib/mock-data";
 import { User } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const handleRegister = (data: {
     name: string;
@@ -14,6 +16,8 @@ const RegisterPage = () => {
     password: string;
     userType: "client" | "provider" | "owner";
   }) => {
+    setIsRegistering(true);
+
     // Check if email already exists
     const emailExists = users.some((user) => user.email === data.email);
 
@@ -23,6 +27,7 @@ const RegisterPage = () => {
         description: "Este email já está em uso.",
         variant: "destructive",
       });
+      setIsRegistering(false);
       return Promise.reject(new Error("Email already in use"));
     }
 
@@ -43,17 +48,32 @@ const RegisterPage = () => {
       ...(data.userType === "owner" && { ownedLocationIds: [] }),
     };
     
+    console.log("Saving user to localStorage:", newUser);
+    
     // Store user in localStorage (in a real app, you'd use a proper auth system)
     localStorage.setItem("currentUser", JSON.stringify(newUser));
     
-    // Redirect based on user type
-    if (data.userType === "provider") {
-      navigate("/provider/dashboard");
-    } else if (data.userType === "owner") {
-      navigate("/owner/dashboard");
-    } else {
-      navigate("/client/dashboard");
-    }
+    // Force a window reload to ensure all components can access the updated user data
+    setTimeout(() => {
+      // Redirect based on user type
+      if (data.userType === "provider") {
+        navigate("/provider/dashboard");
+      } else if (data.userType === "owner") {
+        navigate("/owner/dashboard");
+      } else {
+        navigate("/client/dashboard");
+      }
+      
+      // Add small delay to ensure navigation completes before showing toast
+      setTimeout(() => {
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Sua conta foi criada com sucesso.",
+        });
+        
+        setIsRegistering(false);
+      }, 100);
+    }, 100);
     
     return Promise.resolve();
   };

@@ -19,6 +19,11 @@ interface UserMenuProps {
 
 export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   console.log("UserMenu received user:", currentUser);
+  
+  if (!currentUser) {
+    console.error("UserMenu rendered with no user data!");
+    return null;
+  }
 
   // Determine dashboard and profile routes based on user type
   const dashboardRoute = 
