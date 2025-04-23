@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -7,8 +6,14 @@ import { Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { CabinForm } from "./cabin/CabinForm";
-import { getPricesFromCalendar, getDefaultPricing } from "./cabin/cabinUtils";
-import type { PrecosPorDia, PrecosPorDiaSemana } from "./cabin/cabinUtils";
+import { 
+  getPricesFromCalendar, 
+  getDefaultPricing, 
+  getInitialTurnoInputs,
+  getInitialTurnoDisponibilidade,
+  type TurnoInputs,
+  type TurnoDisponibilidade
+} from "./cabin/cabinUtils";
 import { Json } from "@/integrations/supabase/types";
 
 interface AddCabinModalProps {
@@ -30,21 +35,13 @@ export const AddCabinModal: React.FC<AddCabinModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(undefined);
-  const [precosPorDia, setPrecosPorDia] = React.useState<PrecosPorDia>({});
+  const [precosPorDia, setPrecosPorDia] = React.useState({});
   const [activeTab, setActiveTab] = React.useState<string>("individual");
-  const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState<PrecosPorDiaSemana>(getDefaultPricing());
+  const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState(getDefaultPricing());
   const [valorDiasUteis, setValorDiasUteis] = React.useState<string>("100");
   const [valorFimSemana, setValorFimSemana] = React.useState<string>("150");
-  const [turnoInputs, setTurnoInputs] = React.useState<{ [key: string]: string }>({
-    morning: "",
-    afternoon: "",
-    evening: ""
-  });
-  const [turnoDisponibilidade, setTurnoDisponibilidade] = React.useState<{ [key: string]: boolean }>({
-    morning: true,
-    afternoon: true,
-    evening: true
-  });
+  const [turnoInputs, setTurnoInputs] = React.useState<TurnoInputs>(getInitialTurnoInputs());
+  const [turnoDisponibilidade, setTurnoDisponibilidade] = React.useState<TurnoDisponibilidade>(getInitialTurnoDisponibilidade());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

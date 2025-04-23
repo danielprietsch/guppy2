@@ -6,7 +6,14 @@ import { toast } from "@/hooks/use-toast";
 import { Cabin } from "@/lib/types";
 import { useState } from "react";
 import { CabinForm } from "./CabinForm";
-import { getPricesFromCalendar, getDefaultPricing, TurnoInputs, TurnoDisponibilidade } from "./cabinUtils";
+import { 
+  getPricesFromCalendar, 
+  getDefaultPricing, 
+  getInitialTurnoInputs,
+  getInitialTurnoDisponibilidade,
+  type TurnoInputs, 
+  type TurnoDisponibilidade 
+} from "./cabinUtils";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 
@@ -32,19 +39,10 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
   const [precosPorDia, setPrecosPorDia] = React.useState(cabin.pricing?.specificDates || {});
   const [activeTab, setActiveTab] = React.useState<string>("padrao");
   const [precosPorDiaSemana, setPrecosPorDiaSemana] = React.useState(cabin.pricing?.defaultPricing || getDefaultPricing());
-
   const [valorDiasUteis, setValorDiasUteis] = React.useState<string>("100");
   const [valorFimSemana, setValorFimSemana] = React.useState<string>("150");
-  const [turnoInputs, setTurnoInputs] = React.useState<TurnoInputs>({
-    morning: "",
-    afternoon: "",
-    evening: ""
-  });
-  const [turnoDisponibilidade, setTurnoDisponibilidade] = React.useState<TurnoDisponibilidade>({
-    morning: true,
-    afternoon: true,
-    evening: true
-  });
+  const [turnoInputs, setTurnoInputs] = React.useState<TurnoInputs>(getInitialTurnoInputs());
+  const [turnoDisponibilidade, setTurnoDisponibilidade] = React.useState<TurnoDisponibilidade>(getInitialTurnoDisponibilidade());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,12 +61,12 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
         name,
         description,
         equipment,
-        pricing
+        pricing: pricing as unknown as Json
       };
       
       const { data, error } = await supabase
         .from('cabins')
-        .update(cabinData as { pricing: Json })
+        .update(cabinData)
         .eq('id', cabin.id)
         .select()
         .single();
@@ -160,3 +158,4 @@ export const EditCabinModal: React.FC<EditCabinModalProps> = ({
     </Dialog>
   );
 };
+
