@@ -70,62 +70,38 @@ export const users: User[] = [
 export const locations: Location[] = [
   {
     id: "1",
-    name: "Guppy Imbuí Centro",
-    address: "Av. Jorge Amado, 1000 - Imbuí",
+    name: "Beauty Space Imbuí",
+    address: "Rua das Nações Unidas, 250",
     city: "Salvador",
     state: "BA",
-    zipCode: "41720-000",
-    cabinsCount: 8,
-    openingHours: {
-      open: "09:00",
-      close: "21:00"
-    },
-    amenities: ["Estacionamento", "Wifi", "Cafeteria"],
-    imageUrl: "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80"
-  },
-  {
-    id: "2",
-    name: "Guppy Jardins Imbuí",
-    address: "Rua das Acácias, 82 - Imbuí",
-    city: "Salvador",
-    state: "BA",
-    zipCode: "41720-090",
+    zipCode: "41720-260",
     cabinsCount: 6,
-    openingHours: {
-      open: "10:00",
-      close: "22:00"
-    },
-    amenities: ["Estacionamento VIP", "Wifi", "Cafeteria", "Spa"],
+    openingHours: { open: "08:00", close: "22:00" },
+    amenities: ["Wifi", "Estacionamento", "Ar-condicionado"],
     imageUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80"
   },
   {
-    id: "3",
-    name: "Guppy Paulista Imbuí",
-    address: "Av. Jorge Amado, 2001 - Imbuí",
+    id: "2",
+    name: "Espaço Beleza Imbuí",
+    address: "Avenida Jorge Amado, 180",
     city: "Salvador",
     state: "BA",
-    zipCode: "41720-210",
-    cabinsCount: 10,
-    openingHours: {
-      open: "08:00",
-      close: "20:00"
-    },
-    amenities: ["Metrô Próximo", "Wifi", "Cafeteria", "Espaço Kids"],
+    zipCode: "41720-320",
+    cabinsCount: 4,
+    openingHours: { open: "09:00", close: "20:00" },
+    amenities: ["Café", "Recepção", "Ar-condicionado"],
     imageUrl: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80"
   },
   {
-    id: "4",
+    id: "3",
     name: "CCI Loja 12",
-    address: "Rua das Orquídeas, 12 - Imbuí",
+    address: "Rua das Patativas, 100 - Loja 12",
     city: "Salvador",
     state: "BA",
-    zipCode: "41720-230",
-    cabinsCount: 4,
-    openingHours: {
-      open: "09:00",
-      close: "19:00"
-    },
-    amenities: ["Wi-Fi", "Cafeteria", "Acessibilidade"],
+    zipCode: "41720-120",
+    cabinsCount: 2,
+    openingHours: { open: "10:00", close: "21:00" },
+    amenities: ["Acessibilidade", "Banheiro privativo", "Ar-condicionado"],
     imageUrl: "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?auto=format&fit=crop&w=800&q=80"
   }
 ];

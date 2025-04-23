@@ -1,15 +1,13 @@
-
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
-// Updated list of beauty salon interior and workspace images with verified URLs
 const beautySalonImages = [
-  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80", // Modern salon interior
-  "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80", // Salon workstations
-  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80", // Stylish salon space
-  "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?auto=format&fit=crop&w=800&q=80", // Professional salon setting
-  "https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=800&q=80", // Elegant salon interior
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1633681926022-84c23e8cb2d6?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=800&q=80",
 ];
 
 function formatAddressForMaps(address: string, city: string, state: string) {
@@ -22,11 +20,10 @@ interface LocationCardProps {
 }
 
 const LocationCard = ({ location }: LocationCardProps) => {
-  // Selects a beauty salon image based on the location's id
   const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
   const beautySalonImage = beautySalonImages[imageIndex];
 
-  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&output=embed`;
+  const googleMapEmbedUrl = `https://www.google.com/maps?q=${formatAddressForMaps(location.address, location.city, location.state)}&output=embed&z=17`;
 
   return (
     <Link to={`/locations/${location.id}`}>
@@ -38,7 +35,6 @@ const LocationCard = ({ location }: LocationCardProps) => {
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
         </div>
-        {/* Mini mapa agora vai abaixo da imagem principal */}
         <div className="w-full h-28 bg-white border-t flex items-center justify-center">
           <iframe
             title={`${location.name} Mapa`}
