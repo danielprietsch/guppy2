@@ -5,7 +5,6 @@ import { toast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Session } from "@supabase/supabase-js";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -19,37 +18,34 @@ const RegisterPage = () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         console.log("RegisterPage: Found existing session:", data.session);
-        // Redirection will be handled by the Index component
-        return;
+        // If user is already logged in, redirect to appropriate dashboard
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (profile) {
+          const dashboardRoute = getDashboardRoute(profile.user_type);
+          navigate(dashboardRoute, { replace: true });
+        }
       }
     };
     
     checkSession();
-    
-    // Set up auth state change listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event: string, session: Session | null) => {
-        console.log("RegisterPage: Auth state changed:", event, session);
-        
-        if (event === "SIGNED_UP") {
-          console.log("RegisterPage: User signed up successfully");
-          setIsRegistering(false);
-          
-          toast({
-            title: "Cadastro realizado com sucesso!",
-            description: "Sua conta foi criada com sucesso.",
-          });
-          
-          // Redirection will be handled by the Index component
-        }
-      }
-    );
-    
-    return () => {
-      console.log("RegisterPage: Cleaning up auth listener");
-      subscription.unsubscribe();
-    };
   }, [navigate]);
+
+  // Helper function to determine dashboard route based on user type
+  const getDashboardRoute = (userType: string): string => {
+    switch (userType) {
+      case "provider":
+        return "/provider/dashboard";
+      case "owner":
+        return "/owner/dashboard";
+      default:
+        return "/client/dashboard";
+    }
+  };
 
   const handleRegister = async (data: {
     name: string;
@@ -68,7 +64,7 @@ const RegisterPage = () => {
       });
       
       // Register user with Supabase
-      const { error } = await supabase.auth.signUp({
+      const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -92,7 +88,49 @@ const RegisterPage = () => {
         return Promise.reject(error);
       }
       
-      console.log("Registration successful, waiting for auth state change...");
+      console.log("Registration successful:", authData);
+      
+      toast({
+        title: "Cadastro realizado com sucesso!",
+        description: "Sua conta foi criada com sucesso.",
+      });
+      
+      // Check for profile or wait for trigger to create it
+      if (authData.user) {
+        // Try to find profile (it may take a moment for the trigger to create it)
+        let retries = 0;
+        let profile = null;
+        
+        while (retries < 3 && !profile) {
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('user_type')
+              .eq('id', authData.user.id)
+              .maybeSingle();
+              
+            if (profileData) {
+              profile = profileData;
+              break;
+            }
+          } catch (err) {
+            console.log("Profile not ready yet, retrying...");
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 500));
+          retries++;
+        }
+        
+        // Use specified userType if profile not found
+        const userType = profile?.user_type || data.userType;
+        const dashboardRoute = getDashboardRoute(userType);
+        
+        // Redirect to appropriate dashboard
+        console.log(`Redirecting to ${dashboardRoute}`);
+        navigate(dashboardRoute, { replace: true });
+      }
+      
+      setIsRegistering(false);
       return Promise.resolve();
       
     } catch (error: any) {

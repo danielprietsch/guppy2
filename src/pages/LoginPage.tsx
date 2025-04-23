@@ -18,7 +18,17 @@ const LoginPage = () => {
         console.log("LoginPage: Checking current session:", session);
         if (session) {
           console.log("LoginPage: Session found, user is authenticated:", session.user);
-          // Redirection will be handled by Index component
+          // If user is already logged in, redirect to appropriate dashboard
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profile) {
+            const dashboardRoute = getDashboardRoute(profile.user_type);
+            navigate(dashboardRoute, { replace: true });
+          }
         } else {
           console.log("LoginPage: No active session found");
         }
@@ -28,27 +38,19 @@ const LoginPage = () => {
     };
     
     checkCurrentSession();
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("LoginPage: Auth state changed:", event, session);
-        
-        if (event === "SIGNED_IN") {
-          console.log("LoginPage: User signed in successfully");
-          setIsLoggingIn(false);
-          
-          // Redirection will be handled by Index component
-        } else if (event === "SIGNED_OUT") {
-          console.log("LoginPage: User signed out");
-        }
-      }
-    );
-    
-    return () => {
-      console.log("LoginPage: Cleaning up auth listener");
-      subscription.unsubscribe();
-    };
   }, [navigate]);
+
+  // Helper function to determine dashboard route based on user type
+  const getDashboardRoute = (userType: string): string => {
+    switch (userType) {
+      case "provider":
+        return "/provider/dashboard";
+      case "owner":
+        return "/owner/dashboard";
+      default:
+        return "/client/dashboard";
+    }
+  };
 
   const handleLogin = async (data: { email: string; password: string }) => {
     console.log("Starting login process...");
@@ -74,7 +76,41 @@ const LoginPage = () => {
         return Promise.reject(error);
       }
       
-      console.log("Login successful, waiting for auth state change...", authData);
+      console.log("Login successful, getting user profile...", authData);
+      
+      // Get user profile to determine dashboard type
+      if (authData.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', authData.user.id)
+            .single();
+            
+          if (profile) {
+            const dashboardRoute = getDashboardRoute(profile.user_type);
+            console.log(`Redirecting to ${dashboardRoute}`);
+            toast({
+              title: "Login realizado com sucesso",
+              description: "Bem-vindo de volta!"
+            });
+            
+            // Immediate redirect to dashboard
+            navigate(dashboardRoute, { replace: true });
+          } else {
+            console.error("No profile found for user");
+            toast({
+              title: "Erro no login",
+              description: "Perfil de usuário não encontrado.",
+              variant: "destructive"
+            });
+          }
+        } catch (profileError) {
+          console.error("Error fetching profile:", profileError);
+        }
+      }
+      
+      setIsLoggingIn(false);
       return Promise.resolve();
       
     } catch (error: any) {
