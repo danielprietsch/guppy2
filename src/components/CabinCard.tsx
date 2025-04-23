@@ -1,14 +1,15 @@
+
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 const cabinImages = [
-  "https://images.unsplash.com/photo-1580130544977-da0c765f90d4?auto=format&fit=crop&w=800&q=80", // Professional hair station
-  "https://images.unsplash.com/photo-1519823551089-5d6f7ea4f91b?auto=format&fit=crop&w=800&q=80", // Modern salon workstation
-  "https://images.unsplash.com/photo-1622374812598-2dde6d9eeafb?auto=format&fit=crop&w=800&q=80", // Beauty cabin interior
-  "https://images.unsplash.com/photo-1497366811353-6870989d8005?auto=format&fit=crop&w=800&q=80", // Stylish salon workspace
-  "https://images.unsplash.com/photo-1615228402326-7adf9a257f2b?auto=format&fit=crop&w=800&q=80", // Professional beauty cabin
+  "https://images.unsplash.com/photo-1633687367233-b9097e506d60?auto=format&fit=crop&w=800&q=80", // Hair salon station
+  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80", // Salon chair and mirror
+  "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80", // Modern beauty workspace
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80", // Elegant salon interior
+  "https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=800&q=80", // Professional salon setup
 ];
 
 interface CabinCardProps {

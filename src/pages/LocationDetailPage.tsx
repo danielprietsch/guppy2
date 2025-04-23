@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Location, Cabin } from "@/lib/types";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, MapPin, ArrowLeft } from "lucide-react";
 
 const beautySalonImage =
-  "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=800&q=80";
+  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
 
 function formatAddressForMaps(address: string, city: string, state: string) {
   const full = `${address}, ${city}, ${state}`.replace(/\s/g, "+");
