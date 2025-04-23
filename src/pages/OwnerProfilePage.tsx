@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { 
   Form,
@@ -17,6 +16,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { supabase } from "@/integrations/supabase/client";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -32,37 +32,77 @@ const formSchema = z.object({
 const OwnerProfilePage = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(storedUser) as User;
-      
-      // Check if user is owner type
-      if (user.userType !== "owner") {
-        navigate("/");
+    const checkAuthStatus = async () => {
+      try {
+        // Get current authenticated user from Supabase
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+        
+        if (!authUser) {
+          toast({
+            title: "Não autenticado",
+            description: "Você precisa fazer login para acessar esta página.",
+            variant: "destructive",
+          });
+          navigate("/login");
+          return;
+        }
+        
+        // Fetch the user profile from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', authUser.id)
+          .single();
+          
+        if (!profile) {
+          toast({
+            title: "Perfil não encontrado",
+            description: "Não foi possível carregar seu perfil.",
+            variant: "destructive",
+          });
+          navigate("/login");
+          return;
+        }
+        
+        // Check if user is the owner type
+        if (profile.user_type !== "owner") {
+          toast({
+            title: "Acesso restrito",
+            description: "Você não tem permissão para acessar esta página.",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+        
+        // Build the user object
+        const userData: User = {
+          id: authUser.id,
+          name: profile.name || authUser.email?.split('@')[0] || "Usuário",
+          email: profile.email || authUser.email || "",
+          userType: profile.user_type as "client" | "provider" | "owner",
+          avatarUrl: profile.avatar_url,
+          phoneNumber: profile.phone_number
+        };
+        
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error("Error checking auth status:", error);
         toast({
-          title: "Acesso restrito",
-          description: "Você não tem permissão para acessar esta página.",
+          title: "Erro",
+          description: "Ocorreu um erro ao verificar sua autenticação.",
           variant: "destructive",
         });
-        return;
+        navigate("/login");
+      } finally {
+        setIsLoading(false);
       }
-      
-      setCurrentUser(user);
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      localStorage.removeItem("currentUser");
-      navigate("/login");
-    }
+    };
+    
+    checkAuthStatus();
   }, [navigate]);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -87,13 +127,27 @@ const OwnerProfilePage = () => {
     }
   }, [currentUser, form]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     
-    // In a real app, we would submit to an API
-    // For this example, we'll just update localStorage
     try {
       if (currentUser) {
+        // Update the profile in Supabase
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            name: values.name,
+            email: values.email,
+            phone_number: values.phoneNumber,
+            avatar_url: values.avatarUrl,
+          })
+          .eq('id', currentUser.id);
+          
+        if (error) {
+          throw error;
+        }
+        
+        // Update current user state
         const updatedUser = {
           ...currentUser,
           name: values.name,
@@ -102,7 +156,6 @@ const OwnerProfilePage = () => {
           avatarUrl: values.avatarUrl,
         };
         
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
         setCurrentUser(updatedUser);
         
         toast({
@@ -122,7 +175,7 @@ const OwnerProfilePage = () => {
     }
   }
 
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <div className="container py-8">
         <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
@@ -200,6 +253,7 @@ const OwnerProfilePage = () => {
               <Button 
                 variant="outline" 
                 onClick={() => navigate(-1)}
+                type="button"
               >
                 Cancelar
               </Button>
