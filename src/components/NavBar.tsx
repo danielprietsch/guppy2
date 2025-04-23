@@ -1,5 +1,6 @@
+
 import * as React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
 import {
@@ -10,16 +11,30 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import { Menu, Search, User as UserIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Menu, Search, User as UserIcon, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/hooks/use-toast";
 
 interface NavBarProps {
   currentUser?: User | null;
+  onLogout?: () => void;
 }
 
-const NavBar: React.FC<NavBarProps> = ({ currentUser }) => {
+const NavBar: React.FC<NavBarProps> = ({ currentUser, onLogout }) => {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    toast({
+      title: "Logout realizado com sucesso",
+      description: "Você foi desconectado do sistema",
+    });
+    navigate("/");
+  };
 
   return (
     <header className="border-b">
@@ -100,7 +115,8 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser }) => {
           
           {currentUser ? (
             <div className="flex items-center gap-4">
-              <Link to={currentUser.userType === "provider" ? "/provider/dashboard" : "/client/dashboard"}>
+              <Link to={currentUser.userType === "provider" ? "/provider/dashboard" : 
+                      currentUser.userType === "owner" ? "/owner/dashboard" : "/client/dashboard"}>
                 <span className="text-sm font-medium hover:underline hidden md:inline-block">
                   {currentUser.name}
                 </span>
@@ -118,6 +134,15 @@ const NavBar: React.FC<NavBarProps> = ({ currentUser }) => {
                   )}
                 </div>
               </Link>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={handleLogout}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <LogOut className="h-5 w-5" />
+                <span className="sr-only">Sair</span>
+              </Button>
             </div>
           ) : (
             <div className="flex items-center gap-2">

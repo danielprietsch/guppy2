@@ -16,9 +16,16 @@ const Index = () => {
     }
   }, []);
 
+  const handleLogout = () => {
+    // Clear user from localStorage
+    localStorage.removeItem("currentUser");
+    // Reset user state
+    setCurrentUser(null);
+  };
+
   return (
     <div className="flex min-h-screen flex-col">
-      <NavBar currentUser={currentUser} />
+      <NavBar currentUser={currentUser} onLogout={handleLogout} />
       <main className="flex-1">
         <Outlet />
       </main>
