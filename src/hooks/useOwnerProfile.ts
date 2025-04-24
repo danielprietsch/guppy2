@@ -83,24 +83,18 @@ export const useOwnerProfile = () => {
         const userTypeStr = typeof profileData.user_type === 'string' ? profileData.user_type : '';
         let validUserType: "owner" | "professional" | "client" | "global_admin";
         
-        // Use a simple switch statement to safely assign the user type
-        switch (userTypeStr) {
-          case "owner":
-            validUserType = "owner";
-            break;
-          case "global_admin":
-            validUserType = "global_admin";
-            break;
-          case "professional":
-            validUserType = "professional";
-            break;
-          case "client":
-            validUserType = "client";
-            break;
-          default:
-            // Default to owner for the owner dashboard
-            validUserType = "owner";
-            break;
+        // Map the string to a valid user type
+        if (userTypeStr === "owner") {
+          validUserType = "owner";
+        } else if (userTypeStr === "global_admin") {
+          validUserType = "global_admin";
+        } else if (userTypeStr === "professional") {
+          validUserType = "professional";
+        } else if (userTypeStr === "client") {
+          validUserType = "client";
+        } else {
+          // Default to owner for the owner dashboard
+          validUserType = "owner";
         }
         
         // User is confirmed as owner or global_admin
