@@ -12,6 +12,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserMenuProps {
   currentUser: User;
@@ -19,6 +21,40 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(currentUser?.avatarUrl || null);
+
+  useEffect(() => {
+    // Update avatar URL when currentUser changes
+    if (currentUser?.avatarUrl) {
+      setAvatarUrl(currentUser.avatarUrl);
+    }
+    
+    // Subscribe to profile changes to refresh the avatar when updated elsewhere
+    if (currentUser?.id) {
+      const channel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${currentUser.id}`,
+          },
+          (payload) => {
+            if (payload.new && payload.new.avatar_url) {
+              setAvatarUrl(payload.new.avatar_url);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [currentUser]);
+
   if (!currentUser) {
     console.error("UserMenu rendered with no user data!");
     return null;
@@ -50,7 +86,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
           <Avatar className="h-10 w-10 border-2 border-primary/20">
             <AvatarImage 
-              src={currentUser.avatarUrl || undefined}
+              src={avatarUrl || undefined}
               alt={currentUser.name || "User"} 
               className="object-cover"
             />

@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Upload, Loader2, Camera } from "lucide-react";
@@ -22,49 +22,75 @@ export function ProfileImageUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
 
+  // Effect to update preview URL when currentAvatarUrl changes
+  useEffect(() => {
+    if (currentAvatarUrl) {
+      setPreviewUrl(currentAvatarUrl);
+    }
+  }, [currentAvatarUrl]);
+
   const uploadAvatar = async (file: File) => {
     try {
       setIsUploading(true);
 
-      // Verificar tamanho do arquivo (max 5MB)
+      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         throw new Error("Arquivo muito grande. Máximo permitido: 5MB");
       }
 
-      // Verificar tipo do arquivo
+      // Check file type
       if (!file.type.startsWith('image/')) {
         throw new Error("Por favor, selecione apenas arquivos de imagem");
       }
 
-      // Criar nome único para o arquivo usando userId
+      // Create unique filename using userId
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
-      // Upload do arquivo para o bucket 'avatars'
-      const { error: uploadError } = await supabase.storage
+      // Upload file to 'avatars' bucket
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Obter URL pública do arquivo
+      // Get public URL for the file
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Atualizar avatar no perfil do usuário
-      const { error: updateError } = await supabase.auth.updateUser({
+      console.log("Image uploaded successfully, public URL:", publicUrl);
+
+      // Update user metadata with new avatar URL
+      const { error: userUpdateError } = await supabase.auth.updateUser({
         data: { avatar_url: publicUrl }
       });
 
-      if (updateError) throw updateError;
+      if (userUpdateError) throw userUpdateError;
 
+      // Update user profile in profiles table
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileUpdateError) {
+        console.error("Error updating profile:", profileUpdateError);
+        throw new Error("Não foi possível atualizar o perfil no banco de dados");
+      }
+
+      // Update local preview
       setPreviewUrl(publicUrl);
+      
+      // Notify parent component
       onImageUploaded(publicUrl);
       
       toast({
         title: "Foto atualizada",
-        description: "Sua foto de perfil foi atualizada com sucesso.",
+        description: "Sua foto de perfil foi atualizada com sucesso e salva no banco de dados.",
       });
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);

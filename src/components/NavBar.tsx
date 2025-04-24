@@ -48,35 +48,34 @@ const NavBar = () => {
           
           setCurrentUser(userData);
           setLoading(false);
-          return;
-        }
-        
-        // Fallback: Fetch user profile from Supabase
-        console.log("NavBar: Fetching user profile from database");
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        } else {
+          // Fallback: Fetch user profile from Supabase
+          console.log("NavBar: Fetching user profile from database");
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (profileError || !profileData) {
+            console.error("Error fetching user profile:", profileError);
+            setCurrentUser(null);
+            return;
+          }
           
-        if (profileError || !profileData) {
-          console.error("Error fetching user profile:", profileError);
-          setCurrentUser(null);
-          return;
+          // Map profile data to User type
+          const userData: User = {
+            id: profileData.id,
+            name: profileData.name || session.user.email?.split('@')[0] || "User",
+            email: profileData.email || session.user.email || "",
+            user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
+            avatarUrl: profileData.avatar_url,
+            phoneNumber: profileData.phone_number,
+          };
+          
+          console.log("NavBar: User data loaded:", userData);
+          setCurrentUser(userData);
         }
-        
-        // Map profile data to User type
-        const userData: User = {
-          id: profileData.id,
-          name: profileData.name || session.user.email?.split('@')[0] || "User",
-          email: profileData.email || session.user.email || "",
-          user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
-          avatarUrl: profileData.avatar_url,
-          phoneNumber: profileData.phone_number,
-        };
-        
-        console.log("NavBar: User data loaded:", userData);
-        setCurrentUser(userData);
       } catch (error) {
         console.error("Error checking auth:", error);
         setCurrentUser(null);
@@ -98,9 +97,38 @@ const NavBar = () => {
         }
       }
     );
+    
+    // Listen for profile changes to update avatar and user info in real-time
+    const channel = supabase
+      .channel('public:profiles')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+        },
+        (payload) => {
+          // Only update if it's the current user's profile that changed
+          if (currentUser && payload.new.id === currentUser.id) {
+            console.log("Profile updated in real-time:", payload.new);
+            setCurrentUser(prev => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                name: payload.new.name || prev.name,
+                avatarUrl: payload.new.avatar_url,
+                phoneNumber: payload.new.phone_number,
+              };
+            });
+          }
+        }
+      )
+      .subscribe();
 
     return () => {
       subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, []);
 
