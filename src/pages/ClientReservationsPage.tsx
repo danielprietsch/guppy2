@@ -35,31 +35,75 @@ const ClientReservationsPage = () => {
           return;
         }
 
-        // Fetch bookings with cabin and location details
-        const { data: bookings, error } = await supabase
+        // Use direct query instead of a join that might trigger RLS recursion
+        // First fetch all bookings for the current professional
+        const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
-          .select(`
-            *,
-            cabin:cabins (
-              name,
-              location:locations (
-                name,
-                address,
-                city,
-                state
-              )
-            )
-          `)
+          .select('*')
           .eq('professional_id', session.user.id)
           .eq('status', 'confirmed');
 
-        if (error) {
-          debugError("Error fetching reservations:", error);
-          throw error;
+        if (bookingsError) {
+          debugError("Error fetching bookings:", bookingsError);
+          throw bookingsError;
         }
 
-        debugLog("Fetched reservations:", bookings);
-        setReservations(bookings || []);
+        if (!bookingsData || bookingsData.length === 0) {
+          debugLog("No reservations found");
+          setReservations([]);
+          setLoading(false);
+          return;
+        }
+
+        // Then fetch cabin information for each booking
+        const bookingsWithDetails = await Promise.all(
+          bookingsData.map(async (booking) => {
+            // Get cabin details
+            const { data: cabinData } = await supabase
+              .from('cabins')
+              .select('name, location_id')
+              .eq('id', booking.cabin_id)
+              .single();
+
+            let locationName = "Local não encontrado";
+            let locationAddress = "";
+            let locationCity = "";
+            let locationState = "";
+
+            // If cabin was found, get location details
+            if (cabinData) {
+              const { data: locationData } = await supabase
+                .from('locations')
+                .select('name, address, city, state')
+                .eq('id', cabinData.location_id)
+                .single();
+
+              if (locationData) {
+                locationName = locationData.name;
+                locationAddress = locationData.address;
+                locationCity = locationData.city;
+                locationState = locationData.state;
+              }
+            }
+
+            // Return booking with additional details
+            return {
+              ...booking,
+              cabin: {
+                name: cabinData?.name || "Cabine não encontrada",
+                location: {
+                  name: locationName,
+                  address: locationAddress,
+                  city: locationCity,
+                  state: locationState
+                }
+              }
+            };
+          })
+        );
+
+        debugLog("Fetched reservations with details:", bookingsWithDetails);
+        setReservations(bookingsWithDetails);
 
       } catch (error) {
         debugError("Error fetching reservations:", error);
