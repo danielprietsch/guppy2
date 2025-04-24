@@ -6,9 +6,19 @@ import { debugLog, debugError } from "@/utils/debugLogger";
 /**
  * Trigger an approval request for a location
  */
-export const triggerApprovalRequest = async (locationId: string) => {
+export const triggerApprovalRequest = async (locationId: string, cabinsCount: number) => {
   try {
     debugLog("triggerApprovalRequest: Starting approval request for location", locationId);
+    
+    // Validate the location has at least one cabin
+    if (cabinsCount < 1) {
+      toast({
+        title: "Erro",
+        description: "O local precisa ter pelo menos uma cabine cadastrada para solicitar aprovação.",
+        variant: "destructive",
+      });
+      return { success: false, message: "no-cabins" };
+    }
     
     // Check if there's already an approval request
     const { data: existingApproval, error: checkError } = await supabase
@@ -63,6 +73,18 @@ export const triggerApprovalRequest = async (locationId: string) => {
           variant: "destructive",
         });
         return { success: false };
+      }
+      
+      // Update locations table status
+      const { error: locationError } = await supabase
+        .from('locations')
+        .update({ 
+          active: false // Keep as inactive until approved
+        })
+        .eq('id', locationId);
+      
+      if (locationError) {
+        debugError("triggerApprovalRequest: Error updating location status:", locationError);
       }
       
       toast({

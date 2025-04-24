@@ -6,7 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
 type LocationApproval = {
@@ -18,11 +18,13 @@ type LocationApproval = {
   status: "PENDENTE" | "APROVADO" | "REJEITADO";
   created_at: string;
   notes?: string;
+  cabins_count: number;
 };
 
 export const LocationApprovals = () => {
   const [approvals, setApprovals] = useState<LocationApproval[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchApprovals();
@@ -43,7 +45,8 @@ export const LocationApprovals = () => {
           created_at,
           locations!inner (
             name,
-            owner_id
+            owner_id,
+            cabins_count
           )
         `)
         .order('created_at', { ascending: false });
@@ -57,6 +60,9 @@ export const LocationApprovals = () => {
         });
         return;
       }
+
+      // Log that we're fetching approvals and what we received
+      debugLog("LocationApprovals: Fetched approvals data:", data);
 
       // Now, fetch owner details for each location
       const locationsWithOwners = await Promise.all((data || []).map(async (approval) => {
@@ -72,6 +78,7 @@ export const LocationApprovals = () => {
             id: approval.id,
             location_id: approval.location_id,
             location_name: approval.locations.name,
+            cabins_count: approval.locations.cabins_count,
             owner_name: "Desconhecido",
             owner_email: "Desconhecido",
             status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
@@ -84,6 +91,7 @@ export const LocationApprovals = () => {
           id: approval.id,
           location_id: approval.location_id,
           location_name: approval.locations.name,
+          cabins_count: approval.locations.cabins_count,
           owner_name: ownerData?.name || "Desconhecido",
           owner_email: ownerData?.email || "Desconhecido",
           status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
@@ -91,6 +99,9 @@ export const LocationApprovals = () => {
           notes: approval.notes
         };
       }));
+      
+      // Log the final result with owner information
+      debugLog("LocationApprovals: Completed approvals with owner data:", locationsWithOwners);
       
       setApprovals(locationsWithOwners);
       
@@ -103,7 +114,13 @@ export const LocationApprovals = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchApprovals();
   };
 
   const handleApprove = async (approvalId: string, locationId: string) => {
@@ -223,11 +240,22 @@ export const LocationApprovals = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Aprovação de Locais</CardTitle>
-        <CardDescription>
-          Gerencie as solicitações de aprovação de locais
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Aprovação de Locais</CardTitle>
+          <CardDescription>
+            Gerencie as solicitações de aprovação de locais
+          </CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={refreshing || loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -241,6 +269,7 @@ export const LocationApprovals = () => {
                 <TableRow>
                   <TableHead>Local</TableHead>
                   <TableHead>Proprietário</TableHead>
+                  <TableHead>Cabines</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -254,6 +283,7 @@ export const LocationApprovals = () => {
                       <div>{approval.owner_name}</div>
                       <div className="text-xs text-muted-foreground">{approval.owner_email}</div>
                     </TableCell>
+                    <TableCell>{approval.cabins_count}</TableCell>
                     <TableCell>
                       {new Date(approval.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>

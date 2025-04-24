@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -10,10 +11,9 @@ import { Calendar, DollarSign, PlusCircle, TrendingDown, TrendingUp } from "luci
 import { Location, Cabin } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { triggerApprovalRequest } from "@/utils/triggerApprovalRequest";
 import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
@@ -73,10 +73,20 @@ export const LocationsOverview = ({
   const handleRequestApproval = async () => {
     if (!selectedLocation) return;
     
+    // Validate that there's at least one cabin
+    if (locationCabins.length === 0) {
+      toast({
+        title: "Erro",
+        description: "É necessário cadastrar pelo menos uma cabine antes de solicitar aprovação.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsRequestingApproval(true);
     try {
       debugLog("LocationsOverview: Requesting approval for location", selectedLocation.id);
-      const result = await triggerApprovalRequest(selectedLocation.id);
+      const result = await triggerApprovalRequest(selectedLocation.id, locationCabins.length);
       debugLog("LocationsOverview: Approval request result:", result);
       
       if (result.success) {
@@ -148,7 +158,7 @@ export const LocationsOverview = ({
               </div>
             </div>
             
-            {/* Approval Status Section - Changed label from "Status de Aprovação" to "Status do Local" */}
+            {/* Status do Local Section */}
             <div className="border-t pt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -167,13 +177,21 @@ export const LocationsOverview = ({
                 {(!approvalStatus || approvalStatus === "REJEITADO") && (
                   <Button 
                     onClick={handleRequestApproval}
-                    disabled={isRequestingApproval}
+                    disabled={isRequestingApproval || locationCabins.length === 0}
                     className="bg-primary hover:bg-primary/90"
                   >
                     {isRequestingApproval ? "Enviando..." : "Solicitar Aprovação do Local"}
                   </Button>
                 )}
               </div>
+
+              {locationCabins.length === 0 && (
+                <Alert className="mt-4 border-blue-500/50 bg-blue-500/10">
+                  <AlertDescription className="text-blue-800">
+                    Cadastre pelo menos uma cabine para poder solicitar a aprovação do local.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               {approvalStatus === "PENDENTE" && (
                 <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
