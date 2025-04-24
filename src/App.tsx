@@ -18,6 +18,7 @@ import ClientProfilePage from "@/pages/ClientProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
 import GlobalAdminProfilePage from "@/pages/GlobalAdminProfilePage";
+import ProfessionalProfilePage from "@/pages/ProfessionalProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -40,6 +41,10 @@ const router = createBrowserRouter([
       {
         path: "/professional/dashboard",
         element: <ProfessionalDashboardPage />,
+      },
+      {
+        path: "/professional/profile",
+        element: <ProfessionalProfilePage />,
       },
       {
         path: "/client/dashboard",

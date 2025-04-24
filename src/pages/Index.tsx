@@ -116,7 +116,7 @@ const Index = () => {
               id: profile.id,
               name: profile.name || authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
               email: profile.email || authUser?.email || "",
-              userType: profile.user_type as "client" | "provider" | "owner" | "global_admin",
+              userType: profile.user_type as "client" | "professional" | "owner" | "global_admin",
               avatarUrl: profile.avatar_url || authUser?.user_metadata?.avatar_url,
               phoneNumber: profile.phone_number,
               roles: userRolesList
@@ -129,11 +129,17 @@ const Index = () => {
           else {
             debugLog("Index: No profile found, using auth metadata");
             
+            let metadataUserType = authUser?.user_metadata?.userType;
+            // Convert provider to professional if found in metadata
+            if (metadataUserType === "provider") {
+              metadataUserType = "professional";
+            }
+            
             const userData: User = {
               id: userId,
               name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
               email: authUser?.email || "",
-              userType: currentUserType as "client" | "provider" | "owner" | "global_admin",
+              userType: metadataUserType as "client" | "professional" | "owner" | "global_admin",
               avatarUrl: authUser?.user_metadata?.avatar_url,
               phoneNumber: null,
               roles: userRolesList
@@ -158,13 +164,17 @@ const Index = () => {
           debugError("Index: Error in profile section:", profileError);
           
           // Fallback to auth metadata if profile query fails completely
-          const currentUserType = authUser?.user_metadata?.userType || "client";
+          let metadataUserType = authUser?.user_metadata?.userType || "client";
+          // Convert provider to professional if found in metadata
+          if (metadataUserType === "provider") {
+            metadataUserType = "professional";
+          }
           
           const userData: User = {
             id: userId,
             name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
             email: authUser?.email || "",
-            userType: currentUserType as "client" | "provider" | "owner" | "global_admin",
+            userType: metadataUserType as "client" | "professional" | "owner" | "global_admin",
             avatarUrl: authUser?.user_metadata?.avatar_url,
             phoneNumber: null,
             roles: userRolesList
@@ -178,11 +188,17 @@ const Index = () => {
         debugError("Index: Error in loadUserProfile:", error);
         
         // Ultimate fallback if everything fails
+        let metadataUserType = authUser?.user_metadata?.userType || "client";
+        // Convert provider to professional if found in metadata
+        if (metadataUserType === "provider") {
+          metadataUserType = "professional";
+        }
+        
         const userData: User = {
           id: userId,
           name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
           email: authUser?.email || "",
-          userType: (authUser?.user_metadata?.userType || "client") as "client" | "provider" | "owner" | "global_admin",
+          userType: metadataUserType as "client" | "professional" | "owner" | "global_admin",
           avatarUrl: authUser?.user_metadata?.avatar_url,
           phoneNumber: null,
           roles: []

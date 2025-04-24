@@ -14,12 +14,12 @@ import { debugLog, debugError } from "@/utils/debugLogger";
 
 import { users } from "@/lib/mock-data";
 
-const ProviderDashboardPage = () => {
+const ProfessionalDashboardPage = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [providerBookings, setProviderBookings] = useState<Booking[]>([]);
-  const [providerAppointments, setProviderAppointments] = useState<Appointment[]>([]);
-  const [providerServices, setProviderServices] = useState<Service[]>([]);
+  const [professionalBookings, setProfessionalBookings] = useState<Booking[]>([]);
+  const [professionalAppointments, setProfessionalAppointments] = useState<Appointment[]>([]);
+  const [professionalServices, setProfessionalServices] = useState<Service[]>([]);
   const [isAddingService, setIsAddingService] = useState(false);
   const [newService, setNewService] = useState<Partial<Service>>({
     name: "",
@@ -34,10 +34,10 @@ const ProviderDashboardPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        debugLog("ProviderDashboardPage: Checking session...");
+        debugLog("ProfessionalDashboardPage: Checking session...");
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          debugLog("ProviderDashboardPage: No session found, redirecting to login");
+          debugLog("ProfessionalDashboardPage: No session found, redirecting to login");
           toast({
             title: "Acesso Negado",
             description: "Você precisa estar logado para acessar esta página.",
@@ -47,25 +47,30 @@ const ProviderDashboardPage = () => {
           return;
         }
         
-        debugLog("ProviderDashboardPage: Session found, user:", session.user);
+        debugLog("ProfessionalDashboardPage: Session found, user:", session.user);
         
         // First check user metadata
-        const userType = session.user.user_metadata?.userType;
-        if (userType && userType === 'provider') {
-          debugLog("ProviderDashboardPage: User is provider according to metadata");
+        let userType = session.user.user_metadata?.userType;
+        // Convert provider to professional if needed
+        if (userType === 'provider') {
+          userType = 'professional';
+        }
+        
+        if (userType && userType === 'professional') {
+          debugLog("ProfessionalDashboardPage: User is professional according to metadata");
           
           // Set current user from metadata
           setCurrentUser({
             id: session.user.id,
-            name: session.user.user_metadata?.name || 'Prestador',
+            name: session.user.user_metadata?.name || 'Profissional',
             email: session.user.email || '',
-            userType: 'provider',
+            userType: 'professional',
             avatarUrl: session.user.user_metadata?.avatar_url,
           });
           
-          loadProviderData(session.user.id);
+          loadProfessionalData(session.user.id);
           setIsLoading(false);
-          return; // User is provider, allow access
+          return; // User is professional, allow access
         }
 
         try {
@@ -77,32 +82,32 @@ const ProviderDashboardPage = () => {
             .maybeSingle();
 
           if (error) {
-            debugError("ProviderDashboardPage: Error fetching profile:", error);
-            // If there's an error querying profiles but metadata indicates provider, allow access
-            if (userType === 'provider') {
-              debugLog("ProviderDashboardPage: Falling back to metadata user type");
+            debugError("ProfessionalDashboardPage: Error fetching profile:", error);
+            // If there's an error querying profiles but metadata indicates professional, allow access
+            if (userType === 'professional') {
+              debugLog("ProfessionalDashboardPage: Falling back to metadata user type");
               
               // Set current user from metadata
               setCurrentUser({
                 id: session.user.id,
-                name: session.user.user_metadata?.name || 'Prestador',
+                name: session.user.user_metadata?.name || 'Profissional',
                 email: session.user.email || '',
-                userType: 'provider',
+                userType: 'professional',
                 avatarUrl: session.user.user_metadata?.avatar_url,
               });
               
-              loadProviderData(session.user.id);
+              loadProfessionalData(session.user.id);
               setIsLoading(false);
               return;
             }
           }
 
-          debugLog("ProviderDashboardPage: Profile data:", profile);
+          debugLog("ProfessionalDashboardPage: Profile data:", profile);
 
-          if (!profile || profile.user_type !== 'provider') {
-            // Only redirect if we can confirm user is not a provider
-            if (userType !== 'provider') {
-              debugLog("ProviderDashboardPage: User is not provider, redirecting");
+          if (!profile || profile.user_type !== 'professional') {
+            // Only redirect if we can confirm user is not a professional
+            if (userType !== 'professional') {
+              debugLog("ProfessionalDashboardPage: User is not professional, redirecting");
               toast({
                 title: "Acesso Negado",
                 description: "Você não tem permissão para acessar esta área.",
@@ -111,43 +116,43 @@ const ProviderDashboardPage = () => {
               navigate("/");
               return;
             } else {
-              // Metadata says provider but no profile, use metadata
+              // Metadata says professional but no profile, use metadata
               setCurrentUser({
                 id: session.user.id,
-                name: session.user.user_metadata?.name || 'Prestador',
+                name: session.user.user_metadata?.name || 'Profissional',
                 email: session.user.email || '',
-                userType: 'provider',
+                userType: 'professional',
                 avatarUrl: session.user.user_metadata?.avatar_url,
               });
               
-              loadProviderData(session.user.id);
+              loadProfessionalData(session.user.id);
             }
           } else {
-            // Profile exists and confirms provider
+            // Profile exists and confirms professional
             setCurrentUser({
               id: profile.id,
-              name: profile.name || session.user.user_metadata?.name || 'Prestador',
+              name: profile.name || session.user.user_metadata?.name || 'Profissional',
               email: profile.email || session.user.email || '',
-              userType: 'provider',
+              userType: 'professional',
               avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
               phoneNumber: profile.phone_number
             });
             
-            loadProviderData(session.user.id);
+            loadProfessionalData(session.user.id);
           }
         } catch (error) {
-          // If we can't determine from profile but metadata says provider, allow access
-          debugError("ProviderDashboardPage: Error in profile check:", error);
-          if (userType === 'provider') {
+          // If we can't determine from profile but metadata says professional, allow access
+          debugError("ProfessionalDashboardPage: Error in profile check:", error);
+          if (userType === 'professional') {
             setCurrentUser({
               id: session.user.id,
-              name: session.user.user_metadata?.name || 'Prestador',
+              name: session.user.user_metadata?.name || 'Profissional',
               email: session.user.email || '',
-              userType: 'provider',
+              userType: 'professional',
               avatarUrl: session.user.user_metadata?.avatar_url,
             });
             
-            loadProviderData(session.user.id);
+            loadProfessionalData(session.user.id);
             setIsLoading(false);
             return;
           }
@@ -157,7 +162,7 @@ const ProviderDashboardPage = () => {
           setIsLoading(false);
         }
       } catch (error) {
-        debugError("ProviderDashboardPage: Error checking session:", error);
+        debugError("ProfessionalDashboardPage: Error checking session:", error);
         navigate("/login");
         setIsLoading(false);
       }
@@ -166,22 +171,22 @@ const ProviderDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  const loadProviderData = (userId: string) => {
-    // Load the provider's data from mock or Supabase
+  const loadProfessionalData = (userId: string) => {
+    // Load the professional's data from mock or Supabase
     const userBookings = bookings.filter(
       (booking) => booking.providerId === userId
     );
-    setProviderBookings(userBookings);
+    setProfessionalBookings(userBookings);
     
     const userAppointments = appointments.filter(
       (appointment) => appointment.providerId === userId
     );
-    setProviderAppointments(userAppointments);
+    setProfessionalAppointments(userAppointments);
     
     const userServices = services.filter(
       (service) => service.providerId === userId
     );
-    setProviderServices(userServices);
+    setProfessionalServices(userServices);
   };
 
   const getCabinInfo = (cabinId: string) => {
@@ -235,7 +240,7 @@ const ProviderDashboardPage = () => {
       category: newService.category || "Outros",
     };
     
-    setProviderServices([...providerServices, service]);
+    setProfessionalServices([...professionalServices, service]);
     
     toast({
       title: "Serviço adicionado",
@@ -253,7 +258,7 @@ const ProviderDashboardPage = () => {
   };
 
   const handleAddBookingsFromModal = (newBookings: Booking[]) => {
-    setProviderBookings((prev) => [...prev, ...newBookings]);
+    setProfessionalBookings((prev) => [...prev, ...newBookings]);
   };
 
   if (isLoading) {
@@ -282,15 +287,15 @@ const ProviderDashboardPage = () => {
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Olá, {currentUser.name}</h1>
+          <h1 className="text-3xl font-bold">Olá, {currentUser?.name}</h1>
           <p className="mt-1 text-gray-500">
-            Bem-vindo ao seu painel de controle de Prestador de Serviço
+            Bem-vindo ao seu painel de controle de Profissional
           </p>
         </div>
         <Button
           variant="outline"
           className="mt-4 md:mt-0"
-          onClick={handleLogout}
+          onClick={() => handleLogout()}
         >
           Sair
         </Button>
@@ -303,7 +308,7 @@ const ProviderDashboardPage = () => {
               <Calendar className="h-6 w-6 text-primary" />
             </div>
             <h3 className="font-medium text-center">Reservas de Cabines</h3>
-            <div className="mt-2 text-3xl font-bold">{providerBookings.length}</div>
+            <div className="mt-2 text-3xl font-bold">{professionalBookings.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -312,7 +317,7 @@ const ProviderDashboardPage = () => {
               <Users className="h-6 w-6 text-primary" />
             </div>
             <h3 className="font-medium text-center">Agendamentos de Clientes</h3>
-            <div className="mt-2 text-3xl font-bold">{providerAppointments.length}</div>
+            <div className="mt-2 text-3xl font-bold">{professionalAppointments.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -323,7 +328,7 @@ const ProviderDashboardPage = () => {
             <h3 className="font-medium text-center">Faturamento do Mês</h3>
             <div className="mt-2 text-3xl font-bold">
               R$ {(
-                providerAppointments.reduce(
+                professionalAppointments.reduce(
                   (sum, appointment) => sum + appointment.price,
                   0
                 ) || 0
@@ -358,12 +363,12 @@ const ProviderDashboardPage = () => {
                   open={modalReserveOpen}
                   onClose={() => setModalReserveOpen(false)}
                   currentUser={currentUser}
-                  providerBookings={providerBookings}
+                  professionalBookings={professionalBookings}
                   onSubmitBookings={handleAddBookingsFromModal}
                 />
-                {providerBookings.length > 0 ? (
+                {professionalBookings.length > 0 ? (
                   <div className="space-y-4">
-                    {providerBookings.map((booking) => {
+                    {professionalBookings.map((booking) => {
                       const cabinInfo = getCabinInfo(booking.cabinId);
                       return (
                         <div
@@ -430,9 +435,9 @@ const ProviderDashboardPage = () => {
                 <CardTitle>Agendamentos de Clientes</CardTitle>
               </CardHeader>
               <CardContent>
-                {providerAppointments.length > 0 ? (
+                {professionalAppointments.length > 0 ? (
                   <div className="space-y-4">
-                    {providerAppointments.map((appointment) => (
+                    {professionalAppointments.map((appointment) => (
                       <div
                         key={appointment.id}
                         className="rounded-lg border p-4 grid md:grid-cols-[1fr_auto]"
@@ -580,9 +585,9 @@ const ProviderDashboardPage = () => {
                   </div>
                 ) : (
                   <>
-                    {providerServices.length > 0 ? (
+                    {professionalServices.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {providerServices.map((service) => (
+                        {professionalServices.map((service) => (
                           <div
                             key={service.id}
                             className="rounded-lg border p-4"
@@ -726,4 +731,4 @@ const ProviderDashboardPage = () => {
   );
 };
 
-export default ProviderDashboardPage;
+export default ProfessionalDashboardPage;

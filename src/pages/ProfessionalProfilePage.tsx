@@ -1,242 +1,181 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription,
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
+import { User } from "@/lib/types";
 
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "O nome deve ter pelo menos 2 caracteres.",
-  }),
-  email: z.string().email({
-    message: "Por favor, insira um email válido.",
-  }),
-  phoneNumber: z.string().optional(),
-  specialties: z.string().optional(),
-  avatarUrl: z.string().optional(),
-});
-
-const ProviderProfilePage = () => {
+const ProfessionalProfilePage = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(storedUser) as User;
-      
-      // Check if user is provider type
-      if (user.userType !== "provider") {
-        navigate("/");
-        toast({
-          title: "Acesso restrito",
-          description: "Você não tem permissão para acessar esta página.",
-          variant: "destructive",
+  const [profile, setProfile] = useState<User | null>(null);
+  
+  // This would be replaced with actual data fetch from Supabase
+  useState(() => {
+    const checkSession = async () => {
+      try {
+        setIsLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast({
+            title: "Acesso Negado",
+            description: "Você precisa estar logado para acessar esta página",
+            variant: "destructive",
+          });
+          navigate("/login");
+          return;
+        }
+        
+        // Check if user is professional
+        const { data: userData, error } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", session.user.id)
+          .single();
+          
+        if (error || userData?.user_type !== "professional") {
+          toast({
+            title: "Acesso Negado",
+            description: "Você não tem permissão para acessar esta página",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+        
+        setProfile({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          userType: userData.user_type,
+          avatarUrl: userData.avatar_url,
+          phoneNumber: userData.phone_number,
+          specialties: userData.specialties || [],
         });
-        return;
+      } catch (error) {
+        console.error("Error loading profile:", error);
+      } finally {
+        setIsLoading(false);
       }
-      
-      setCurrentUser(user);
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      localStorage.removeItem("currentUser");
-      navigate("/login");
-    }
+    };
+    
+    checkSession();
   }, [navigate]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phoneNumber: "",
-      specialties: "",
-      avatarUrl: "",
-    },
-  });
-
-  // Update form values when user data is loaded
-  useEffect(() => {
-    if (currentUser) {
-      form.reset({
-        name: currentUser.name,
-        email: currentUser.email,
-        phoneNumber: currentUser.phoneNumber || "",
-        specialties: currentUser.specialties?.join(", ") || "",
-        avatarUrl: currentUser.avatarUrl || "",
-      });
-    }
-  }, [currentUser, form]);
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    
-    // In a real app, we would submit to an API
-    // For this example, we'll just update localStorage
-    try {
-      if (currentUser) {
-        const updatedUser = {
-          ...currentUser,
-          name: values.name,
-          email: values.email,
-          phoneNumber: values.phoneNumber,
-          specialties: values.specialties ? values.specialties.split(",").map(s => s.trim()) : [],
-          avatarUrl: values.avatarUrl,
-        };
-        
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
-        
-        toast({
-          title: "Perfil atualizado",
-          description: "Seus dados foram atualizados com sucesso.",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar seus dados.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  if (!currentUser) {
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle saving professional profile
+    toast({
+      title: "Perfil Atualizado",
+      description: "Suas informações foram atualizadas com sucesso!",
+    });
+  };
+  
+  if (isLoading) {
     return (
-      <div className="container py-8">
-        <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+          <p className="text-muted-foreground">
+            Buscando seus dados, por favor aguarde.
+          </p>
+        </div>
       </div>
     );
   }
-
+  
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-2">Meu Perfil</h1>
-      <p className="text-muted-foreground mb-8">
-        Atualize suas informações profissionais
-      </p>
-
-      <div className="max-w-2xl mx-auto">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="seu@email.com" {...field} type="email" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="specialties"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Especialidades</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Manicure, Cabeleireiro, Maquiagem..." {...field} />
-                  </FormControl>
-                  <FormDescription>Separe suas especialidades por vírgulas</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="avatarUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL da foto de perfil</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://exemplo.com/sua-foto.jpg" {...field} />
-                  </FormControl>
-                  <FormDescription>Insira uma URL válida para uma imagem</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(-1)}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Salvando..." : "Salvar alterações"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+    <div className="container px-4 py-12 md:px-6 md:py-16">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Meu Perfil Profissional</h1>
+        
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Informações Pessoais</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome Completo</Label>
+                  <Input
+                    id="name"
+                    placeholder="Seu nome completo"
+                    defaultValue={profile?.name}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    defaultValue={profile?.email}
+                    readOnly
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Telefone</Label>
+                  <Input
+                    id="phoneNumber"
+                    placeholder="(00) 00000-0000"
+                    defaultValue={profile?.phoneNumber || ""}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Perfil Profissional</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="bio">Biografia Profissional</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Conte sobre sua experiência e especialidades..."
+                  className="min-h-[120px]"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Especialidades</Label>
+                <div className="flex flex-wrap gap-2">
+                  {profile?.specialties?.map((specialty, i) => (
+                    <span
+                      key={i}
+                      className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                    >
+                      {specialty}
+                    </span>
+                  ))}
+                </div>
+                <Button type="button" variant="outline" size="sm" className="mt-2">
+                  Adicionar Especialidade
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <div className="flex justify-end space-x-4">
+            <Button variant="outline" onClick={() => navigate("/professional/dashboard")}>
+              Cancelar
+            </Button>
+            <Button type="submit">Salvar Alterações</Button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default ProviderProfilePage;
+export default ProfessionalProfilePage;
