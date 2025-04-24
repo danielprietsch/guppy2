@@ -49,6 +49,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   };
 
   const handleStatusChange = (date: string, turno: string, isManualClose: boolean) => {
+    debugAreaLog('PRICE_EDIT', 'Status change:', { date, turno, isManualClose });
     if (onStatusChange) {
       onStatusChange(date, turno, isManualClose);
     }

@@ -89,10 +89,16 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     return "bg-green-500";
   };
 
-  const handleCardClick = () => {
+  const handleCardClick = (e: React.MouseEvent) => {
     if (isBooked && onViewBooking) {
       onViewBooking();
     }
+  };
+
+  // Stop event propagation for buttons
+  const handleButtonClick = (e: React.MouseEvent, callback: () => void) => {
+    e.stopPropagation();
+    callback();
   };
 
   return (
@@ -188,10 +194,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "secondary" : "default"}
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onManualClose();
-              }}
+              onClick={(e) => handleButtonClick(e, onManualClose)}
               className="text-xs h-6 py-0 flex-1"
             >
               {isManuallyClosed ? "Fechado" : "Fechar"}
@@ -199,10 +202,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "default" : "secondary"}
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRelease();
-              }}
+              onClick={(e) => handleButtonClick(e, onRelease)}
               className="text-xs h-6 py-0 flex-1"
             >
               Liberar

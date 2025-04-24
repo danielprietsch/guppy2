@@ -1,9 +1,9 @@
 
-export const DEBUG_MODE = false; // Alterar para true para habilitar todos os logs de depuração
+export const DEBUG_MODE = false; // Change to true to enable all debug logs
 
-// Logs específicos para áreas do sistema podem ser habilitados individualmente
+// Specific areas of the system can be enabled individually for debugging
 export const DEBUG_AREAS = {
-  PRICE_EDIT: false, // Descomente para depurar apenas a edição de preços
+  PRICE_EDIT: true, // Enable debugging just for price editing
   AVAILABILITY: false,
   USER_ACTIONS: false
 };
@@ -20,10 +20,9 @@ export const debugError = (...args: any[]) => {
   }
 };
 
-// Função para logs específicos por área
+// Function for area-specific logs
 export const debugAreaLog = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => {
   if (DEBUG_MODE || DEBUG_AREAS[area]) {
     console.log(`[DEBUG:${area}]`, ...args);
   }
 };
-
