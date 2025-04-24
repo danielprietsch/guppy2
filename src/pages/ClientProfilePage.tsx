@@ -1,10 +1,7 @@
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { 
   Form,
@@ -17,6 +14,8 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
+import { useClientProfile } from "@/hooks/useClientProfile";
+import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -30,52 +29,21 @@ const formSchema = z.object({
 
 const ClientProfilePage = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(storedUser) as User;
-      
-      // Check if user is client type
-      if (user.userType !== "client") {
-        navigate("/");
-        toast({
-          title: "Acesso restrito",
-          description: "Você não tem permissão para acessar esta página.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setCurrentUser(user);
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      localStorage.removeItem("currentUser");
-      navigate("/login");
-    }
-  }, [navigate]);
-
+  const { currentUser, isLoading, error, updateProfile } = useClientProfile();
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: currentUser?.name || "",
-      email: currentUser?.email || "",
-      phoneNumber: currentUser?.phoneNumber || "",
+      name: "",
+      email: "",
+      phoneNumber: "",
     },
   });
 
   // Update form values when user data is loaded
   useEffect(() => {
     if (currentUser) {
+      debugAreaLog("USER_ACTIONS", "Setting form values from currentUser:", currentUser);
       form.reset({
         name: currentUser.name,
         email: currentUser.email,
@@ -84,44 +52,57 @@ const ClientProfilePage = () => {
     }
   }, [currentUser, form]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    debugAreaLog("USER_ACTIONS", "Submitting form with values:", values);
     
-    // In a real app, we would submit to an API
-    // For this example, we'll just update localStorage
     try {
-      if (currentUser) {
-        const updatedUser = {
-          ...currentUser,
-          name: values.name,
-          email: values.email,
-          phoneNumber: values.phoneNumber,
-        };
-        
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
-        
-        toast({
-          title: "Perfil atualizado",
-          description: "Seus dados foram atualizados com sucesso.",
-        });
+      const result = await updateProfile({
+        name: values.name,
+        email: values.email,
+        phoneNumber: values.phoneNumber,
+      });
+      
+      if (!result.success) {
+        throw result.error;
       }
+      
+      toast({
+        title: "Perfil atualizado",
+        description: "Seus dados foram atualizados com sucesso.",
+      });
     } catch (error) {
-      console.error("Error updating profile:", error);
+      debugAreaCritical("USER_ACTIONS", "Error updating profile:", error);
       toast({
         title: "Erro ao atualizar perfil",
         description: "Ocorreu um erro ao atualizar seus dados.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   }
 
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <div className="container py-8">
-        <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Carregando...</h1>
+            <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !currentUser) {
+    return (
+      <div className="container py-8">
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Erro</h1>
+            <p className="text-red-500 mb-4">{error || "Não foi possível carregar seu perfil."}</p>
+            <Button onClick={() => navigate("/")}>Voltar para a página inicial</Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -143,7 +124,11 @@ const ClientProfilePage = () => {
                 <FormItem>
                   <FormLabel>Nome</FormLabel>
                   <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
+                    <input
+                      className="w-full p-2 border rounded-md"
+                      placeholder="Seu nome completo"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -157,7 +142,12 @@ const ClientProfilePage = () => {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="seu@email.com" {...field} type="email" />
+                    <input
+                      className="w-full p-2 border rounded-md"
+                      placeholder="seu@email.com"
+                      type="email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -171,7 +161,11 @@ const ClientProfilePage = () => {
                 <FormItem>
                   <FormLabel>Telefone</FormLabel>
                   <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} />
+                    <input
+                      className="w-full p-2 border rounded-md"
+                      placeholder="(00) 00000-0000"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -182,14 +176,14 @@ const ClientProfilePage = () => {
               <Button 
                 variant="outline" 
                 onClick={() => navigate(-1)}
+                type="button"
               >
                 Cancelar
               </Button>
               <Button 
-                type="submit" 
-                disabled={isLoading}
+                type="submit"
               >
-                {isLoading ? "Salvando..." : "Salvar alterações"}
+                Salvar alterações
               </Button>
             </div>
           </form>

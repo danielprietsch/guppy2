@@ -5,14 +5,14 @@ export const DEBUG_MODE = false; // Change to true to enable all debug logs
 export const DEBUG_AREAS = {
   PRICE_EDIT: true, // Enable debugging just for price editing
   AVAILABILITY: true, // Enable debugging for availability changes
-  USER_ACTIONS: false
+  USER_ACTIONS: true // Enable debugging for user profile actions
 };
 
 // Control verbosity level for specific areas
 export const DEBUG_VERBOSITY = {
   PRICE_EDIT: 1, // 1 = essentials only, 2 = detailed, 3 = all
   AVAILABILITY: 1, // Setting to 1 to ensure we see critical logs
-  USER_ACTIONS: 2
+  USER_ACTIONS: 2  // Medium verbosity for user actions
 };
 
 export const debugLog = (...args: any[]) => {
@@ -41,5 +41,23 @@ export const debugAreaLog = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => 
 export const debugAreaCritical = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => {
   if (DEBUG_MODE || DEBUG_AREAS[area]) {
     console.log(`[DEBUG:${area}:CRITICAL]`, ...args);
+  }
+};
+
+// Helper for timing operations
+export const debugTimer = (label: string) => {
+  if (DEBUG_MODE) {
+    console.time(`[DEBUG:TIMER] ${label}`);
+    return () => console.timeEnd(`[DEBUG:TIMER] ${label}`);
+  }
+  return () => {}; // No-op if debug mode is off
+};
+
+// Group related logs together
+export const debugGroup = (label: string, fn: () => void) => {
+  if (DEBUG_MODE) {
+    console.group(`[DEBUG:GROUP] ${label}`);
+    fn();
+    console.groupEnd();
   }
 };
