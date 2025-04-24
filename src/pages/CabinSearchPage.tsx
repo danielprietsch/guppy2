@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -92,11 +93,14 @@ const CabinSearchPage = () => {
           .eq('id', session.user.id)
           .single();
         
-        // Set a fictional address if not available
+        // Set a fictional address for now - the profile table does not have an address field yet
+        const defaultAddress = "Rua Exemplo, 123, São Paulo, SP";
+        
         if (profile) {
-          setProfessionalAddress(profile.address || "Rua Exemplo, 123, São Paulo, SP");
+          // Use a fictional address since address field doesn't exist in profiles yet
+          setProfessionalAddress(defaultAddress);
         } else {
-          setProfessionalAddress("Rua Exemplo, 123, São Paulo, SP");
+          setProfessionalAddress(defaultAddress);
         }
 
         // Get user's geolocation for proximity sorting
