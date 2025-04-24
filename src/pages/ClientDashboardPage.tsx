@@ -6,12 +6,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { addAdminRole } from "@/utils/adminUtils";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -29,6 +31,9 @@ const ClientDashboardPage = () => {
           navigate("/login");
           return;
         }
+
+        // Store user ID for later use
+        setUserId(session.user.id);
 
         // Get user profile
         const { data: profile, error } = await supabase
@@ -64,18 +69,7 @@ const ClientDashboardPage = () => {
         setUserName(name);
 
         // Check if user has admin role
-        const { data: roles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id);
-        
-        if (rolesError) {
-          debugError("ClientDashboardPage: Error fetching roles:", rolesError);
-        } else {
-          const hasAdminRole = roles?.some(r => r.role === 'admin') || false;
-          debugLog(`ClientDashboardPage: User is admin: ${hasAdminRole}`);
-          setIsAdmin(hasAdminRole);
-        }
+        await checkAdminRole(session.user.id);
       } catch (error) {
         debugError("ClientDashboardPage: Authentication verification error:", error);
         toast({
@@ -91,6 +85,46 @@ const ClientDashboardPage = () => {
     
     checkAuth();
   }, [navigate]);
+
+  const checkAdminRole = async (userId: string) => {
+    try {
+      debugLog("ClientDashboardPage: Checking admin role for user", userId);
+      const { data: roles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      if (rolesError) {
+        debugError("ClientDashboardPage: Error fetching roles:", rolesError);
+        return;
+      }
+
+      const hasAdminRole = roles && roles.some(r => r.role === 'admin') || false;
+      debugLog(`ClientDashboardPage: User is admin: ${hasAdminRole}`);
+      setIsAdmin(hasAdminRole);
+    } catch (error) {
+      debugError("ClientDashboardPage: Error checking admin role:", error);
+    }
+  };
+
+  const handleMakeAdmin = async () => {
+    if (!userId) return;
+    
+    const success = await addAdminRole(userId);
+    if (success) {
+      toast({
+        title: "Papel de administrador adicionado",
+        description: "Você agora tem acesso administrativo.",
+      });
+      setIsAdmin(true);
+    } else {
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o papel de administrador.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -135,7 +169,7 @@ const ClientDashboardPage = () => {
           Esta é uma página de exemplo para o painel do cliente.
         </p>
         
-        {isAdmin && (
+        {isAdmin ? (
           <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
             <h3 className="font-medium text-lg mb-2 text-purple-800">Acesso Administrativo</h3>
             <p className="text-gray-600 mb-4">Você possui privilégios administrativos nesta plataforma.</p>
@@ -144,6 +178,14 @@ const ClientDashboardPage = () => {
                 Acessar Dashboard Admin
               </Button>
             </Link>
+          </div>
+        ) : (
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <h3 className="font-medium text-lg mb-2">Ativar Modo Administrativo</h3>
+            <p className="text-gray-600 mb-4">Para fins de demonstração, você pode se tornar um administrador.</p>
+            <Button onClick={handleMakeAdmin} variant="outline">
+              Tornar-se Administrador
+            </Button>
           </div>
         )}
         
