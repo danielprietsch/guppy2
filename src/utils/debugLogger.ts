@@ -4,14 +4,14 @@ export const DEBUG_MODE = false; // Change to true to enable all debug logs
 // Specific areas of the system can be enabled individually for debugging
 export const DEBUG_AREAS = {
   PRICE_EDIT: true, // Enable debugging just for price editing
-  AVAILABILITY: false,
+  AVAILABILITY: true, // Enable debugging for availability changes
   USER_ACTIONS: false
 };
 
 // Control verbosity level for specific areas
 export const DEBUG_VERBOSITY = {
   PRICE_EDIT: 1, // 1 = essentials only, 2 = detailed, 3 = all
-  AVAILABILITY: 2,
+  AVAILABILITY: 1, // Setting to 1 to ensure we see critical logs
   USER_ACTIONS: 2
 };
 
