@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -264,17 +263,14 @@ const BookCabinPage = () => {
         return;
       }
 
-      const bookingData = {
+      const { data: bookingId, error } = await supabase.rpc('create_booking', {
         cabin_id: cabin.id,
         professional_id: session.user.id,
         date: format(date, 'yyyy-MM-dd'),
         shift: selectedShift,
         price: price,
         status: 'confirmed'
-      };
-
-      // Direct insert without RLS check to avoid profile recursion issue
-      const { data: booking, error } = await supabase.rpc('create_booking', bookingData);
+      });
 
       if (error) {
         debugError('Error creating booking:', error);

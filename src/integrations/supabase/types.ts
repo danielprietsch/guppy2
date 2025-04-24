@@ -368,6 +368,17 @@ export type Database = {
         Args: { loc_id: string; user_id: string }
         Returns: boolean
       }
+      create_booking: {
+        Args: {
+          cabin_id: string
+          professional_id: string
+          date: string
+          shift: string
+          price: number
+          status?: string
+        }
+        Returns: string
+      }
       get_allowed_user_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
