@@ -9,6 +9,11 @@ import ClientDashboardPage from "@/pages/ClientDashboardPage";
 import OwnerDashboardPage from "@/pages/OwnerDashboardPage";
 import ProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import HomePage from "@/pages/HomePage";
+import LocationsPage from "@/pages/LocationsPage";
+import ProvidersPage from "@/pages/ProvidersPage";
+import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
 
 const router = createBrowserRouter([
   {
@@ -18,7 +23,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <LoginPage />,
+        element: <HomePage />,
       },
       {
         path: "/login",
@@ -47,6 +52,22 @@ const router = createBrowserRouter([
       {
         path: "/reset-password",
         element: <ResetPasswordPage />,
+      },
+      {
+        path: "/locations",
+        element: <LocationsPage />,
+      },
+      {
+        path: "/providers",
+        element: <ProvidersPage />,
+      },
+      {
+        path: "/about",
+        element: <AboutPage />,
+      },
+      {
+        path: "/contact",
+        element: <ContactPage />,
       },
     ],
   },
