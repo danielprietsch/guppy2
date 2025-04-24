@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
 import { useLocationManagement } from "@/hooks/useLocationManagement";
 import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
@@ -27,7 +27,7 @@ const OwnerDashboardPage = () => {
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
 
   // Load locations when user is available
-  React.useEffect(() => {
+  useEffect(() => {
     if (currentUser?.id) {
       loadUserLocations(currentUser.id);
     }
