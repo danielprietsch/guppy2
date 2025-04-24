@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,9 +12,8 @@ import { User } from "@/lib/types";
 const ProfessionalProfilePage = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<User | null>(null);
+  const [profile, setProfile] = useState<(User & { specialties?: string[] }) | null>(null);
   
-  // This would be replaced with actual data fetch from Supabase
   useEffect(() => {
     const checkSession = async () => {
       try {

@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types"; 
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const OwnerProfilePage = () => {
   const navigate = useNavigate();
-  const { currentUser, isLoading, setCurrentUser } = useOwnerProfile();
+  const { currentUser, isLoading, error, setCurrentUser } = useOwnerProfile();
   const [formData, setFormData] = useState({
     name: currentUser?.name || "",
     email: currentUser?.email || "",

@@ -1,14 +1,14 @@
-
 export interface User {
   id: string;
   name: string;
   email: string;
-  userType: "client" | "professional" | "owner" | "global_admin";
-  avatarUrl?: string | null;
-  phoneNumber?: string | null;
-  roles?: string[];
+  userType: "professional" | "client" | "owner" | "admin";
+  avatarUrl?: string;
+  phoneNumber?: string;
   specialties?: string[];
-  ownedLocationIds?: string[];
+  bio?: string;
+  companyName?: string;
+  cnpj?: string;
 }
 
 export interface Location {
@@ -92,7 +92,6 @@ export interface SystemEquipment {
   description?: string;
 }
 
-// Predefined equipment options for cabins
 export const PREDEFINED_EQUIPMENT: SystemEquipment[] = [
   {
     id: "1",
@@ -155,3 +154,11 @@ export const PREDEFINED_EQUIPMENT: SystemEquipment[] = [
     description: "Lavatório para procedimentos"
   }
 ];
+
+export interface OwnerProfileHook {
+  currentUser: User | null;
+  isLoading: boolean;
+  error?: string;
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  updateProfile?: (data: Partial<User>) => Promise<void>;
+}
