@@ -1,10 +1,8 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
 import { 
   Form,
   FormControl,
@@ -16,8 +14,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { supabase } from "@/integrations/supabase/client";
-import { debugLog, debugError } from "@/utils/debugLogger";
+import { debugLog } from "@/utils/debugLogger";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -32,10 +29,10 @@ const formSchema = z.object({
 
 interface GlobalAdminProfileFormProps {
   currentUser: User;
-  setCurrentUser: (user: User) => void;
+  onSubmit: (values: z.infer<typeof formSchema>) => Promise<void>;
 }
 
-export function GlobalAdminProfileForm({ currentUser, setCurrentUser }: GlobalAdminProfileFormProps) {
+export function GlobalAdminProfileForm({ currentUser, onSubmit }: GlobalAdminProfileFormProps) {
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -58,72 +55,18 @@ export function GlobalAdminProfileForm({ currentUser, setCurrentUser }: GlobalAd
     }
   }, [currentUser, form]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      debugLog("GlobalAdminProfileForm: Updating profile for user:", currentUser.id);
-      debugLog("GlobalAdminProfileForm: Update values:", values);
-      
-      // Utilizando a função RPC para atualizar o perfil em vez de usar a API direta
-      // Isso evita o problema de recursão infinita nas políticas RLS
-      const { data, error } = await supabase
-        .rpc('update_admin_profile', {
-          user_id: currentUser.id,
-          user_name: values.name,
-          user_email: values.email,
-          user_phone: values.phoneNumber || null,
-          user_avatar: values.avatarUrl || null
-        });
-        
-      if (error) {
-        debugError("GlobalAdminProfileForm: Error updating profile via RPC:", error);
-        
-        // Tentativa alternativa usando métodos de inserção com auth.uid()
-        debugLog("GlobalAdminProfileForm: Trying alternative update approach");
-        
-        // Atualizando apenas os metadados do usuário (não afetado por RLS)
-        const { error: userUpdateError } = await supabase.auth.updateUser({
-          data: {
-            name: values.name,
-            avatar_url: values.avatarUrl
-          }
-        });
-        
-        if (userUpdateError) {
-          debugError("GlobalAdminProfileForm: Error updating user metadata:", userUpdateError);
-          throw userUpdateError;
-        }
-        
-        // Apenas atualizamos o estado local sem tentar gravar no banco
-        debugLog("GlobalAdminProfileForm: Successfully updated user metadata, skipping profile table update");
-      }
-      
-      const updatedUser = {
-        ...currentUser,
-        name: values.name,
-        email: values.email,
-        phoneNumber: values.phoneNumber,
-        avatarUrl: values.avatarUrl,
-      };
-      
-      setCurrentUser(updatedUser);
-      
-      toast({
-        title: "Perfil atualizado",
-        description: "Seus dados foram atualizados com sucesso.",
-      });
+      debugLog("GlobalAdminProfileForm: Submitting form values:", values);
+      await onSubmit(values);
     } catch (error) {
-      debugError("GlobalAdminProfileForm: Error updating profile:", error);
-      toast({
-        title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar seus dados.",
-        variant: "destructive",
-      });
+      debugLog("GlobalAdminProfileForm: Error in form submission:", error);
     }
-  }
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"

@@ -436,6 +436,16 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      update_admin_profile: {
+        Args: {
+          user_id: string
+          user_name: string
+          user_email: string
+          user_phone: string
+          user_avatar: string
+        }
+        Returns: boolean
+      }
       update_location_approval_status: {
         Args: { location_id: string; new_status: string; admin_id: string }
         Returns: boolean
