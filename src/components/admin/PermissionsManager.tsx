@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,6 +26,14 @@ type UserPermission = {
   permission_id: string;
 };
 
+// Define the shape of data returned from the get_all_users RPC function
+type GetAllUsersResponse = {
+  id: string;
+  email: string;
+  name: string;
+  user_type: string;
+}[];
+
 export const PermissionsManager = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +51,8 @@ export const PermissionsManager = () => {
         setLoading(true);
         
         // Using the security definer function to fetch users via RPC
-        const { data: userData, error: userError } = await supabase.rpc<User>('get_all_users');
+        // Providing both required type parameters for rpc
+        const { data: userData, error: userError } = await supabase.rpc<GetAllUsersResponse, null>('get_all_users');
         
         if (userError) {
           debugError("PermissionsManager: Error fetching users:", userError);
@@ -54,7 +64,8 @@ export const PermissionsManager = () => {
           return;
         }
         
-        setUsers(userData || []);
+        // Ensure we're setting an array of User objects
+        setUsers(userData as User[] || []);
         
         // Fetch user permissions from the user_roles table
         const { data: userRoles, error: rolesError } = await supabase
@@ -240,3 +251,4 @@ export const PermissionsManager = () => {
     </Card>
   );
 };
+
