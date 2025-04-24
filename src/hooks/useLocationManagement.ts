@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,21 +13,7 @@ export const useLocationManagement = () => {
     try {
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Direct RPC call to avoid infinite recursion in RLS policies
-      // check_owner_status now returns a boolean
-      const { data: isOwner, error: ownerCheckError } = await supabase
-        .rpc('check_owner_status', { user_id: userId });
-      
-      if (ownerCheckError || !isOwner) {
-        debugError("useLocationManagement: User is not an owner:", ownerCheckError);
-        toast({
-          title: "Erro",
-          description: "Você não tem permissão para gerenciar locais.",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      // Direct query to locations table without going through profiles first
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select('*')
