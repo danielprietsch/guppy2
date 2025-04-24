@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileForm";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 const GlobalAdminProfilePage = () => {
   const navigate = useNavigate();
@@ -38,24 +39,15 @@ const GlobalAdminProfilePage = () => {
         if (userTypeFromMetadata === "global_admin") {
           debugLog("GlobalAdminProfilePage: User is global_admin according to metadata");
           
-          // Get or create profile data
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-            
-          if (error) {
-            debugError("GlobalAdminProfilePage: Error fetching profile:", error);
-          }
-          
+          // Não tentar buscar o perfil da tabela, apenas usar os metadados
+          // para evitar problemas com RLS
           const userData: User = {
             id: session.user.id,
-            name: profile?.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador",
-            email: profile?.email || session.user.email || "",
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador",
+            email: session.user.email || "",
             userType: "global_admin",
-            avatarUrl: profile?.avatar_url || session.user.user_metadata?.avatar_url,
-            phoneNumber: profile?.phone_number
+            avatarUrl: session.user.user_metadata?.avatar_url,
+            phoneNumber: session.user.user_metadata?.phone_number
           };
           
           setCurrentUser(userData);
@@ -63,45 +55,46 @@ const GlobalAdminProfilePage = () => {
           return;
         }
 
-        // If not in metadata, check profile
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('name, user_type, email, phone_number, avatar_url')
-          .eq('id', session.user.id)
-          .single();
+        // Tentativa de verificar via função RPC (contornando RLS)
+        try {
+          const { data: isAdmin, error: adminCheckError } = await supabase
+            .rpc('is_global_admin', { user_id: session.user.id });
+            
+          if (adminCheckError) {
+            throw adminCheckError;
+          }
           
-        if (error) {
-          debugError("GlobalAdminProfilePage: Error fetching profile:", error);
+          if (!isAdmin) {
+            debugLog("GlobalAdminProfilePage: User is not an admin");
+            toast({
+              title: "Acesso negado",
+              description: "Esta página é apenas para administradores globais.",
+              variant: "destructive",
+            });
+            navigate("/");
+            return;
+          }
+          
+          // Usuário é admin, criar objeto de usuário a partir dos metadados da sessão
+          const userData: User = {
+            id: session.user.id,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador",
+            email: session.user.email || "",
+            userType: "global_admin",
+            avatarUrl: session.user.user_metadata?.avatar_url,
+            phoneNumber: session.user.user_metadata?.phone_number
+          };
+          
+          setCurrentUser(userData);
+        } catch (error) {
+          debugError("GlobalAdminProfilePage: Error checking admin status:", error);
           toast({
-            title: "Erro ao carregar perfil",
+            title: "Erro ao verificar permissões",
             description: "Não foi possível verificar suas credenciais.",
             variant: "destructive",
           });
           navigate("/login");
-          return;
         }
-          
-        if (!profile || profile.user_type !== "global_admin") {
-          debugLog("GlobalAdminProfilePage: Non-admin user attempting to access:", profile?.user_type);
-          toast({
-            title: "Acesso negado",
-            description: "Esta página é apenas para administradores globais.",
-            variant: "destructive",
-          });
-          navigate("/");
-          return;
-        }
-        
-        const userData: User = {
-          id: session.user.id,
-          name: profile.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador",
-          email: profile.email || session.user.email || "",
-          userType: "global_admin",
-          avatarUrl: profile.avatar_url,
-          phoneNumber: profile.phone_number
-        };
-        
-        setCurrentUser(userData);
       } catch (error) {
         debugError("GlobalAdminProfilePage: Authentication error:", error);
         navigate("/login");
@@ -135,12 +128,20 @@ const GlobalAdminProfilePage = () => {
         Atualize suas informações de administrador global
       </p>
 
-      <div className="max-w-2xl mx-auto">
-        <GlobalAdminProfileForm 
-          currentUser={currentUser} 
-          setCurrentUser={setCurrentUser} 
-        />
-      </div>
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Informações do Perfil</CardTitle>
+          <CardDescription>
+            Estas informações estarão visíveis para outros usuários do sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GlobalAdminProfileForm 
+            currentUser={currentUser} 
+            setCurrentUser={setCurrentUser} 
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 };
