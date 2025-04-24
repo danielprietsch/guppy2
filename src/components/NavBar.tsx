@@ -28,7 +28,31 @@ const NavBar = () => {
           return;
         }
         
-        // Fetch user profile from Supabase
+        // First, check if user metadata contains user type information
+        const userMetadata = session.user.user_metadata;
+        const userTypeFromMetadata = userMetadata?.userType;
+        const nameFromMetadata = userMetadata?.name;
+        const avatarFromMetadata = userMetadata?.avatar_url;
+        
+        if (userTypeFromMetadata) {
+          // If metadata has user info, use that first (it's most reliable)
+          console.log("NavBar: Using user data from metadata:", userMetadata);
+          
+          const userData: User = {
+            id: session.user.id,
+            name: nameFromMetadata || session.user.email?.split('@')[0] || "User",
+            email: session.user.email || "",
+            userType: userTypeFromMetadata as "professional" | "client" | "owner" | "global_admin",
+            avatarUrl: avatarFromMetadata,
+          };
+          
+          setCurrentUser(userData);
+          setLoading(false);
+          return;
+        }
+        
+        // Fallback: Fetch user profile from Supabase
+        console.log("NavBar: Fetching user profile from database");
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -66,6 +90,7 @@ const NavBar = () => {
     // Setup auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state change:", event);
         if (event === "SIGNED_OUT") {
           setCurrentUser(null);
         } else if (session) {
