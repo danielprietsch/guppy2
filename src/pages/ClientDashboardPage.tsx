@@ -1,14 +1,17 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,6 +62,20 @@ const ClientDashboardPage = () => {
         const name = profile.name || session.user.email?.split('@')[0] || "Cliente";
         debugLog(`ClientDashboardPage: Setting username to ${name}`);
         setUserName(name);
+
+        // Check if user has admin role
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', session.user.id);
+        
+        if (rolesError) {
+          debugError("ClientDashboardPage: Error fetching roles:", rolesError);
+        } else {
+          const hasAdminRole = roles?.some(r => r.role === 'admin') || false;
+          debugLog(`ClientDashboardPage: User is admin: ${hasAdminRole}`);
+          setIsAdmin(hasAdminRole);
+        }
       } catch (error) {
         debugError("ClientDashboardPage: Authentication verification error:", error);
         toast({
@@ -117,6 +134,18 @@ const ClientDashboardPage = () => {
         <p className="text-muted-foreground mb-6">
           Esta é uma página de exemplo para o painel do cliente.
         </p>
+        
+        {isAdmin && (
+          <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <h3 className="font-medium text-lg mb-2 text-purple-800">Acesso Administrativo</h3>
+            <p className="text-gray-600 mb-4">Você possui privilégios administrativos nesta plataforma.</p>
+            <Link to="/admin/dashboard">
+              <Button variant="secondary" className="bg-purple-600 text-white hover:bg-purple-700">
+                Acessar Dashboard Admin
+              </Button>
+            </Link>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white shadow rounded-lg p-6">
