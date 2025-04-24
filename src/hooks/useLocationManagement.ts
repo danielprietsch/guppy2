@@ -1,7 +1,9 @@
+
 import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 export const useLocationManagement = () => {
   const [userLocations, setUserLocations] = useState<Location[]>([]);
@@ -10,13 +12,29 @@ export const useLocationManagement = () => {
 
   const loadUserLocations = async (userId: string) => {
     try {
+      debugLog("useLocationManagement: Loading locations for user", userId);
+      
+      // Direct RPC call to avoid infinite recursion in RLS policies
+      const { data: ownerCheck, error: ownerCheckError } = await supabase
+        .rpc('check_owner_status', { user_id: userId });
+      
+      if (ownerCheckError || !ownerCheck) {
+        debugError("useLocationManagement: User is not an owner:", ownerCheckError);
+        toast({
+          title: "Erro",
+          description: "Você não tem permissão para gerenciar locais.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select('*')
         .eq('owner_id', userId);
           
       if (locationsError) {
-        console.error("Error fetching locations:", locationsError);
+        debugError("useLocationManagement: Error fetching locations:", locationsError);
         toast({
           title: "Erro",
           description: "Não foi possível carregar seus locais.",
@@ -42,7 +60,7 @@ export const useLocationManagement = () => {
                 };
               }
             } catch (e) {
-              console.error("Error parsing opening hours:", e);
+              debugError("useLocationManagement: Error parsing opening hours:", e);
             }
           }
           
@@ -62,14 +80,17 @@ export const useLocationManagement = () => {
           };
         });
         
+        debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
         setUserLocations(transformedLocations);
         if (!selectedLocation) {
           setSelectedLocation(transformedLocations[0]);
           await loadCabinsForLocation(transformedLocations[0].id);
         }
+      } else {
+        debugLog("useLocationManagement: No locations found for user");
       }
     } catch (error) {
-      console.error("Error processing locations:", error);
+      debugError("useLocationManagement: Error processing locations:", error);
       toast({
         title: "Erro",
         description: "Erro ao processar locais",
