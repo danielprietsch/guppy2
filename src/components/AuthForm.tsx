@@ -32,21 +32,9 @@ const userTypes = [
   },
   {
     key: "provider",
-    label: "Prestador de Serviço",
+    label: "Profissional",
     desc: "Cabeleireiro, barbeiro, manicure etc.",
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
-  },
-  {
-    key: "owner",
-    label: "Dono/Franqueado",
-    desc: "Local de serviços ou franquia",
-    icon: <Briefcase className="w-8 h-8 text-blue-400" />,
-  },
-  {
-    key: "global_admin",
-    label: "Administrador Global",
-    desc: "Gerenciar toda a plataforma",
-    icon: <Shield className="w-8 h-8 text-red-400" />,
   },
 ];
 
