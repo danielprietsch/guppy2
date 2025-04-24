@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -79,11 +80,11 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       const userId = session.user.id;
       
       // Using check_owner_status function to verify user is an owner
-      // This avoids the RLS recursion issue
-      const { data: ownerData, error: ownerError } = await supabase
+      // This function now returns a boolean directly
+      const { data: isOwner, error: ownerError } = await supabase
         .rpc('check_owner_status', { user_id: userId });
         
-      if (ownerError || !ownerData) {
+      if (ownerError || !isOwner) {
         toast.error("Você não tem permissão para cadastrar locais");
         debugError("OwnerAddLocationModal: User is not an owner or check failed:", ownerError);
         return;

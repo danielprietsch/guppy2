@@ -15,10 +15,11 @@ export const useLocationManagement = () => {
       debugLog("useLocationManagement: Loading locations for user", userId);
       
       // Direct RPC call to avoid infinite recursion in RLS policies
-      const { data: ownerCheck, error: ownerCheckError } = await supabase
+      // check_owner_status now returns a boolean
+      const { data: isOwner, error: ownerCheckError } = await supabase
         .rpc('check_owner_status', { user_id: userId });
       
-      if (ownerCheckError || !ownerCheck) {
+      if (ownerCheckError || !isOwner) {
         debugError("useLocationManagement: User is not an owner:", ownerCheckError);
         toast({
           title: "Erro",
