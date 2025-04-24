@@ -68,9 +68,10 @@ export const recreateGlobalAdmin = async () => {
         if (!user || typeof user !== 'object') return false;
         
         // Check if email property exists and matches our target
-        return 'email' in user && 
-          typeof user.email === 'string' && 
-          user.email === 'guppyadmin@nuvemtecnologia.com';
+        if ('email' in user && typeof user.email === 'string') {
+          return user.email === 'guppyadmin@nuvemtecnologia.com';
+        }
+        return false;
       });
     
     // If user exists, try password reset
