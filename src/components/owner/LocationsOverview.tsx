@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -6,13 +7,14 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, Eye, EyeOff, PlusCircle, TrendingDown, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, PlusCircle, TrendingDown, TrendingUp } from "lucide-react";
 import { Location, Cabin } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useState } from "react";
+import { triggerApprovalRequest } from "@/utils/triggerApprovalRequest";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { debugLog, debugError } from "@/utils/debugLogger";
+import { useEffect } from "react";
 
 interface LocationsOverviewProps {
   selectedLocation: Location | null;
@@ -25,40 +27,42 @@ export const LocationsOverview = ({
   locationCabins,
   onAddCabinClick
 }: LocationsOverviewProps) => {
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
+  const [isRequestingApproval, setIsRequestingApproval] = useState(false);
 
-  const handleToggleVisibility = async () => {
+  useEffect(() => {
+    if (selectedLocation) {
+      fetchApprovalStatus();
+    }
+  }, [selectedLocation]);
+
+  const fetchApprovalStatus = async () => {
     if (!selectedLocation) return;
     
-    setIsUpdatingStatus(true);
-    try {
-      const { error } = await supabase
-        .from('locations')
-        .update({ active: !selectedLocation.active })
-        .eq('id', selectedLocation.id);
-
-      if (error) {
-        debugError("LocationsOverview: Error updating location status:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível alterar a visibilidade do local.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Reload the page to update the location status
-      window.location.reload();
+    const { data, error } = await supabase
+      .from('admin_approvals')
+      .select('status')
+      .eq('location_id', selectedLocation.id)
+      .maybeSingle();
       
+    if (!error && data) {
+      setApprovalStatus(data.status);
+    }
+  };
+
+  const handleRequestApproval = async () => {
+    if (!selectedLocation) return;
+    
+    setIsRequestingApproval(true);
+    try {
+      const result = await triggerApprovalRequest(selectedLocation.id);
+      if (result.success) {
+        await fetchApprovalStatus();
+      }
     } catch (error) {
-      debugError("LocationsOverview: Error toggling visibility:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao alterar a visibilidade do local.",
-        variant: "destructive",
-      });
+      console.error("Error requesting approval:", error);
     } finally {
-      setIsUpdatingStatus(false);
+      setIsRequestingApproval(false);
     }
   };
 
@@ -113,40 +117,56 @@ export const LocationsOverview = ({
               </div>
             </div>
             
-            {/* Status do Local Section */}
+            {/* Approval Status Section - Changed label from "Status de Aprovação" to "Status do Local" */}
             <div className="border-t pt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Status do Local:</span>
-                  <Badge 
-                    variant={selectedLocation.active ? "default" : "secondary"}
-                    className={selectedLocation.active ? "bg-green-500" : ""}
-                  >
-                    {selectedLocation.active ? "VISÍVEL" : "OCULTO"}
-                  </Badge>
+                  {approvalStatus === "APROVADO" ? (
+                    <Badge className="bg-green-500">APROVADO</Badge>
+                  ) : approvalStatus === "PENDENTE" ? (
+                    <Badge variant="secondary" className="bg-yellow-500 text-white">AGUARDANDO APROVAÇÃO</Badge>
+                  ) : approvalStatus === "REJEITADO" ? (
+                    <Badge variant="destructive">REJEITADO</Badge>
+                  ) : (
+                    <Badge variant="outline">INATIVO</Badge>
+                  )}
                 </div>
                 
-                <Button 
-                  onClick={handleToggleVisibility}
-                  disabled={isUpdatingStatus}
-                  variant="outline"
-                  className={selectedLocation.active ? "border-red-500 text-red-500 hover:bg-red-50" : "border-green-500 text-green-500 hover:bg-green-50"}
-                >
-                  {isUpdatingStatus ? (
-                    "Atualizando..."
-                  ) : selectedLocation.active ? (
-                    <>
-                      <EyeOff className="h-4 w-4 mr-2" />
-                      Ocultar Local
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-4 w-4 mr-2" />
-                      Tornar Visível
-                    </>
-                  )}
-                </Button>
+                {!approvalStatus && (
+                  <Button 
+                    onClick={handleRequestApproval}
+                    disabled={isRequestingApproval}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    {isRequestingApproval ? "Enviando..." : "Solicitar Aprovação do Local"}
+                  </Button>
+                )}
               </div>
+
+              {approvalStatus === "PENDENTE" && (
+                <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
+                  <AlertDescription className="text-yellow-800">
+                    Seu local está em análise. Você será notificado quando houver uma decisão.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {approvalStatus === "REJEITADO" && (
+                <Alert className="mt-4 border-red-500/50 bg-red-500/10">
+                  <AlertDescription className="text-red-800">
+                    Seu local foi rejeitado. Por favor, verifique as informações e tente novamente.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {!selectedLocation.active && approvalStatus !== "APROVADO" && (
+                <Alert className="mt-4">
+                  <AlertDescription>
+                    Este local não está visível para os usuários até ser aprovado por um administrador.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           </div>
         </CardContent>

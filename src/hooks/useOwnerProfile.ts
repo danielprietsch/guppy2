@@ -10,11 +10,8 @@ export const useOwnerProfile = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | undefined>(undefined);
-  const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
-    let isMounted = true; // Flag to prevent state updates after unmounting
     debugLog("useOwnerProfile: Initializing");
     
     const checkAuthStatus = async () => {
@@ -24,135 +21,214 @@ export const useOwnerProfile = () => {
         
         if (!session) {
           debugLog("useOwnerProfile: No session found, redirecting to login");
-          if (isMounted) {
-            toast({
-              title: "Não autenticado",
-              description: "Você precisa fazer login para acessar esta página.",
-              variant: "destructive",
-            });
-            navigate("/login");
-          }
+          toast({
+            title: "Não autenticado",
+            description: "Você precisa fazer login para acessar esta página.",
+            variant: "destructive",
+          });
+          navigate("/login");
           return;
         }
         
-        // Get user metadata from the session directly if possible
-        const userType = session.user?.user_metadata?.userType;
+        debugLog("useOwnerProfile: Session found, checking user type");
         
-        if (userType && userType !== 'owner' && userType !== 'global_admin') {
-          debugLog("useOwnerProfile: User type in metadata is not owner:", userType);
-          if (isMounted) {
-            setError("Você não tem permissão para acessar esta página.");
-            toast({
-              title: "Acesso restrito",
-              description: "Você não tem permissão para acessar esta página.",
-              variant: "destructive",
-            });
-            navigate("/");
-          }
-          return;
-        }
+        // Primeiro verificar metadados do usuário (mais confiável)
+        const userMetadata = session.user.user_metadata;
+        const userTypeFromMetadata = userMetadata?.userType;
         
-        // Query for the profile data as a direct database query instead of using functions
-        // This avoids the infinite recursion in RLS policies
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, name, email, user_type, avatar_url, phone_number')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        if (userTypeFromMetadata === 'owner') {
+          // Se os metadados confirmam que é franqueado, criar usuário a partir dos metadados
+          debugLog("useOwnerProfile: User is owner according to metadata");
           
-        if (profileError) {
-          debugError("useOwnerProfile: Error retrieving profile:", profileError);
-          throw profileError;
+          const userData: User = {
+            id: session.user.id,
+            name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+            email: session.user.email || "",
+            userType: "owner",
+            avatarUrl: userMetadata?.avatar_url,
+            phoneNumber: null
+          };
+          
+          debugLog("useOwnerProfile: Setting currentUser from metadata:", userData);
+          setCurrentUser(userData);
+          setIsLoading(false);
+          return;
         }
         
-        if (!profileData || (profileData.user_type !== 'owner' && profileData.user_type !== 'global_admin')) {
-          debugLog("useOwnerProfile: User is not an owner or admin");
-          if (isMounted) {
-            setError("Você não tem permissão para acessar esta página.");
+        // Se os metadados não confirmam que é franqueado, tentar buscar perfil
+        debugLog("useOwnerProfile: Fetching profile");
+        
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+            
+          if (error) {
+            debugError("useOwnerProfile: Error fetching profile:", error);
+            
+            // Se os metadados indicam outro tipo de usuário, redirecionar
+            if (userTypeFromMetadata && userTypeFromMetadata !== 'owner') {
+              toast({
+                title: "Acesso restrito",
+                description: "Você não tem permissão para acessar esta página.",
+                variant: "destructive",
+              });
+              navigate("/");
+              return;
+            }
+            
+            // Se não conseguimos determinar, tentar criar perfil a partir dos metadados
+            const { error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+                email: session.user.email,
+                user_type: userTypeFromMetadata || "owner",
+                avatar_url: userMetadata?.avatar_url
+              });
+              
+            if (insertError) {
+              debugError("useOwnerProfile: Error creating profile:", insertError);
+              
+              // Se falhar na criação do perfil mas temos metadados, usar esses dados
+              if (userMetadata) {
+                const userData: User = {
+                  id: session.user.id,
+                  name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+                  email: session.user.email || "",
+                  userType: "owner",
+                  avatarUrl: userMetadata?.avatar_url,
+                  phoneNumber: null
+                };
+                
+                debugLog("useOwnerProfile: Setting currentUser as fallback:", userData);
+                setCurrentUser(userData);
+                setIsLoading(false);
+                return;
+              }
+              
+              // Se não temos nem perfil nem metadados suficientes, redirecionar
+              navigate("/login");
+              return;
+            }
+            
+            // Se criamos o perfil com sucesso, buscar o perfil recém-criado
+            const { data: newProfile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (newProfile) {
+              // Verificar se o perfil criado é de franqueado
+              if (newProfile.user_type !== "owner") {
+                toast({
+                  title: "Acesso restrito",
+                  description: "Você não tem permissão para acessar esta página.",
+                  variant: "destructive",
+                });
+                navigate("/");
+                return;
+              }
+              
+              const userData: User = {
+                id: session.user.id,
+                name: newProfile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+                email: newProfile.email || session.user.email || "",
+                userType: newProfile.user_type as "client" | "provider" | "owner",
+                avatarUrl: newProfile.avatar_url || userMetadata?.avatar_url,
+                phoneNumber: newProfile.phone_number
+              };
+              
+              debugLog("useOwnerProfile: Setting currentUser from new profile:", userData);
+              setCurrentUser(userData);
+              setIsLoading(false);
+              return;
+            }
+          }
+          
+          // Se o perfil existe, usá-lo
+          if (profile) {
+            // Verificar se o perfil é de franqueado
+            if (profile.user_type !== "owner") {
+              toast({
+                title: "Acesso restrito",
+                description: "Você não tem permissão para acessar esta página.",
+                variant: "destructive",
+              });
+              navigate("/");
+              return;
+            }
+            
+            const userData: User = {
+              id: session.user.id,
+              name: profile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+              email: profile.email || session.user.email || "",
+              userType: profile.user_type as "client" | "provider" | "owner",
+              avatarUrl: profile.avatar_url || userMetadata?.avatar_url,
+              phoneNumber: profile.phone_number
+            };
+            
+            debugLog("useOwnerProfile: Setting currentUser from profile:", userData);
+            setCurrentUser(userData);
+          } else {
+            // Se não encontramos um perfil, redirecionar
             toast({
-              title: "Acesso restrito",
-              description: "Você não tem permissão para acessar esta página.",
+              title: "Perfil não encontrado",
+              description: "Não foi possível encontrar seu perfil de franqueado.",
               variant: "destructive",
             });
             navigate("/");
           }
-          return;
-        }
-        
-        // Safely handle the user type
-        const userTypeStr = typeof profileData.user_type === 'string' ? profileData.user_type : '';
-        let validUserType: "owner" | "professional" | "client" | "global_admin";
-        
-        // Map the string to a valid user type
-        if (userTypeStr === "owner") {
-          validUserType = "owner";
-        } else if (userTypeStr === "global_admin") {
-          validUserType = "global_admin";
-        } else if (userTypeStr === "professional") {
-          validUserType = "professional";
-        } else if (userTypeStr === "client") {
-          validUserType = "client";
-        } else {
-          // Default to owner for the owner dashboard
-          validUserType = "owner";
-        }
-        
-        // User is confirmed as owner or global_admin
-        const userData: User = {
-          id: profileData.id,
-          name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
-          email: profileData.email || session.user.email || "",
-          userType: validUserType,
-          avatarUrl: profileData.avatar_url,
-          phoneNumber: profileData.phone_number
-        };
-        
-        if (isMounted) {
-          debugLog("useOwnerProfile: Setting currentUser from profile check:", userData);
-          setCurrentUser(userData);
-          setIsAuthChecked(true);
-        }
-      } catch (error) {
-        debugError("useOwnerProfile: Error checking auth status:", error);
-        if (isMounted) {
-          setError("Ocorreu um erro ao verificar sua autenticação.");
+        } catch (error) {
+          debugError("useOwnerProfile: Error in profile section:", error);
           toast({
             title: "Erro",
-            description: "Ocorreu um erro ao verificar sua autenticação.",
+            description: "Ocorreu um erro ao buscar seu perfil.",
             variant: "destructive",
           });
           navigate("/login");
         }
+      } catch (error) {
+        debugError("useOwnerProfile: Error checking auth status:", error);
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao verificar sua autenticação.",
+          variant: "destructive",
+        });
+        navigate("/login");
       } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
     
-    // Setup listener for auth state changes
+    // Configurar listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      debugLog("useOwnerProfile: Auth state changed:", event);
       if (event === "SIGNED_OUT" || !session) {
-        if (isMounted) {
-          setCurrentUser(null);
-          navigate("/login");
-        }
-      } else if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && isMounted) {
-        // Use setTimeout to avoid potential deadlocks with Supabase auth
+        debugLog("useOwnerProfile: User signed out, redirecting to login");
+        setCurrentUser(null);
+        navigate("/login");
+      } else if (event === "SIGNED_IN") {
+        // Re-verificar perfil ao fazer login
+        debugLog("useOwnerProfile: User signed in, checking auth status");
+        // Pequeno timeout para evitar race conditions
         setTimeout(() => {
-          if (isMounted) checkAuthStatus();
+          checkAuthStatus();
         }, 0);
       }
     });
     
-    // Only check auth status once during component mount
     checkAuthStatus();
     
     return () => {
-      isMounted = false;
+      debugLog("useOwnerProfile: Cleaning up");
       subscription.unsubscribe();
     };
-  }, [navigate]); // Only depend on navigate
+  }, [navigate]);
 
-  return { currentUser, isLoading, error, isAuthChecked, setCurrentUser };
+  return { currentUser, isLoading, setCurrentUser };
 };

@@ -17,8 +17,8 @@ export const MobileMenu = ({ isOpen }: MobileMenuProps) => {
         <Link to="/locations" className="text-sm font-medium py-2 hover:underline">
           Locais
         </Link>
-        <Link to="/professionals" className="text-sm font-medium py-2 hover:underline">
-          Profissionais
+        <Link to="/providers" className="text-sm font-medium py-2 hover:underline">
+          Prestadores
         </Link>
         <Link to="/about" className="text-sm font-medium py-2 hover:underline">
           Sobre Nós

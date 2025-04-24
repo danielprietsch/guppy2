@@ -1,31 +1,23 @@
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { debugLog, debugError } from "@/utils/debugLogger";
 
 export const useLocationManagement = () => {
   const [userLocations, setUserLocations] = useState<Location[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
-  const [isLocationsLoading, setIsLocationsLoading] = useState(false);
-  
-  const loadUserLocations = useCallback(async (userId: string) => {
-    if (isLocationsLoading) return; // Prevent concurrent calls
-    
+
+  const loadUserLocations = async (userId: string) => {
     try {
-      setIsLocationsLoading(true);
-      debugLog("useLocationManagement: Loading locations for user", userId);
-      
-      // Use a direct query instead of RPC to avoid TypeScript errors
-      const { data, error } = await supabase
+      const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select('*')
         .eq('owner_id', userId);
           
-      if (error) {
-        debugError("useLocationManagement: Error fetching locations:", error);
+      if (locationsError) {
+        console.error("Error fetching locations:", locationsError);
         toast({
           title: "Erro",
           description: "Não foi possível carregar seus locais.",
@@ -34,10 +26,8 @@ export const useLocationManagement = () => {
         return;
       }
 
-      debugLog(`useLocationManagement: Found ${data?.length || 0} locations`);
-
-      if (data && data.length > 0) {
-        const transformedLocations: Location[] = data.map(location => {
+      if (locationsData && locationsData.length > 0) {
+        const transformedLocations: Location[] = locationsData.map(location => {
           let openingHours = { open: "09:00", close: "18:00" };
           
           if (location.opening_hours) {
@@ -53,7 +43,7 @@ export const useLocationManagement = () => {
                 };
               }
             } catch (e) {
-              debugError("useLocationManagement: Error parsing opening hours:", e);
+              console.error("Error parsing opening hours:", e);
             }
           }
           
@@ -66,36 +56,27 @@ export const useLocationManagement = () => {
             zipCode: location.zip_code,
             cabinsCount: location.cabins_count || 0,
             openingHours: openingHours,
-            amenities: Array.isArray(location.amenities) ? location.amenities : [],
+            amenities: location.amenities || [],
             imageUrl: location.image_url || "",
-            description: location.description,
-            active: location.active
+            description: location.description
           };
         });
         
-        debugLog("useLocationManagement: Transformed locations", transformedLocations);
         setUserLocations(transformedLocations);
-        
-        if (!selectedLocation && transformedLocations.length > 0) {
-          debugLog("useLocationManagement: Setting initial location", transformedLocations[0]);
+        if (!selectedLocation) {
           setSelectedLocation(transformedLocations[0]);
-          loadCabinsForLocation(transformedLocations[0].id);
+          await loadCabinsForLocation(transformedLocations[0].id);
         }
-      } else {
-        debugLog("useLocationManagement: No locations found for user");
-        setUserLocations([]);
       }
     } catch (error) {
-      debugError("useLocationManagement: Error processing locations:", error);
+      console.error("Error processing locations:", error);
       toast({
         title: "Erro",
         description: "Erro ao processar locais",
         variant: "destructive",
       });
-    } finally {
-      setIsLocationsLoading(false);
     }
-  }, [selectedLocation, isLocationsLoading]);
+  };
 
   const loadCabinsForLocation = async (locationId: string) => {
     try {
@@ -191,7 +172,6 @@ export const useLocationManagement = () => {
   };
 
   const handleLocationCreated = (location: Location) => {
-    debugLog("useLocationManagement: New location created", location);
     setUserLocations(prev => [...prev, location]);
     setSelectedLocation(location);
     setLocationCabins([]);

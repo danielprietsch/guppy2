@@ -1,189 +1,231 @@
 
-import { useState } from "react";
-import { Dialog } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Booking, User, Cabin, Location } from "@/lib/types";
+import React, { useState, useEffect } from "react";
 import { cabins, locations } from "@/lib/mock-data";
+import { Cabin, Booking, User, Location } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { toast } from "@/hooks/use-toast";
+import { MapPin } from "lucide-react";
 
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  currentUser: User | null;
-  professionalBookings?: Booking[];
-  onSubmitBookings: (bookings: Booking[]) => void;
+// Função auxiliar para calcular distância entre duas lat/lng com Haversine
+function getDistance(
+  lat1: number, lon1: number, lat2: number, lon2: number
+) {
+  const toRad = (val: number) => (val * Math.PI) / 180;
+  const R = 6371; // km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
-const CabinBookingModal = ({ open, onClose, currentUser, professionalBookings = [], onSubmitBookings }: Props) => {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
-  const [selectedCabin, setSelectedCabin] = useState<string>("");
-  const [selectedLocation, setSelectedLocation] = useState<string>("");
-  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "evening" | "">("");
-  
-  // Filter only available cabins
-  const availableLocations = locations.filter(location => location.active);
-  
-  const filteredCabins = cabins.filter(cabin => {
-    if (!selectedLocation) return false;
-    return cabin.locationId === selectedLocation;
-  });
-  
-  const handleBookCabin = () => {
-    if (!selectedDate || !selectedCabin || !selectedShift || !currentUser) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos",
-        variant: "destructive",
-      });
-      return;
+type Props = {
+  currentUser: User;
+  providerBookings: Booking[];
+  open: boolean;
+  onClose: () => void;
+  onSubmitBookings: (newBookings: Booking[]) => void;
+};
+
+const CabinBookingModal: React.FC<Props> = ({
+  currentUser,
+  providerBookings,
+  open,
+  onClose,
+  onSubmitBookings,
+}) => {
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [errorLocation, setErrorLocation] = useState<string | null>(null);
+  const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
+  const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(null);
+  const [calendarTurn, setCalendarTurn] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+
+  // Obter localização do usuário assim que modal abrir
+  useEffect(() => {
+    if (open) {
+      setSelectedCabin(null);
+      setSelectedDates([]);
+      setCalendarTurn("morning");
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+            setErrorLocation(null);
+          },
+          () => setErrorLocation("Não foi possível acessar sua localização. Habilite a permissão no navegador.")
+        );
+      } else {
+        setErrorLocation("Geolocalização não suportada no navegador.");
+      }
     }
-    
-    // Format date as ISO string for comparison
-    const bookingDateStr = selectedDate.toISOString().split('T')[0];
-    
-    // Check if the cabin is already booked for the selected date and shift
-    const isAlreadyBooked = professionalBookings.some(booking =>
-      booking.cabinId === selectedCabin &&
-      booking.date === bookingDateStr &&
-      booking.shift === selectedShift
-    );
-    
-    if (isAlreadyBooked) {
-      toast({
-        title: "Cabine indisponível",
-        description: "Esta cabine já está reservada para a data e período selecionados.",
-        variant: "destructive",
-      });
-      return;
+  }, [open]);
+
+  // Ordenar cabines por proximidade quando localização estiver disponível
+  useEffect(() => {
+    if (userLocation) {
+      // Cabines com local válido e filtradas por menor distância
+      const cabinsWithLoc = cabins
+        .map((cabin) => {
+          const loc: any = locations.find((l) => l.id === cabin.locationId);
+          // Checar se informações de localização de latitude/longitude existem
+          if (!loc || typeof loc.lat !== "number" || typeof loc.lng !== "number") return null;
+          const dist = getDistance(userLocation.lat, userLocation.lng, loc.lat, loc.lng);
+          return { ...cabin, _distance: dist, _location: loc };
+        })
+        .filter(Boolean) as Array<Cabin & { _distance: number; _location: Location & { lat: number; lng: number } }>;
+      cabinsWithLoc.sort((a, b) => a._distance - b._distance);
+      setFilteredCabins(cabinsWithLoc);
+    } else {
+      setFilteredCabins(cabins);
     }
-    
-    // Create new booking
-    const selectedCabinObj = cabins.find(cabin => cabin.id === selectedCabin);
-    const price = selectedCabinObj?.price || 50; // Default price if not set
-    
-    const newBooking: Booking = {
-      id: `${Date.now()}`,
-      cabinId: selectedCabin,
-      providerId: currentUser.id,
-      date: bookingDateStr,
-      shift: selectedShift,
-      status: "pending",
-      price: price,
-    };
-    
-    // Add the new booking
-    onSubmitBookings([newBooking]);
-    
-    toast({
-      title: "Reserva solicitada",
-      description: "Sua reserva foi solicitada com sucesso e está aguardando confirmação.",
+  }, [userLocation]);
+
+  // Controle de bookings existentes da cabine + turno
+  const getCabinBookings = (cabinId: string) => {
+    const mybookings = providerBookings.filter((b) => b.cabinId === cabinId);
+    const byDayAndShift: { [date: string]: { [turn: string]: boolean } } = {};
+    mybookings.forEach((b) => {
+      if (!byDayAndShift[b.date]) byDayAndShift[b.date] = {};
+      byDayAndShift[b.date][b.shift] = b.status === "confirmed";
     });
-    
-    // Reset form and close modal
-    setSelectedCabin("");
-    setSelectedLocation("");
-    setSelectedShift("");
+    return byDayAndShift;
+  };
+
+  // Reservar múltiplos dias no turno escolhido
+  const handleReserve = () => {
+    if (!selectedDates.length || !selectedCabin) return;
+    const newBookings: Booking[] = selectedDates.map((dt, i) => ({
+      id: `${providerBookings.length + i + 1}`,
+      cabinId: selectedCabin.id,
+      providerId: currentUser.id,
+      date: dt,
+      shift: calendarTurn,
+      status: "confirmed",
+      price: 100,
+    }));
+    onSubmitBookings(newBookings);
+    toast({
+      title: "Reservas realizadas",
+      description: `Foram reservados ${newBookings.length} dias para o turno de ${calendarTurn === "morning" ? "Manhã" : calendarTurn === "afternoon" ? "Tarde" : "Noite"} em "${selectedCabin.name}".`,
+    });
+    setSelectedCabin(null);
+    setSelectedDates([]);
     onClose();
   };
-  
-  const getLocationName = (locationId: string) => {
-    const location = locations.find(loc => loc.id === locationId);
-    return location ? location.name : "Desconhecido";
-  };
-  
+
+  if (!open) return null;
+
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${!open && "hidden"}`}>
-        <div className="fixed inset-0 bg-black/50" onClick={onClose}></div>
-        <div className="bg-white rounded-lg shadow-lg w-full max-w-lg relative z-50 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Reservar Cabine</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Localização</label>
-                <Select
-                  value={selectedLocation}
-                  onValueChange={setSelectedLocation}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma localização" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableLocations.map((location) => (
-                      <SelectItem key={location.id} value={location.id}>
-                        {location.name} - {location.address}, {location.city}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              {selectedLocation && (
-                <div>
-                  <label className="block text-sm font-medium mb-1">Cabine</label>
-                  <Select
-                    value={selectedCabin}
-                    onValueChange={setSelectedCabin}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma cabine" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCabins.map((cabin) => (
-                        <SelectItem key={cabin.id} value={cabin.id}>
-                          {cabin.name} - {getLocationName(cabin.locationId)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Data</label>
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  className="border rounded-md p-2"
-                  disabled={(date) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return date < today;
-                  }}
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-1">Período</label>
-                <Select
-                  value={selectedShift}
-                  onValueChange={(value) => setSelectedShift(value as "morning" | "afternoon" | "evening")}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="morning">Manhã (08:00 - 12:00)</SelectItem>
-                    <SelectItem value="afternoon">Tarde (13:00 - 17:00)</SelectItem>
-                    <SelectItem value="evening">Noite (18:00 - 22:00)</SelectItem>
-                  </SelectContent>
-                </Select>
+    <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
+      <div className="bg-background rounded-lg max-w-2xl w-full p-6 shadow-lg relative">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-4 text-gray-600 hover:text-black text-2xl font-bold"
+          aria-label="Fechar"
+        >
+          ×
+        </button>
+        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <MapPin className="h-5 w-5" /> Reservar Cabine Próxima
+        </h2>
+        {errorLocation && (
+          <div className="mb-4 text-sm text-red-500">{errorLocation}</div>
+        )}
+        {!selectedCabin ? (
+          <>
+            <div className="mb-4">
+              <span className="font-medium">Selecione uma cabine para reservar:</span>
+              <div className="mt-2 flex flex-col gap-2 max-h-60 overflow-auto">
+                {filteredCabins.map((cabin: any) => {
+                  const loc = cabin._location || locations.find((l) => l.id === cabin.locationId);
+                  return (
+                    <button
+                      key={cabin.id}
+                      className="border rounded p-2 flex flex-row items-center text-left hover:bg-primary/10"
+                      onClick={() => setSelectedCabin(cabin)}
+                    >
+                      {/* Imagem à esquerda */}
+                      <img
+                        src={cabin.imageUrl}
+                        alt={cabin.name}
+                        className="w-16 h-16 rounded-md object-cover mr-3 border"
+                      />
+                      <div className="flex-1 flex flex-col">
+                        <span className="font-bold">{cabin.name}</span>
+                        <span className="text-xs text-gray-500">
+                          {loc?.name} - {loc?.city}
+                          {cabin._distance !== undefined &&
+                            <span> &bull; ~{cabin._distance.toFixed(1)} km</span>
+                          }
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-            
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" onClick={onClose}>Cancelar</Button>
-              <Button onClick={handleBookCabin}>Reservar</Button>
+          </>
+        ) : (
+          <div>
+            <div className="mb-4">
+              <span className="font-medium">Cabine selecionada: </span>
+              <span>{selectedCabin.name}</span>
+              <button className="ml-2 text-xs underline text-blue-600" onClick={() => setSelectedCabin(null)}>
+                Voltar
+              </button>
+            </div>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="font-medium">Selecione o turno:</span>
+              <Button
+                variant={calendarTurn === "morning" ? "default" : "outline"}
+                onClick={() => setCalendarTurn("morning")}
+              >
+                Manhã
+              </Button>
+              <Button
+                variant={calendarTurn === "afternoon" ? "default" : "outline"}
+                onClick={() => setCalendarTurn("afternoon")}
+              >
+                Tarde
+              </Button>
+              <Button
+                variant={calendarTurn === "evening" ? "default" : "outline"}
+                onClick={() => setCalendarTurn("evening")}
+              >
+                Noite
+              </Button>
+            </div>
+            <CabinAvailabilityCalendar
+              selectedTurn={calendarTurn}
+              daysBooked={getCabinBookings(selectedCabin.id)}
+              onSelectDates={setSelectedDates}
+              selectedDates={selectedDates}
+            />
+            <div className="flex mt-4 gap-3 justify-end">
+              <Button variant="outline" onClick={() => setSelectedCabin(null)}>
+                Cancelar
+              </Button>
+              <Button
+                disabled={selectedDates.length === 0}
+                onClick={handleReserve}
+              >
+                Reservar dias selecionados
+              </Button>
             </div>
           </div>
-        </div>
+        )}
       </div>
-    </Dialog>
+    </div>
   );
 };
 
 export default CabinBookingModal;
+
+// O ARQUIVO ESTÁ FICANDO MUITO GRANDE. Considere solicitar a refatoração dele!

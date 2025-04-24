@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Json } from "@/integrations/supabase/types";
 import { Scissors } from "lucide-react";
-import { debugLog, debugError } from "@/utils/debugLogger";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
 
@@ -66,21 +64,16 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
-      debugLog("OwnerAddLocationModal: Submitting new location", values);
 
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         toast.error("Usuário não autenticado");
-        debugError("OwnerAddLocationModal: No authenticated user");
         return;
       }
 
-      debugLog("OwnerAddLocationModal: User ID for location creation", user.id);
-      
       const openingHours = { open: "08:00", close: "20:00" };
       
-      // Insert directly with owner_id
       const { data, error } = await supabase
         .from('locations')
         .insert({
@@ -101,13 +94,10 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
 
       if (error) {
         console.error("Erro ao cadastrar local:", error);
-        debugError("OwnerAddLocationModal: Error creating location", error);
         toast.error("Erro ao cadastrar local: " + error.message);
         return;
       }
 
-      debugLog("OwnerAddLocationModal: Location created successfully", data);
-      
       const novoLocation: Location = {
         id: data.id,
         name: data.name,
@@ -119,8 +109,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         openingHours: (data.opening_hours as unknown as { open: string; close: string }) || { open: "09:00", close: "18:00" },
         amenities: data.amenities || [],
         imageUrl: data.image_url,
-        description: data.description || "",
-        active: data.active
+        description: data.description || ""
       };
 
       toast.success("Local cadastrado com sucesso!");
@@ -134,7 +123,6 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       setPreviewImage(null);
     } catch (error: any) {
       console.error("Erro ao processar cadastro:", error);
-      debugError("OwnerAddLocationModal: Error processing location creation", error);
       toast.error("Erro ao cadastrar local: " + error.message);
     } finally {
       setIsSubmitting(false);

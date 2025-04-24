@@ -21,8 +21,8 @@ export const NavigationLinks = () => {
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link to="/professionals" className="text-sm font-medium hover:underline">
-            Profissionais
+          <Link to="/providers" className="text-sm font-medium hover:underline">
+            Prestadores
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>

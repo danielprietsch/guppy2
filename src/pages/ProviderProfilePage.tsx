@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Form,
   FormControl,
@@ -13,6 +14,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -26,9 +28,11 @@ const formSchema = z.object({
     message: "Por favor, insira um email válido.",
   }),
   phoneNumber: z.string().optional(),
+  specialties: z.string().optional(),
+  avatarUrl: z.string().optional(),
 });
 
-const ClientProfilePage = () => {
+const ProviderProfilePage = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,8 +49,8 @@ const ClientProfilePage = () => {
     try {
       const user = JSON.parse(storedUser) as User;
       
-      // Check if user is client type
-      if (user.userType !== "client") {
+      // Check if user is provider type
+      if (user.userType !== "provider") {
         navigate("/");
         toast({
           title: "Acesso restrito",
@@ -67,9 +71,11 @@ const ClientProfilePage = () => {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: currentUser?.name || "",
-      email: currentUser?.email || "",
-      phoneNumber: currentUser?.phoneNumber || "",
+      name: "",
+      email: "",
+      phoneNumber: "",
+      specialties: "",
+      avatarUrl: "",
     },
   });
 
@@ -80,6 +86,8 @@ const ClientProfilePage = () => {
         name: currentUser.name,
         email: currentUser.email,
         phoneNumber: currentUser.phoneNumber || "",
+        specialties: currentUser.specialties?.join(", ") || "",
+        avatarUrl: currentUser.avatarUrl || "",
       });
     }
   }, [currentUser, form]);
@@ -96,6 +104,8 @@ const ClientProfilePage = () => {
           name: values.name,
           email: values.email,
           phoneNumber: values.phoneNumber,
+          specialties: values.specialties ? values.specialties.split(",").map(s => s.trim()) : [],
+          avatarUrl: values.avatarUrl,
         };
         
         localStorage.setItem("currentUser", JSON.stringify(updatedUser));
@@ -130,7 +140,7 @@ const ClientProfilePage = () => {
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-2">Meu Perfil</h1>
       <p className="text-muted-foreground mb-8">
-        Atualize suas informações pessoais
+        Atualize suas informações profissionais
       </p>
 
       <div className="max-w-2xl mx-auto">
@@ -178,6 +188,36 @@ const ClientProfilePage = () => {
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="specialties"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Especialidades</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Manicure, Cabeleireiro, Maquiagem..." {...field} />
+                  </FormControl>
+                  <FormDescription>Separe suas especialidades por vírgulas</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="avatarUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>URL da foto de perfil</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://exemplo.com/sua-foto.jpg" {...field} />
+                  </FormControl>
+                  <FormDescription>Insira uma URL válida para uma imagem</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="flex justify-end gap-4">
               <Button 
                 variant="outline" 
@@ -199,4 +239,4 @@ const ClientProfilePage = () => {
   );
 };
 
-export default ClientProfilePage;
+export default ProviderProfilePage;

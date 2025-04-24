@@ -30,8 +30,8 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   const dashboardRoute = 
     currentUser.userType === "global_admin"
       ? "/admin/global"
-      : currentUser.userType === "professional"
-      ? "/professional/dashboard"
+      : currentUser.userType === "provider"
+      ? "/provider/dashboard"
       : currentUser.userType === "owner"
       ? "/owner/dashboard"
       : "/client/dashboard";
@@ -39,10 +39,10 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   const profileRoute = 
     currentUser.userType === "global_admin"
       ? "/admin/profile"
-      : currentUser.userType === "professional"
-      ? "/professional/profile"
+      : currentUser.userType === "provider"
+      ? "/provider/profile"
       : currentUser.userType === "owner"
-      ? "/owner/profile"
+      ? "/profile"
       : "/client/profile";
 
   // Extract first letter of name for avatar fallback
@@ -54,7 +54,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   // Translate user type
   const userTypeLabel = {
     client: "Cliente",
-    professional: "Profissional",
+    provider: "Prestador",
     owner: "Franqueado",
     global_admin: "Administrador Global"
   }[currentUser.userType] || "Usuário";

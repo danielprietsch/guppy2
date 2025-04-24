@@ -5,7 +5,7 @@ import { bookings, appointments, services, cabins, locations } from "@/lib/mock-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { Calendar, Clock, DollarSign, Plus, Users, Search } from "lucide-react";
+import { Calendar, Clock, DollarSign, Plus, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import CabinBookingModal from "@/components/CabinBookingModal";
@@ -14,12 +14,12 @@ import { debugLog, debugError } from "@/utils/debugLogger";
 
 import { users } from "@/lib/mock-data";
 
-const ProfessionalDashboardPage = () => {
+const ProviderDashboardPage = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [professionalBookings, setProfessionalBookings] = useState<Booking[]>([]);
-  const [professionalAppointments, setProfessionalAppointments] = useState<Appointment[]>([]);
-  const [professionalServices, setProfessionalServices] = useState<Service[]>([]);
+  const [providerBookings, setProviderBookings] = useState<Booking[]>([]);
+  const [providerAppointments, setProviderAppointments] = useState<Appointment[]>([]);
+  const [providerServices, setProviderServices] = useState<Service[]>([]);
   const [isAddingService, setIsAddingService] = useState(false);
   const [newService, setNewService] = useState<Partial<Service>>({
     name: "",
@@ -34,10 +34,10 @@ const ProfessionalDashboardPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        debugLog("ProfessionalDashboardPage: Checking session...");
+        debugLog("ProviderDashboardPage: Checking session...");
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          debugLog("ProfessionalDashboardPage: No session found, redirecting to login");
+          debugLog("ProviderDashboardPage: No session found, redirecting to login");
           toast({
             title: "Acesso Negado",
             description: "Você precisa estar logado para acessar esta página.",
@@ -47,30 +47,29 @@ const ProfessionalDashboardPage = () => {
           return;
         }
         
-        debugLog("ProfessionalDashboardPage: Session found, user:", session.user);
+        debugLog("ProviderDashboardPage: Session found, user:", session.user);
         
-        let userType = session.user.user_metadata?.userType;
-        if (userType === 'provider') {
-          userType = 'professional';
-        }
-        
-        if (userType && userType === 'professional') {
-          debugLog("ProfessionalDashboardPage: User is professional according to metadata");
+        // First check user metadata
+        const userType = session.user.user_metadata?.userType;
+        if (userType && userType === 'provider') {
+          debugLog("ProviderDashboardPage: User is provider according to metadata");
           
+          // Set current user from metadata
           setCurrentUser({
             id: session.user.id,
-            name: session.user.user_metadata?.name || 'Profissional',
+            name: session.user.user_metadata?.name || 'Prestador',
             email: session.user.email || '',
-            userType: 'professional',
+            userType: 'provider',
             avatarUrl: session.user.user_metadata?.avatar_url,
           });
           
-          loadProfessionalData(session.user.id);
+          loadProviderData(session.user.id);
           setIsLoading(false);
-          return;
+          return; // User is provider, allow access
         }
 
         try {
+          // Then check profile if metadata doesn't confirm
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
@@ -78,29 +77,32 @@ const ProfessionalDashboardPage = () => {
             .maybeSingle();
 
           if (error) {
-            debugError("ProfessionalDashboardPage: Error fetching profile:", error);
-            if (userType === 'professional') {
-              debugLog("ProfessionalDashboardPage: Falling back to metadata user type");
+            debugError("ProviderDashboardPage: Error fetching profile:", error);
+            // If there's an error querying profiles but metadata indicates provider, allow access
+            if (userType === 'provider') {
+              debugLog("ProviderDashboardPage: Falling back to metadata user type");
               
+              // Set current user from metadata
               setCurrentUser({
                 id: session.user.id,
-                name: session.user.user_metadata?.name || 'Profissional',
+                name: session.user.user_metadata?.name || 'Prestador',
                 email: session.user.email || '',
-                userType: 'professional',
+                userType: 'provider',
                 avatarUrl: session.user.user_metadata?.avatar_url,
               });
               
-              loadProfessionalData(session.user.id);
+              loadProviderData(session.user.id);
               setIsLoading(false);
               return;
             }
           }
 
-          debugLog("ProfessionalDashboardPage: Profile data:", profile);
+          debugLog("ProviderDashboardPage: Profile data:", profile);
 
-          if (!profile || profile.user_type !== 'professional') {
-            if (userType !== 'professional') {
-              debugLog("ProfessionalDashboardPage: User is not professional, redirecting");
+          if (!profile || profile.user_type !== 'provider') {
+            // Only redirect if we can confirm user is not a provider
+            if (userType !== 'provider') {
+              debugLog("ProviderDashboardPage: User is not provider, redirecting");
               toast({
                 title: "Acesso Negado",
                 description: "Você não tem permissão para acessar esta área.",
@@ -109,41 +111,43 @@ const ProfessionalDashboardPage = () => {
               navigate("/");
               return;
             } else {
+              // Metadata says provider but no profile, use metadata
               setCurrentUser({
-                id: profile.id,
-                name: profile.name || session.user.user_metadata?.name || 'Profissional',
-                email: profile.email || session.user.email || '',
-                userType: 'professional',
-                avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
-                phoneNumber: profile.phone_number
+                id: session.user.id,
+                name: session.user.user_metadata?.name || 'Prestador',
+                email: session.user.email || '',
+                userType: 'provider',
+                avatarUrl: session.user.user_metadata?.avatar_url,
               });
               
-              loadProfessionalData(session.user.id);
+              loadProviderData(session.user.id);
             }
           } else {
+            // Profile exists and confirms provider
             setCurrentUser({
               id: profile.id,
-              name: profile.name || session.user.user_metadata?.name || 'Profissional',
+              name: profile.name || session.user.user_metadata?.name || 'Prestador',
               email: profile.email || session.user.email || '',
-              userType: 'professional',
+              userType: 'provider',
               avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
               phoneNumber: profile.phone_number
             });
             
-            loadProfessionalData(session.user.id);
+            loadProviderData(session.user.id);
           }
         } catch (error) {
-          debugError("ProfessionalDashboardPage: Error in profile check:", error);
-          if (userType === 'professional') {
+          // If we can't determine from profile but metadata says provider, allow access
+          debugError("ProviderDashboardPage: Error in profile check:", error);
+          if (userType === 'provider') {
             setCurrentUser({
               id: session.user.id,
-              name: session.user.user_metadata?.name || 'Profissional',
+              name: session.user.user_metadata?.name || 'Prestador',
               email: session.user.email || '',
-              userType: 'professional',
+              userType: 'provider',
               avatarUrl: session.user.user_metadata?.avatar_url,
             });
             
-            loadProfessionalData(session.user.id);
+            loadProviderData(session.user.id);
             setIsLoading(false);
             return;
           }
@@ -153,7 +157,7 @@ const ProfessionalDashboardPage = () => {
           setIsLoading(false);
         }
       } catch (error) {
-        debugError("ProfessionalDashboardPage: Error checking session:", error);
+        debugError("ProviderDashboardPage: Error checking session:", error);
         navigate("/login");
         setIsLoading(false);
       }
@@ -162,21 +166,22 @@ const ProfessionalDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  const loadProfessionalData = (userId: string) => {
+  const loadProviderData = (userId: string) => {
+    // Load the provider's data from mock or Supabase
     const userBookings = bookings.filter(
       (booking) => booking.providerId === userId
     );
-    setProfessionalBookings(userBookings);
+    setProviderBookings(userBookings);
     
     const userAppointments = appointments.filter(
       (appointment) => appointment.providerId === userId
     );
-    setProfessionalAppointments(userAppointments);
+    setProviderAppointments(userAppointments);
     
     const userServices = services.filter(
       (service) => service.providerId === userId
     );
-    setProfessionalServices(userServices);
+    setProviderServices(userServices);
   };
 
   const getCabinInfo = (cabinId: string) => {
@@ -230,7 +235,7 @@ const ProfessionalDashboardPage = () => {
       category: newService.category || "Outros",
     };
     
-    setProfessionalServices([...professionalServices, service]);
+    setProviderServices([...providerServices, service]);
     
     toast({
       title: "Serviço adicionado",
@@ -248,7 +253,7 @@ const ProfessionalDashboardPage = () => {
   };
 
   const handleAddBookingsFromModal = (newBookings: Booking[]) => {
-    setProfessionalBookings((prev) => [...prev, ...newBookings]);
+    setProviderBookings((prev) => [...prev, ...newBookings]);
   };
 
   if (isLoading) {
@@ -277,15 +282,15 @@ const ProfessionalDashboardPage = () => {
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Olá, {currentUser?.name}</h1>
+          <h1 className="text-3xl font-bold">Olá, {currentUser.name}</h1>
           <p className="mt-1 text-gray-500">
-            Bem-vindo ao seu painel de controle de Profissional
+            Bem-vindo ao seu painel de controle de Prestador de Serviço
           </p>
         </div>
         <Button
           variant="outline"
           className="mt-4 md:mt-0"
-          onClick={() => handleLogout()}
+          onClick={handleLogout}
         >
           Sair
         </Button>
@@ -298,7 +303,7 @@ const ProfessionalDashboardPage = () => {
               <Calendar className="h-6 w-6 text-primary" />
             </div>
             <h3 className="font-medium text-center">Reservas de Cabines</h3>
-            <div className="mt-2 text-3xl font-bold">{professionalBookings.length}</div>
+            <div className="mt-2 text-3xl font-bold">{providerBookings.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -307,7 +312,7 @@ const ProfessionalDashboardPage = () => {
               <Users className="h-6 w-6 text-primary" />
             </div>
             <h3 className="font-medium text-center">Agendamentos de Clientes</h3>
-            <div className="mt-2 text-3xl font-bold">{professionalAppointments.length}</div>
+            <div className="mt-2 text-3xl font-bold">{providerAppointments.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -318,7 +323,7 @@ const ProfessionalDashboardPage = () => {
             <h3 className="font-medium text-center">Faturamento do Mês</h3>
             <div className="mt-2 text-3xl font-bold">
               R$ {(
-                professionalAppointments.reduce(
+                providerAppointments.reduce(
                   (sum, appointment) => sum + appointment.price,
                   0
                 ) || 0
@@ -342,26 +347,23 @@ const ProfessionalDashboardPage = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Minhas Reservas de Cabines</CardTitle>
                 <Button
-                  onClick={() => navigate("/search-cabins")}
+                  onClick={() => setModalReserveOpen(true)}
                   variant="default"
                 >
-                  <Search className="h-4 w-4 mr-2" />
-                  Procurar Cabines
+                  Reservar Nova Cabine
                 </Button>
               </CardHeader>
               <CardContent>
-                {modalReserveOpen && (
-                  <CabinBookingModal
-                    open={modalReserveOpen}
-                    onClose={() => setModalReserveOpen(false)}
-                    currentUser={currentUser}
-                    professionalBookings={professionalBookings}
-                    onSubmitBookings={handleAddBookingsFromModal}
-                  />
-                )}
-                {professionalBookings.length > 0 ? (
+                <CabinBookingModal
+                  open={modalReserveOpen}
+                  onClose={() => setModalReserveOpen(false)}
+                  currentUser={currentUser}
+                  providerBookings={providerBookings}
+                  onSubmitBookings={handleAddBookingsFromModal}
+                />
+                {providerBookings.length > 0 ? (
                   <div className="space-y-4">
-                    {professionalBookings.map((booking) => {
+                    {providerBookings.map((booking) => {
                       const cabinInfo = getCabinInfo(booking.cabinId);
                       return (
                         <div
@@ -412,10 +414,9 @@ const ProfessionalDashboardPage = () => {
                     </p>
                     <Button
                       className="mt-4"
-                      onClick={() => navigate("/search-cabins")}
+                      onClick={() => setModalReserveOpen(true)}
                     >
-                      <Search className="h-4 w-4 mr-2" />
-                      Procurar Cabines
+                      Reservar Cabine
                     </Button>
                   </div>
                 )}
@@ -429,9 +430,9 @@ const ProfessionalDashboardPage = () => {
                 <CardTitle>Agendamentos de Clientes</CardTitle>
               </CardHeader>
               <CardContent>
-                {professionalAppointments.length > 0 ? (
+                {providerAppointments.length > 0 ? (
                   <div className="space-y-4">
-                    {professionalAppointments.map((appointment) => (
+                    {providerAppointments.map((appointment) => (
                       <div
                         key={appointment.id}
                         className="rounded-lg border p-4 grid md:grid-cols-[1fr_auto]"
@@ -579,9 +580,9 @@ const ProfessionalDashboardPage = () => {
                   </div>
                 ) : (
                   <>
-                    {professionalServices.length > 0 ? (
+                    {providerServices.length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {professionalServices.map((service) => (
+                        {providerServices.map((service) => (
                           <div
                             key={service.id}
                             className="rounded-lg border p-4"
@@ -725,4 +726,4 @@ const ProfessionalDashboardPage = () => {
   );
 };
 
-export default ProfessionalDashboardPage;
+export default ProviderDashboardPage;

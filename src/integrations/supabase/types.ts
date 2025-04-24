@@ -9,6 +9,44 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_approvals: {
+        Row: {
+          approved_by: string | null
+          created_at: string | null
+          id: string
+          location_id: string | null
+          notes: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_approvals_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: true
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_id: string | null
@@ -16,7 +54,7 @@ export type Database = {
           date: string
           id: string
           price: number
-          professional_id: string | null
+          provider_id: string | null
           service_id: string | null
           status: string | null
           time: string
@@ -28,7 +66,7 @@ export type Database = {
           date: string
           id?: string
           price: number
-          professional_id?: string | null
+          provider_id?: string | null
           service_id?: string | null
           status?: string | null
           time: string
@@ -40,7 +78,7 @@ export type Database = {
           date?: string
           id?: string
           price?: number
-          professional_id?: string | null
+          provider_id?: string | null
           service_id?: string | null
           status?: string | null
           time?: string
@@ -55,7 +93,7 @@ export type Database = {
           date: string
           id: string
           price: number
-          professional_id: string | null
+          provider_id: string | null
           shift: string
           status: string | null
           updated_at: string | null
@@ -66,7 +104,7 @@ export type Database = {
           date: string
           id?: string
           price: number
-          professional_id?: string | null
+          provider_id?: string | null
           shift: string
           status?: string | null
           updated_at?: string | null
@@ -77,7 +115,7 @@ export type Database = {
           date?: string
           id?: string
           price?: number
-          professional_id?: string | null
+          provider_id?: string | null
           shift?: string
           status?: string | null
           updated_at?: string | null
@@ -144,7 +182,6 @@ export type Database = {
           active: boolean | null
           address: string
           amenities: string[] | null
-          approval_status: string
           cabins_count: number | null
           city: string
           created_at: string | null
@@ -162,7 +199,6 @@ export type Database = {
           active?: boolean | null
           address: string
           amenities?: string[] | null
-          approval_status?: string
           cabins_count?: number | null
           city: string
           created_at?: string | null
@@ -180,7 +216,6 @@ export type Database = {
           active?: boolean | null
           address?: string
           amenities?: string[] | null
-          approval_status?: string
           cabins_count?: number | null
           city?: string
           created_at?: string | null
@@ -198,49 +233,34 @@ export type Database = {
       }
       profiles: {
         Row: {
-          address: string | null
           avatar_url: string | null
-          city: string | null
-          cpf: string | null
           created_at: string | null
           email: string | null
           id: string
           name: string | null
           phone_number: string | null
-          state: string | null
           updated_at: string | null
           user_type: string | null
-          zip_code: string | null
         }
         Insert: {
-          address?: string | null
           avatar_url?: string | null
-          city?: string | null
-          cpf?: string | null
           created_at?: string | null
           email?: string | null
           id: string
           name?: string | null
           phone_number?: string | null
-          state?: string | null
           updated_at?: string | null
           user_type?: string | null
-          zip_code?: string | null
         }
         Update: {
-          address?: string | null
           avatar_url?: string | null
-          city?: string | null
-          cpf?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
           name?: string | null
           phone_number?: string | null
-          state?: string | null
           updated_at?: string | null
           user_type?: string | null
-          zip_code?: string | null
         }
         Relationships: []
       }
@@ -251,7 +271,7 @@ export type Database = {
           created_at: string | null
           date: string | null
           id: string
-          professional_id: string | null
+          provider_id: string | null
           rating: number
           updated_at: string | null
         }
@@ -261,7 +281,7 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           id?: string
-          professional_id?: string | null
+          provider_id?: string | null
           rating: number
           updated_at?: string | null
         }
@@ -271,7 +291,7 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           id?: string
-          professional_id?: string | null
+          provider_id?: string | null
           rating?: number
           updated_at?: string | null
         }
@@ -286,7 +306,7 @@ export type Database = {
           id: string
           name: string
           price: number
-          professional_id: string | null
+          provider_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -297,7 +317,7 @@ export type Database = {
           id?: string
           name: string
           price: number
-          professional_id?: string | null
+          provider_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -308,7 +328,7 @@ export type Database = {
           id?: string
           name?: string
           price?: number
-          professional_id?: string | null
+          provider_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -363,44 +383,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_request_approval: {
-        Args: { user_id: string; location_id: string }
-        Returns: boolean
-      }
-      check_location_ownership: {
-        Args: { loc_id: string; user_id: string }
-        Returns: boolean
-      }
-      create_booking: {
-        Args: {
-          cabin_id: string
-          professional_id: string
-          date: string
-          shift: string
-          price: number
-          status?: string
-        }
-        Returns: string
-      }
       get_allowed_user_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
-      }
-      get_profile_user_type: {
-        Args: { user_id: string }
-        Returns: string
-      }
-      is_global_admin: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      is_user_owner: {
-        Args: { user_id: string }
-        Returns: boolean
-      }
-      update_location_approval_status: {
-        Args: { location_id: string; new_status: string; admin_id: string }
-        Returns: boolean
       }
     }
     Enums: {
