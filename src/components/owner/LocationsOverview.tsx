@@ -122,11 +122,11 @@ export const LocationsOverview = ({
                   {approvalStatus === "APROVADO" ? (
                     <Badge className="bg-green-500">APROVADO</Badge>
                   ) : approvalStatus === "PENDENTE" ? (
-                    <Badge variant="secondary" className="bg-yellow-500 text-white">PENDENTE</Badge>
+                    <Badge variant="secondary" className="bg-yellow-500 text-white">AGUARDANDO APROVAÇÃO</Badge>
                   ) : approvalStatus === "REJEITADO" ? (
                     <Badge variant="destructive">REJEITADO</Badge>
                   ) : (
-                    <Badge variant="outline">NÃO SOLICITADO</Badge>
+                    <Badge variant="outline">INATIVO</Badge>
                   )}
                 </div>
                 
@@ -134,16 +134,25 @@ export const LocationsOverview = ({
                   <Button 
                     onClick={handleRequestApproval}
                     disabled={isRequestingApproval}
+                    className="bg-primary hover:bg-primary/90"
                   >
-                    Solicitar Aprovação do Local
+                    {isRequestingApproval ? "Enviando..." : "Solicitar Aprovação do Local"}
                   </Button>
                 )}
               </div>
 
               {approvalStatus === "PENDENTE" && (
-                <Alert className="mt-4">
-                  <AlertDescription>
-                    Seu local está em análise. Você será notificado quando for aprovado.
+                <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
+                  <AlertDescription className="text-yellow-800">
+                    Seu local está em análise. Você será notificado quando houver uma decisão.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {approvalStatus === "REJEITADO" && (
+                <Alert className="mt-4 border-red-500/50 bg-red-500/10">
+                  <AlertDescription className="text-red-800">
+                    Seu local foi rejeitado. Por favor, verifique as informações e tente novamente.
                   </AlertDescription>
                 </Alert>
               )}
