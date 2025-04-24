@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import LocationCard from "@/components/LocationCard";
 import { Input } from "@/components/ui/input";
@@ -15,17 +16,30 @@ const LocationsPage = () => {
     const fetchLocations = async () => {
       try {
         debugLog("LocationsPage: Fetching locations");
-        const { data, error } = await supabase
+        // First get all active locations
+        const { data: locationsData, error: locationsError } = await supabase
           .from('locations')
           .select('*')
+          .eq('active', true)
           .order('name');
           
-        if (error) {
-          debugError("LocationsPage: Error fetching locations:", error);
+        if (locationsError) {
+          debugError("LocationsPage: Error fetching locations:", locationsError);
           return;
         }
 
-        const transformedLocations: Location[] = data.map(location => {
+        // For each location, fetch the actual count of cabins
+        const enhancedLocations = await Promise.all(locationsData.map(async (location) => {
+          // Get cabins count for this location
+          const { count, error: cabinsError } = await supabase
+            .from('cabins')
+            .select('*', { count: 'exact', head: true })
+            .eq('location_id', location.id);
+            
+          if (cabinsError) {
+            debugError(`LocationsPage: Error fetching cabins for location ${location.id}:`, cabinsError);
+          }
+          
           // Parse opening_hours safely
           let openingHours = { open: "09:00", close: "18:00" };
           
@@ -62,16 +76,16 @@ const LocationsPage = () => {
             city: location.city,
             state: location.state,
             zipCode: location.zip_code,
-            cabinsCount: location.cabins_count || 0,
+            cabinsCount: count || 0, // Use actual count instead of location.cabins_count
             openingHours: openingHours,
             amenities: location.amenities || [],
             imageUrl: location.image_url || "",
             description: location.description || "",
             active: location.active
           };
-        });
+        }));
 
-        setLocations(transformedLocations);
+        setLocations(enhancedLocations);
       } catch (error) {
         debugError("LocationsPage: Error processing locations:", error);
       } finally {
