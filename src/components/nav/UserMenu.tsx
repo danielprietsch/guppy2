@@ -37,10 +37,12 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
       : "/client/dashboard";
       
   const profileRoute = 
-    currentUser.userType === "provider"
+    currentUser.userType === "global_admin"
+      ? "/admin/profile"
+      : currentUser.userType === "provider"
       ? "/provider/profile"
       : currentUser.userType === "owner"
-      ? "/profile" // Corrigido para "/profile" em vez de "/owner/profile"
+      ? "/profile"
       : "/client/profile";
 
   // Extract first letter of name for avatar fallback
@@ -57,6 +59,9 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
       break;
     case "owner":
       userTypeLabel = "Franqueado";
+      break;
+    case "global_admin":
+      userTypeLabel = "Administrador Global";
       break;
     default:
       userTypeLabel = "Usuário";
