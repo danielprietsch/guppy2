@@ -41,31 +41,40 @@ export const PermissionsManager = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        // Fetch all users from the profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, email, name, user_type')
-          .order('user_type', { ascending: true });
         
-        if (error) {
-          debugError("PermissionsManager: Error fetching users:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar os usuários.",
-            variant: "destructive",
-          });
-          return;
+        // Using the security definer function to fetch users via RPC
+        // This avoids the infinite recursion issue
+        const { data: userData, error: userError } = await supabase.rpc('get_all_users');
+        
+        if (userError) {
+          debugError("PermissionsManager: Error fetching users:", userError);
+          
+          // Fallback to a direct fetch without using profiles RLS
+          // Using a security definer function should be preferable, but this is a workaround
+          // if the function doesn't exist yet
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('profiles')
+            .select('id, email, name, user_type')
+            .order('user_type', { ascending: true });
+            
+          if (fallbackError) {
+            toast({
+              title: "Erro",
+              description: "Não foi possível carregar os usuários.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          setUsers(fallbackData || []);
+        } else {
+          setUsers(userData || []);
         }
-
-        setUsers(data || []);
-        
-        // In a real implementation, we would fetch permissions from a table
-        // For now, we'll use the mock data defined in the state
         
         // Fetch user permissions from the user_roles table
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
-          .select('*');
+          .select('user_id, role');
           
         if (rolesError) {
           debugError("PermissionsManager: Error fetching user roles:", rolesError);
@@ -128,14 +137,43 @@ export const PermissionsManager = () => {
     try {
       setSavingPermissions(true);
       
-      // In a real implementation, we would need to:
-      // 1. Delete all existing permissions for these users
-      // 2. Insert the new permissions
+      const currentUserId = (await supabase.auth.getSession()).data.session?.user?.id;
       
-      // Here we'll log the changes that would be made
-      debugLog("PermissionsManager: Would save permissions:", userPermissions);
+      if (!currentUserId) {
+        toast({
+          title: "Erro",
+          description: "Você precisa estar logado para salvar as permissões.",
+          variant: "destructive",
+        });
+        return;
+      }
       
-      // Mock successful save
+      // First, delete all existing permissions for these users
+      const { error: deleteError } = await supabase
+        .from('user_roles')
+        .delete()
+        .in('user_id', users.map(user => user.id));
+        
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      // Then insert the new permissions
+      if (userPermissions.length > 0) {
+        const { error: insertError } = await supabase
+          .from('user_roles')
+          .insert(
+            userPermissions.map(up => ({
+              user_id: up.user_id,
+              role: up.permission_id
+            }))
+          );
+          
+        if (insertError) {
+          throw insertError;
+        }
+      }
+      
       toast({
         title: "Sucesso",
         description: "Permissões atualizadas com sucesso.",
