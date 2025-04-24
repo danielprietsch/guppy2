@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -9,6 +10,7 @@ export interface User {
   bio?: string;
   companyName?: string;
   cnpj?: string;
+  ownedLocationIds?: string[]; // Added this property
 }
 
 export interface Location {
@@ -48,7 +50,8 @@ export interface Cabin {
 
 export interface Service {
   id: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   name: string;
   description: string;
   duration: number;
@@ -59,7 +62,8 @@ export interface Service {
 export interface Booking {
   id: string;
   cabinId: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   date: string;
   shift: "morning" | "afternoon" | "evening";
   status: "pending" | "confirmed" | "cancelled";
@@ -68,7 +72,8 @@ export interface Booking {
 
 export interface Appointment {
   id: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   clientId: string;
   serviceId: string;
   date: string;
@@ -79,7 +84,8 @@ export interface Appointment {
 
 export interface Review {
   id: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   clientId: string;
   rating: number;
   comment?: string;

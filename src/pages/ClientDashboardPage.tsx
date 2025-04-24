@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { triggerApprovalRequest } from "@/utils/triggerApprovalRequest";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const ClientDashboardPage = () => {
   const [userName, setUserName] = useState("");
   const [userLocations, setUserLocations] = useState<any[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
+  const [processingLocationId, setProcessingLocationId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -91,10 +93,7 @@ const ClientDashboardPage = () => {
           id,
           name,
           active,
-          admin_approvals (
-            id,
-            status
-          )
+          cabins_count
         `)
         .eq('owner_id', userId)
         .order('created_at', { ascending: false });
@@ -118,79 +117,27 @@ const ClientDashboardPage = () => {
     }
   };
 
-  const handleRequestApproval = async (locationId: string) => {
+  const handleToggleVisibility = async (locationId: string, cabinsCount: number) => {
     try {
-      // Check if there's already an approval request
-      const { data: existingApproval, error: checkError } = await supabase
-        .from('admin_approvals')
-        .select('id, status')
-        .eq('location_id', locationId)
-        .maybeSingle();
-        
-      if (checkError) {
-        debugError("ClientDashboardPage: Error checking existing approval:", checkError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível verificar solicitações existentes.",
-          variant: "destructive",
-        });
-        return;
+      setProcessingLocationId(locationId);
+      const result = await triggerApprovalRequest(locationId, cabinsCount);
+      
+      if (result.success) {
+        // Refresh locations to get the updated status
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await fetchUserLocations(session.user.id);
+        }
       }
-      
-      // If there's an existing approved request, don't create a new one
-      if (existingApproval?.status === "APROVADO") {
-        toast({
-          title: "Aviso",
-          description: "Este local já foi aprovado.",
-        });
-        return;
-      }
-      
-      // If there's a pending request, don't create a new one
-      if (existingApproval?.status === "PENDENTE") {
-        toast({
-          title: "Aviso",
-          description: "Já existe uma solicitação de aprovação pendente para este local.",
-        });
-        return;
-      }
-      
-      // Create a new approval request
-      const { error } = await supabase
-        .from('admin_approvals')
-        .insert({
-          location_id: locationId,
-          status: "PENDENTE"
-        });
-        
-      if (error) {
-        debugError("ClientDashboardPage: Error creating approval request:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível solicitar a aprovação do local.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: "Solicitação de aprovação enviada com sucesso.",
-      });
-      
-      // Refresh locations
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetchUserLocations(session.user.id);
-      }
-      
     } catch (error) {
-      debugError("ClientDashboardPage: Error in handleRequestApproval:", error);
+      debugError("ClientDashboardPage: Error in handleToggleVisibility:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao solicitar a aprovação.",
+        description: "Ocorreu um erro ao alterar a visibilidade do local.",
         variant: "destructive",
       });
+    } finally {
+      setProcessingLocationId(null);
     }
   };
 
@@ -260,37 +207,38 @@ const ClientDashboardPage = () => {
             <h2 className="text-2xl font-semibold mb-4">Meus Locais</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userLocations.map((location) => {
-                const approvalStatus = location.admin_approvals?.[0]?.status;
-                const isApproved = location.active || approvalStatus === "APROVADO";
-                const hasPendingRequest = approvalStatus === "PENDENTE";
+                const isActive = location.active || false;
+                const hasCabins = (location.cabins_count || 0) > 0;
                 
                 return (
                   <Card key={location.id} className="overflow-hidden">
                     <CardContent className="p-6">
                       <h3 className="font-medium text-lg mb-2">{location.name}</h3>
                       <div className="flex items-center mb-4">
-                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isApproved ? 'bg-green-500' : 'bg-amber-500'}`}></span>
-                        <span className="text-sm">{isApproved ? 'Aprovado' : 'Aguardando Aprovação'}</span>
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isActive ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                        <span className="text-sm">{isActive ? 'Visível' : 'Oculto'}</span>
                       </div>
                       
-                      {!isApproved && !hasPendingRequest && (
-                        <Button 
-                          onClick={() => handleRequestApproval(location.id)}
-                          className="w-full mt-2"
-                        >
-                          Solicitar Aprovação
-                        </Button>
+                      {!hasCabins && (
+                        <div className="text-amber-500 text-sm mb-4">
+                          <p>Adicione pelo menos uma cabine para tornar este local visível.</p>
+                        </div>
                       )}
                       
-                      {hasPendingRequest && (
-                        <Button 
-                          disabled
-                          variant="outline"
-                          className="w-full mt-2"
-                        >
-                          Solicitação Pendente
-                        </Button>
-                      )}
+                      <Button 
+                        onClick={() => handleToggleVisibility(location.id, location.cabins_count || 0)}
+                        className="w-full mt-2"
+                        variant={isActive ? "outline" : "default"}
+                        disabled={processingLocationId === location.id || (!hasCabins && !isActive)}
+                      >
+                        {processingLocationId === location.id ? (
+                          "Processando..."
+                        ) : isActive ? (
+                          "Ocultar Local"
+                        ) : (
+                          "Tornar Visível"
+                        )}
+                      </Button>
                     </CardContent>
                   </Card>
                 );
