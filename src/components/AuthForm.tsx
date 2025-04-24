@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Scissors, User } from "lucide-react";
+import { Scissors, User, Store, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type AuthFormMode = "login" | "register";
