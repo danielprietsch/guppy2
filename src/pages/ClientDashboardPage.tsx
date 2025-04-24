@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
+import { addAdminRole } from "@/utils/adminUtils";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
@@ -62,6 +64,7 @@ const ClientDashboardPage = () => {
         debugLog(`ClientDashboardPage: Setting username to ${name}`);
         setUserName(name);
 
+        // Check for admin role
         await checkAdminRole(session.user.id);
       } catch (error) {
         debugError("ClientDashboardPage: Authentication verification error:", error);
@@ -82,6 +85,15 @@ const ClientDashboardPage = () => {
   const checkAdminRole = async (userId: string) => {
     try {
       debugLog("ClientDashboardPage: Checking admin role for user", userId);
+      
+      // First, try to make the user an admin if they aren't already
+      if (userId) {
+        debugLog("ClientDashboardPage: Ensuring user has admin role");
+        const adminResult = await addAdminRole(userId);
+        debugLog("ClientDashboardPage: Admin role addition result:", adminResult);
+      }
+      
+      // Now check for admin role
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
