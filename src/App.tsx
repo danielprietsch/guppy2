@@ -7,7 +7,7 @@ import NotFound from "@/pages/NotFound";
 import ProfessionalDashboardPage from "@/pages/ProfessionalDashboardPage";
 import ClientDashboardPage from "@/pages/ClientDashboardPage";
 import OwnerDashboardPage from "@/pages/OwnerDashboardPage";
-import ProfilePage from "@/pages/OwnerProfilePage";
+import OwnerProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import LocationsPage from "@/pages/LocationsPage";
@@ -55,8 +55,12 @@ const router = createBrowserRouter([
         element: <OwnerDashboardPage />,
       },
       {
+        path: "/owner/profile",
+        element: <OwnerProfilePage />,
+      },
+      {
         path: "/profile",
-        element: <ProfilePage />,
+        element: <OwnerProfilePage />,
       },
       {
         path: "/client/profile",
