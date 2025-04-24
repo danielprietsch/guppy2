@@ -12,6 +12,7 @@ import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import LocationsPage from "@/pages/LocationsPage";
 import LocationDetailPage from "@/pages/LocationDetailPage";
+import BookCabinPage from "@/pages/BookCabinPage";
 import ProfessionalsPage from "@/pages/ProfessionalsPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
@@ -88,6 +89,10 @@ const router = createBrowserRouter([
       {
         path: "/locations/:id",
         element: <LocationDetailPage />,
+      },
+      {
+        path: "/book-cabin/:id",
+        element: <BookCabinPage />,
       },
       {
         path: "/professionals",
