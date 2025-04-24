@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -43,33 +42,19 @@ export const PermissionsManager = () => {
         setLoading(true);
         
         // Using the security definer function to fetch users via RPC
-        // This avoids the infinite recursion issue
-        const { data: userData, error: userError } = await supabase.rpc('get_all_users');
+        const { data: userData, error: userError } = await supabase.rpc<User>('get_all_users');
         
         if (userError) {
           debugError("PermissionsManager: Error fetching users:", userError);
-          
-          // Fallback to a direct fetch without using profiles RLS
-          // Using a security definer function should be preferable, but this is a workaround
-          // if the function doesn't exist yet
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('profiles')
-            .select('id, email, name, user_type')
-            .order('user_type', { ascending: true });
-            
-          if (fallbackError) {
-            toast({
-              title: "Erro",
-              description: "Não foi possível carregar os usuários.",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          setUsers(fallbackData || []);
-        } else {
-          setUsers(userData || []);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar os usuários.",
+            variant: "destructive",
+          });
+          return;
         }
+        
+        setUsers(userData || []);
         
         // Fetch user permissions from the user_roles table
         const { data: userRoles, error: rolesError } = await supabase

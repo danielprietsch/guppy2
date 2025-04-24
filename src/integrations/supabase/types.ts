@@ -420,6 +420,15 @@ export type Database = {
         }
         Returns: string
       }
+      get_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          name: string
+          user_type: string
+        }[]
+      }
       get_allowed_user_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
