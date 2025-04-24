@@ -33,7 +33,7 @@ export const useOwnerProfile = () => {
         
         debugLog("useOwnerProfile: Session found, checking user type");
         
-        // First priority: use user metadata (most reliable)
+        // Prioridade: usar metadados do usuário (mais confiável)
         const userMetadata = session.user.user_metadata;
         const userTypeFromMetadata = userMetadata?.userType;
         
@@ -59,25 +59,18 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Se metadados não confirmarem status, usar função de verificação do tipo de usuário
+        // Se metadados não confirmarem status, usar função do supabase que evita recursão
         try {
-          const { data: userType, error: userTypeError } = await supabase
-            .rpc('get_profile_user_type', { user_id: session.user.id });
+          // Usar a função is_user_owner que evita recursão RLS
+          const { data: isOwner, error: checkError } = await supabase
+            .rpc('is_user_owner', { user_id: session.user.id });
             
-          if (userTypeError) {
-            debugError("useOwnerProfile: Error checking user type:", userTypeError);
-            setError("Ocorreu um erro ao verificar seu perfil.");
-            toast({
-              title: "Erro",
-              description: "Ocorreu um erro ao verificar seu perfil.",
-              variant: "destructive",
-            });
-            navigate("/login");
-            return;
+          if (checkError) {
+            debugError("useOwnerProfile: Error checking user type:", checkError);
+            throw checkError;
           }
           
-          // Verificar se o tipo de usuário está na lista de tipos permitidos
-          if (!allowedUserTypes.includes(userType)) {
+          if (!isOwner) {
             setError("Você não tem permissão para acessar esta página.");
             toast({
               title: "Acesso restrito",
@@ -88,16 +81,17 @@ export const useOwnerProfile = () => {
             return;
           }
           
-          // Tipo de usuário confirma status, criar dados básicos do usuário
+          // Tipo de usuário confirmado como owner
           const userData: User = {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: userType === 'owner' ? 'owner' : 'global_admin',
+            userType: "owner",
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };
           
+          debugLog("useOwnerProfile: Setting currentUser from owner check:", userData);
           setCurrentUser(userData);
           setIsLoading(false);
         } catch (error) {
