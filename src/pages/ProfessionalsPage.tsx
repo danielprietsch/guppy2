@@ -11,6 +11,7 @@ const ProfessionalsPage = () => {
   
   // Filter users to only include professionals
   const professionals: User[] = users.filter((user) => user.userType === "professional");
+  console.log("Found professionals:", professionals.length);
   
   // Filter professionals based on search query
   const filteredProfessionals = professionals.filter(professional => 
