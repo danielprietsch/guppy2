@@ -144,6 +144,7 @@ export type Database = {
           active: boolean | null
           address: string
           amenities: string[] | null
+          approval_status: string
           cabins_count: number | null
           city: string
           created_at: string | null
@@ -161,6 +162,7 @@ export type Database = {
           active?: boolean | null
           address: string
           amenities?: string[] | null
+          approval_status?: string
           cabins_count?: number | null
           city: string
           created_at?: string | null
@@ -178,6 +180,7 @@ export type Database = {
           active?: boolean | null
           address?: string
           amenities?: string[] | null
+          approval_status?: string
           cabins_count?: number | null
           city?: string
           created_at?: string | null
@@ -393,6 +396,10 @@ export type Database = {
       }
       is_user_owner: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      update_location_approval_status: {
+        Args: { location_id: string; new_status: string; admin_id: string }
         Returns: boolean
       }
     }

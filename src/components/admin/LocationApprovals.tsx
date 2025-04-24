@@ -6,7 +6,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
 type LocationListItem = {
@@ -14,9 +14,9 @@ type LocationListItem = {
   name: string;
   owner_name: string;
   owner_email: string;
-  active: boolean;
   cabins_count: number;
   created_at: string;
+  approval_status: string;
 };
 
 export const LocationApprovals = () => {
@@ -32,7 +32,6 @@ export const LocationApprovals = () => {
     try {
       setLoading(true);
       
-      // Fetch all locations with owner details
       debugLog("LocationApprovals: Starting to fetch locations");
       const { data, error } = await supabase
         .from('locations')
@@ -42,6 +41,7 @@ export const LocationApprovals = () => {
           active,
           cabins_count,
           created_at,
+          approval_status,
           owner_id
         `)
         .order('created_at', { ascending: false });
@@ -67,21 +67,17 @@ export const LocationApprovals = () => {
         if (ownerError) {
           debugError(`LocationApprovals: Error fetching owner for location ${location.id}:`, ownerError);
           return {
-            id: location.id,
-            name: location.name,
-            cabins_count: location.cabins_count,
-            active: location.active,
+            ...location,
             owner_name: "Desconhecido",
-            owner_email: "Desconhecido",
-            created_at: location.created_at
+            owner_email: "Desconhecido"
           };
         }
         
         return {
           id: location.id,
           name: location.name,
-          cabins_count: location.cabins_count,
-          active: location.active,
+          cabins_count: location.cabins_count || 0,
+          approval_status: location.approval_status,
           owner_name: ownerData?.name || "Desconhecido",
           owner_email: ownerData?.email || "Desconhecido",
           created_at: location.created_at
@@ -108,7 +104,7 @@ export const LocationApprovals = () => {
     fetchLocations();
   };
 
-  const handleToggleVisibility = async (locationId: string, currentStatus: boolean) => {
+  const handleApprovalUpdate = async (locationId: string, newStatus: 'approved' | 'rejected') => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -119,42 +115,56 @@ export const LocationApprovals = () => {
         });
         return;
       }
-      
-      debugLog(`LocationApprovals: Toggling location visibility for ${locationId} to ${!currentStatus}`);
-      const { error } = await supabase
-        .from('locations')
-        .update({ active: !currentStatus })
-        .eq('id', locationId);
-        
+
+      const { data, error } = await supabase.rpc(
+        'update_location_approval_status',
+        {
+          location_id: locationId,
+          new_status: newStatus,
+          admin_id: session.user.id
+        }
+      );
+
       if (error) {
-        debugError("LocationApprovals: Error toggling location visibility:", error);
+        debugError("LocationApprovals: Error updating location status:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível alterar a visibilidade do local.",
+          description: "Não foi possível atualizar o status do local.",
           variant: "destructive",
         });
         return;
       }
-      
+
       toast({
         title: "Sucesso",
-        description: `Local ${!currentStatus ? 'ativado' : 'desativado'} com sucesso.`,
+        description: `Local ${newStatus === 'approved' ? 'aprovado' : 'rejeitado'} com sucesso.`,
       });
-      
+
       // Update local state
       setLocations(prevLocations => 
         prevLocations.map(loc => 
-          loc.id === locationId ? { ...loc, active: !currentStatus } : loc
+          loc.id === locationId ? { ...loc, approval_status: newStatus } : loc
         )
       );
-      
+
     } catch (error) {
-      debugError("LocationApprovals: Error in handleToggleVisibility:", error);
+      debugError("LocationApprovals: Error in handleApprovalUpdate:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao alterar a visibilidade do local.",
+        description: "Ocorreu um erro ao atualizar o status.",
         variant: "destructive",
       });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-500 hover:bg-green-600">Aprovado</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive">Rejeitado</Badge>;
+      default:
+        return <Badge variant="secondary">Pendente</Badge>;
     }
   };
 
@@ -164,7 +174,7 @@ export const LocationApprovals = () => {
         <div>
           <CardTitle>Gestão de Locais</CardTitle>
           <CardDescription>
-            Gerencie a visibilidade dos locais na plataforma
+            Aprove ou rejeite os locais cadastrados na plataforma
           </CardDescription>
         </div>
         <Button 
@@ -181,7 +191,7 @@ export const LocationApprovals = () => {
         {loading ? (
           <p className="text-center py-4">Carregando locais...</p>
         ) : locations.length === 0 ? (
-          <p className="text-center py-4">Não há locais cadastrados.</p>
+          <p className="text-center py-4">Não há locais para aprovar.</p>
         ) : (
           <div className="rounded-md border overflow-hidden">
             <Table>
@@ -208,36 +218,31 @@ export const LocationApprovals = () => {
                       {new Date(location.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
-                      {location.active ? (
-                        <Badge className="bg-green-500 hover:bg-green-600">
-                          <Eye className="h-4 w-4 mr-1" /> VISÍVEL
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <EyeOff className="h-4 w-4 mr-1" /> OCULTO
-                        </Badge>
-                      )}
+                      {getStatusBadge(location.approval_status)}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className={location.active ? 
-                          "border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600" : 
-                          "border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600"
-                        }
-                        onClick={() => handleToggleVisibility(location.id, location.active)}
-                      >
-                        {location.active ? (
-                          <>
-                            <EyeOff className="h-4 w-4 mr-1" /> Ocultar
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="h-4 w-4 mr-1" /> Tornar Visível
-                          </>
-                        )}
-                      </Button>
+                    <TableCell className="text-right space-x-2">
+                      {location.approval_status === 'pending' && (
+                        <>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600"
+                            onClick={() => handleApprovalUpdate(location.id, 'approved')}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Aprovar
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
+                            onClick={() => handleApprovalUpdate(location.id, 'rejected')}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Rejeitar
+                          </Button>
+                        </>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
