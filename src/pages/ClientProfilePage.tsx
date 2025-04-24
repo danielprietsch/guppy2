@@ -4,6 +4,7 @@ import { ClientProfileForm } from "@/components/client/ClientProfileForm";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 
 const ClientProfilePage = () => {
@@ -86,12 +87,28 @@ const ClientProfilePage = () => {
         Atualize suas informações pessoais
       </p>
 
-      <div className="max-w-2xl mx-auto bg-card p-6 rounded-lg shadow">
-        <ClientProfileForm 
-          currentUser={currentUser} 
-          onSave={handleUpdateProfile} 
-          isLoading={isLoading} 
-        />
+      <div className="max-w-2xl mx-auto">
+        {currentUser && (
+          <div className="mb-8">
+            <ProfileImageUpload
+              userId={currentUser.id}
+              currentAvatarUrl={currentUser.avatarUrl}
+              onImageUploaded={(url) => {
+                if (updateProfile) {
+                  updateProfile({ ...currentUser, avatarUrl: url });
+                }
+              }}
+            />
+          </div>
+        )}
+        
+        <div className="bg-card p-6 rounded-lg shadow">
+          <ClientProfileForm 
+            currentUser={currentUser} 
+            onSave={handleUpdateProfile} 
+            isLoading={isLoading} 
+          />
+        </div>
       </div>
     </div>
   );

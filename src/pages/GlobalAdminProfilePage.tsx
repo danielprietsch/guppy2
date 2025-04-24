@@ -1,8 +1,8 @@
-
 import { Navigate } from "react-router-dom";
 import { useGlobalAdminProfile } from "@/hooks/useGlobalAdminProfile";
 import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileForm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import { debugLog } from "@/utils/debugLogger";
 
 const GlobalAdminProfilePage = () => {
@@ -33,20 +33,36 @@ const GlobalAdminProfilePage = () => {
         Atualize suas informações de administrador global
       </p>
 
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Informações do Perfil</CardTitle>
-          <CardDescription>
-            Estas informações estarão visíveis para outros usuários do sistema
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <GlobalAdminProfileForm 
-            currentUser={currentUser}
-            onSubmit={updateProfile}
-          />
-        </CardContent>
-      </Card>
+      <div className="max-w-2xl mx-auto">
+        {currentUser && (
+          <div className="mb-8">
+            <ProfileImageUpload
+              userId={currentUser.id}
+              currentAvatarUrl={currentUser.avatarUrl}
+              onImageUploaded={(url) => {
+                if (updateProfile) {
+                  updateProfile({ ...currentUser, avatarUrl: url });
+                }
+              }}
+            />
+          </div>
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Informações do Perfil</CardTitle>
+            <CardDescription>
+              Estas informações estarão visíveis para outros usuários do sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GlobalAdminProfileForm 
+              currentUser={currentUser}
+              onSubmit={updateProfile}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { User } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 
 const ProfessionalProfilePage = () => {
   const navigate = useNavigate();
@@ -236,6 +236,18 @@ const ProfessionalProfilePage = () => {
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Meu Perfil Profissional</h1>
+        
+        {profile && (
+          <div className="mb-8">
+            <ProfileImageUpload
+              userId={profile.id}
+              currentAvatarUrl={profile.avatarUrl}
+              onImageUploaded={(url) => {
+                setProfile(prev => prev ? { ...prev, avatarUrl: url } : null);
+              }}
+            />
+          </div>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-8">
           <Card>
