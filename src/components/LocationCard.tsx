@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -21,12 +20,11 @@ interface LocationCardProps {
 }
 
 const LocationCard = ({ location }: LocationCardProps) => {
-  const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
-  const beautySalonImage = beautySalonImages[imageIndex];
+  const displayImage = location.imageUrl || (() => {
+    const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
+    return beautySalonImages[imageIndex];
+  })();
 
-  // Usando o Google Maps embed com navegação, removendo borda
-  // viewport maior para navegação agradável e controles habilitados
-  // Pegue a coordenada aproximada apenas pelo endereço, mas mantém estrutura
   const googleMapsEmbedUrl = `https://www.google.com/maps?&q=${formatAddressForMaps(location.address, location.city, location.state)}&z=18&output=embed`;
 
   return (
@@ -34,8 +32,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
         <div className="aspect-[16/9] overflow-hidden">
           <img
-            src={beautySalonImage}
-            alt="Salão de beleza"
+            src={displayImage}
+            alt={location.name}
             className="h-full w-full object-cover transition-transform hover:scale-105"
           />
         </div>

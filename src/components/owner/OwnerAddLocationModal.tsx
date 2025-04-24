@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,9 @@ import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Json } from "@/integrations/supabase/types";
+import { Scissors } from "lucide-react";
+
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
 
 const formSchema = z.object({
   nome: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
@@ -19,6 +21,7 @@ const formSchema = z.object({
   cidade: z.string().min(2, "Cidade deve ser preenchida"),
   estado: z.string().min(2, "Estado deve ser preenchido"),
   cep: z.string().optional(),
+  imageUrl: z.string().optional(),
 });
 
 interface Props {
@@ -33,6 +36,8 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
   onLocationCreated
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,27 +46,34 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       cidade: "",
       estado: "",
       cep: "",
+      imageUrl: "",
     },
   });
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
-      console.log("Criando novo local...", values);
 
-      // Obtém o usuário atual
       const { data: { user } } = await supabase.auth.getUser();
       
       if (!user) {
         toast.error("Usuário não autenticado");
-        setIsSubmitting(false);
         return;
       }
 
-      // Define os dados para inserção
       const openingHours = { open: "08:00", close: "20:00" };
       
-      // Insere o novo local no banco de dados
       const { data, error } = await supabase
         .from('locations')
         .insert({
@@ -74,7 +86,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
           opening_hours: openingHours as unknown as Json,
           amenities: [],
           cabins_count: 0,
-          image_url: "",
+          image_url: previewImage || DEFAULT_IMAGE,
           description: ""
         })
         .select()
@@ -83,13 +95,9 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       if (error) {
         console.error("Erro ao cadastrar local:", error);
         toast.error("Erro ao cadastrar local: " + error.message);
-        setIsSubmitting(false);
         return;
       }
 
-      console.log("Local cadastrado com sucesso:", data);
-
-      // Transforma para o formato da interface Location
       const novoLocation: Location = {
         id: data.id,
         name: data.name,
@@ -100,7 +108,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         cabinsCount: data.cabins_count || 0,
         openingHours: (data.opening_hours as unknown as { open: string; close: string }) || { open: "09:00", close: "18:00" },
         amenities: data.amenities || [],
-        imageUrl: data.image_url || "",
+        imageUrl: data.image_url,
         description: data.description || ""
       };
 
@@ -112,6 +120,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       
       onOpenChange(false);
       form.reset();
+      setPreviewImage(null);
     } catch (error: any) {
       console.error("Erro ao processar cadastro:", error);
       toast.error("Erro ao cadastrar local: " + error.message);
@@ -131,6 +140,31 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <div className="flex justify-center mb-4">
+              <div className="relative w-full max-w-sm aspect-video rounded-lg overflow-hidden bg-muted">
+                {previewImage ? (
+                  <img
+                    src={previewImage}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Scissors className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 hover:opacity-100 transition-opacity">
+                  <span className="text-white text-sm">Clique para adicionar imagem</span>
+                </div>
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="nome"
