@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Booking, Appointment, Service } from "@/lib/types";
@@ -10,6 +9,8 @@ import { Calendar, Clock, DollarSign, Plus, Users } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import CabinBookingModal from "@/components/CabinBookingModal";
+import { supabase } from "@/integrations/supabase/client";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 import { users } from "@/lib/mock-data";
 
@@ -28,48 +29,160 @@ const ProviderDashboardPage = () => {
     category: "",
   });
   const [modalReserveOpen, setModalReserveOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (storedUser) {
-      const user = JSON.parse(storedUser) as User;
-      
-      if (user.userType !== "provider") {
-        toast({
-          title: "Acesso negado",
-          description: "Esta página é apenas para prestadores de serviço.",
-          variant: "destructive",
-        });
+    const checkSession = async () => {
+      try {
+        debugLog("ProviderDashboardPage: Checking session...");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          debugLog("ProviderDashboardPage: No session found, redirecting to login");
+          toast({
+            title: "Acesso Negado",
+            description: "Você precisa estar logado para acessar esta página.",
+            variant: "destructive"
+          });
+          navigate("/login");
+          return;
+        }
+        
+        debugLog("ProviderDashboardPage: Session found, user:", session.user);
+        
+        // First check user metadata
+        const userType = session.user.user_metadata?.userType;
+        if (userType && userType === 'provider') {
+          debugLog("ProviderDashboardPage: User is provider according to metadata");
+          
+          // Set current user from metadata
+          setCurrentUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.name || 'Prestador',
+            email: session.user.email || '',
+            userType: 'provider',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+          });
+          
+          loadProviderData(session.user.id);
+          setIsLoading(false);
+          return; // User is provider, allow access
+        }
+
+        try {
+          // Then check profile if metadata doesn't confirm
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (error) {
+            debugError("ProviderDashboardPage: Error fetching profile:", error);
+            // If there's an error querying profiles but metadata indicates provider, allow access
+            if (userType === 'provider') {
+              debugLog("ProviderDashboardPage: Falling back to metadata user type");
+              
+              // Set current user from metadata
+              setCurrentUser({
+                id: session.user.id,
+                name: session.user.user_metadata?.name || 'Prestador',
+                email: session.user.email || '',
+                userType: 'provider',
+                avatarUrl: session.user.user_metadata?.avatar_url,
+              });
+              
+              loadProviderData(session.user.id);
+              setIsLoading(false);
+              return;
+            }
+          }
+
+          debugLog("ProviderDashboardPage: Profile data:", profile);
+
+          if (!profile || profile.user_type !== 'provider') {
+            // Only redirect if we can confirm user is not a provider
+            if (userType !== 'provider') {
+              debugLog("ProviderDashboardPage: User is not provider, redirecting");
+              toast({
+                title: "Acesso Negado",
+                description: "Você não tem permissão para acessar esta área.",
+                variant: "destructive"
+              });
+              navigate("/");
+              return;
+            } else {
+              // Metadata says provider but no profile, use metadata
+              setCurrentUser({
+                id: session.user.id,
+                name: session.user.user_metadata?.name || 'Prestador',
+                email: session.user.email || '',
+                userType: 'provider',
+                avatarUrl: session.user.user_metadata?.avatar_url,
+              });
+              
+              loadProviderData(session.user.id);
+            }
+          } else {
+            // Profile exists and confirms provider
+            setCurrentUser({
+              id: profile.id,
+              name: profile.name || session.user.user_metadata?.name || 'Prestador',
+              email: profile.email || session.user.email || '',
+              userType: 'provider',
+              avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
+              phoneNumber: profile.phone_number
+            });
+            
+            loadProviderData(session.user.id);
+          }
+        } catch (error) {
+          // If we can't determine from profile but metadata says provider, allow access
+          debugError("ProviderDashboardPage: Error in profile check:", error);
+          if (userType === 'provider') {
+            setCurrentUser({
+              id: session.user.id,
+              name: session.user.user_metadata?.name || 'Prestador',
+              email: session.user.email || '',
+              userType: 'provider',
+              avatarUrl: session.user.user_metadata?.avatar_url,
+            });
+            
+            loadProviderData(session.user.id);
+            setIsLoading(false);
+            return;
+          }
+          
+          navigate("/");
+        } finally {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        debugError("ProviderDashboardPage: Error checking session:", error);
         navigate("/login");
-        return;
+        setIsLoading(false);
       }
-      
-      setCurrentUser(user);
-      
-      const userBookings = bookings.filter(
-        (booking) => booking.providerId === user.id
-      );
-      setProviderBookings(userBookings);
-      
-      const userAppointments = appointments.filter(
-        (appointment) => appointment.providerId === user.id
-      );
-      setProviderAppointments(userAppointments);
-      
-      const userServices = services.filter(
-        (service) => service.providerId === user.id
-      );
-      setProviderServices(userServices);
-    } else {
-      toast({
-        title: "Acesso negado",
-        description: "Você precisa estar logado para acessar esta página.",
-        variant: "destructive",
-      });
-      navigate("/login");
-    }
+    };
+
+    checkSession();
   }, [navigate]);
+
+  const loadProviderData = (userId: string) => {
+    // Load the provider's data from mock or Supabase
+    const userBookings = bookings.filter(
+      (booking) => booking.providerId === userId
+    );
+    setProviderBookings(userBookings);
+    
+    const userAppointments = appointments.filter(
+      (appointment) => appointment.providerId === userId
+    );
+    setProviderAppointments(userAppointments);
+    
+    const userServices = services.filter(
+      (service) => service.providerId === userId
+    );
+    setProviderServices(userServices);
+  };
 
   const getCabinInfo = (cabinId: string) => {
     const cabin = cabins.find((cabin) => cabin.id === cabinId);
@@ -91,8 +204,8 @@ const ProviderDashboardPage = () => {
     return new Date(dateString).toLocaleDateString("pt-BR", options);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
       title: "Logout realizado",
       description: "Você foi desconectado com sucesso.",
@@ -143,8 +256,26 @@ const ProviderDashboardPage = () => {
     setProviderBookings((prev) => [...prev, ...newBookings]);
   };
 
+  if (isLoading) {
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+          <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentUser) {
-    return <div>Carregando...</div>;
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Acesso Negado</h1>
+          <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+        </div>
+      </div>
+    );
   }
 
   return (

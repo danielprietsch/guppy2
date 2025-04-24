@@ -21,16 +21,31 @@ const LoginPage = () => {
         if (session) {
           debugLog("LoginPage: Session found, user is authenticated:", session.user);
           
-          // Get user type from metadata first as a fallback
-          const userTypeFromMetadata = session.user.user_metadata?.userType || "client";
+          // Get user type from metadata as primary source
+          const userTypeFromMetadata = session.user.user_metadata?.userType;
+          debugLog("LoginPage: User type from metadata:", userTypeFromMetadata);
           
-          // Try to get from profile if possible
+          if (userTypeFromMetadata) {
+            const dashboardRoute = getDashboardRoute(userTypeFromMetadata);
+            debugLog(`LoginPage: Redirecting to ${dashboardRoute} (from metadata)`);
+            navigate(dashboardRoute, { replace: true });
+            return;
+          }
+          
+          // Try to get from profile as secondary source
           try {
-            const { data: profile } = await supabase
+            const { data: profile, error } = await supabase
               .from('profiles')
               .select('user_type')
               .eq('id', session.user.id)
               .maybeSingle();
+              
+            if (error) {
+              debugError("LoginPage: Error fetching profile:", error);
+              // Default to client if can't determine user type
+              navigate("/client/dashboard", { replace: true });
+              return;
+            }
               
             if (profile) {
               debugLog("LoginPage: Found profile with user_type:", profile.user_type);
@@ -41,13 +56,9 @@ const LoginPage = () => {
             }
           } catch (error) {
             debugError("Error fetching profile:", error);
+            // Default to client if can't determine user type
+            navigate("/client/dashboard", { replace: true });
           }
-          
-          // Fallback to metadata if profile not found or error occurs
-          debugLog("LoginPage: Using metadata user type:", userTypeFromMetadata);
-          const dashboardRoute = getDashboardRoute(userTypeFromMetadata);
-          debugLog("LoginPage: Redirecting to dashboard route (fallback):", dashboardRoute);
-          navigate(dashboardRoute, { replace: true });
         } else {
           debugLog("LoginPage: No active session found");
         }
@@ -102,52 +113,43 @@ const LoginPage = () => {
       debugLog("Login successful:", authData);
       
       if (authData.user) {
+        // Get user type directly from metadata - more reliable
+        const userTypeFromMetadata = authData.user.user_metadata?.userType;
+        if (userTypeFromMetadata) {
+          debugLog("Login: Using metadata user_type:", userTypeFromMetadata);
+          const dashboardRoute = getDashboardRoute(userTypeFromMetadata);
+          debugLog(`Redirecting to ${dashboardRoute} (from metadata)`);
+          navigate(dashboardRoute, { replace: true });
+          setIsLoggingIn(false);
+          return Promise.resolve();
+        }
+            
         try {
-          // Check if this is a global admin by metadata
-          const userTypeFromMetadata = authData.user.user_metadata?.userType;
-          if (userTypeFromMetadata === 'global_admin') {
-            debugLog("Login: User is global_admin according to metadata");
-            navigate("/admin/global", { replace: true });
-            setIsLoggingIn(false);
-            return Promise.resolve();
-          }
-          
-          // First try to get user type from profile
-          const { data: profile } = await supabase
+          // Only try to get profile if metadata doesn't have user type
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('user_type')
             .eq('id', authData.user.id)
             .maybeSingle();
             
-          if (profile) {
+          if (error) {
+            debugError("Login: Error fetching profile:", error);
+            // Default to client
+            navigate("/client/dashboard", { replace: true });
+          } else if (profile) {
             debugLog("Login: Found profile with user_type:", profile.user_type);
-            
-            // Special check for global_admin
-            if (profile.user_type === 'global_admin') {
-              debugLog("Login: User is global_admin according to profile");
-              navigate("/admin/global", { replace: true });
-            } else {
-              const dashboardRoute = getDashboardRoute(profile.user_type);
-              debugLog(`Redirecting to ${dashboardRoute} (from profile)`);
-              navigate(dashboardRoute, { replace: true });
-            }
-          } else {
-            // Fallback to metadata
-            const userType = userTypeFromMetadata || "client";
-            debugLog("Login: No profile found, using metadata user_type:", userType);
-            const dashboardRoute = getDashboardRoute(userType);
-            debugLog(`Redirecting to ${dashboardRoute} (from metadata)`);
+            const dashboardRoute = getDashboardRoute(profile.user_type);
+            debugLog(`Redirecting to ${dashboardRoute} (from profile)`);
             navigate(dashboardRoute, { replace: true });
+          } else {
+            // No profile found, default to client
+            debugLog("Login: No profile found, defaulting to client dashboard");
+            navigate("/client/dashboard", { replace: true });
           }
         } catch (profileError) {
           debugError("Error fetching profile:", profileError);
-          
-          // Fallback to metadata if profile fetch fails
-          const userType = authData.user.user_metadata?.userType || "client";
-          debugLog("Login: Error fetching profile, using metadata user_type:", userType);
-          const dashboardRoute = getDashboardRoute(userType);
-          debugLog(`Redirecting to ${dashboardRoute} (fallback)`);
-          navigate(dashboardRoute, { replace: true });
+          // Default to client
+          navigate("/client/dashboard", { replace: true });
         }
       }
       

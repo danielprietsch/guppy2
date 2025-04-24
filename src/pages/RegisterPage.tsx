@@ -20,21 +20,34 @@ const RegisterPage = () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         console.log("RegisterPage: Found existing session:", data.session);
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', data.session.user.id)
-          .single();
-          
-        if (profile) {
-          const dashboardRoute = getDashboardRoute(profile.user_type);
-          navigate(dashboardRoute, { replace: true });
-        } else {
-          // Fallback to metadata
-          const userType = data.session.user.user_metadata?.userType || "client";
+        
+        // Use metadata as primary source
+        const userType = data.session.user.user_metadata?.userType;
+        if (userType) {
           const dashboardRoute = getDashboardRoute(userType);
           navigate(dashboardRoute, { replace: true });
+          return;
         }
+        
+        // Try profile as secondary source
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', data.session.user.id)
+            .single();
+            
+          if (profile) {
+            const dashboardRoute = getDashboardRoute(profile.user_type);
+            navigate(dashboardRoute, { replace: true });
+            return;
+          }
+        } catch (error) {
+          debugError("RegisterPage: Error fetching profile:", error);
+        }
+        
+        // Default to client if can't determine
+        navigate("/client/dashboard", { replace: true });
       }
     };
     
@@ -134,33 +147,11 @@ const RegisterPage = () => {
       });
       
       if (authData.user) {
-        let retries = 0;
-        let profile = null;
-        
-        while (retries < 3 && !profile) {
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('user_type')
-              .eq('id', authData.user.id)
-              .maybeSingle();
-              
-            if (profileData) {
-              profile = profileData;
-              break;
-            }
-          } catch (err) {
-            console.log("Profile not ready yet, retrying...");
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, 500));
-          retries++;
-        }
-        
-        const userType = profile?.user_type || data.userType;
+        // Use metadata user type directly - more reliable than waiting for profile
+        const userType = authData.user.user_metadata?.userType || data.userType;
         const dashboardRoute = getDashboardRoute(userType);
         
-        console.log(`Redirecting to ${dashboardRoute}`);
+        debugLog(`Redirecting to ${dashboardRoute}`);
         navigate(dashboardRoute, { replace: true });
       }
       

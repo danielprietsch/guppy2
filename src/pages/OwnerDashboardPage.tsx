@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
@@ -9,6 +8,7 @@ import { OwnerAddLocationModal } from "@/components/owner/OwnerAddLocationModal"
 import { AddCabinModal } from "@/components/owner/AddCabinModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -33,10 +33,10 @@ const OwnerDashboardPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        console.log("OwnerDashboardPage: Checking session...");
+        debugLog("OwnerDashboardPage: Checking session...");
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          console.log("OwnerDashboardPage: No session found, redirecting to login");
+          debugLog("OwnerDashboardPage: No session found, redirecting to login");
           toast({
             title: "Acesso Negado",
             description: "Você precisa estar logado para acessar esta página.",
@@ -46,39 +46,55 @@ const OwnerDashboardPage = () => {
           return;
         }
         
-        console.log("OwnerDashboardPage: Session found, user:", session.user);
+        debugLog("OwnerDashboardPage: Session found, user:", session.user);
         
         // First check user metadata
         const userType = session.user.user_metadata?.userType;
         if (userType && userType === 'owner') {
-          console.log("OwnerDashboardPage: User is owner according to metadata");
+          debugLog("OwnerDashboardPage: User is owner according to metadata");
           return; // User is owner, allow access
         }
 
-        // Then check profile if needed
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', session.user.id)
-          .maybeSingle();
+        try {
+          // Then check profile if metadata doesn't confirm
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .maybeSingle();
 
-        if (error) {
-          console.error("OwnerDashboardPage: Error fetching profile:", error);
-        }
+          if (error) {
+            debugError("OwnerDashboardPage: Error fetching profile:", error);
+            // If there's an error querying profiles but metadata indicates owner, allow access
+            if (userType === 'owner') {
+              debugLog("OwnerDashboardPage: Falling back to metadata user type");
+              return;
+            }
+          }
 
-        console.log("OwnerDashboardPage: Profile data:", profile);
+          debugLog("OwnerDashboardPage: Profile data:", profile);
 
-        if (!profile || profile.user_type !== 'owner') {
-          console.log("OwnerDashboardPage: User is not owner, redirecting");
-          toast({
-            title: "Acesso Negado",
-            description: "Você não tem permissão para acessar esta área.",
-            variant: "destructive"
-          });
+          if (!profile || profile.user_type !== 'owner') {
+            // Only redirect if we can confirm user is not an owner
+            if (userType !== 'owner') {
+              debugLog("OwnerDashboardPage: User is not owner, redirecting");
+              toast({
+                title: "Acesso Negado",
+                description: "Você não tem permissão para acessar esta área.",
+                variant: "destructive"
+              });
+              navigate("/");
+            }
+          }
+        } catch (error) {
+          // If we can't determine from profile but metadata says owner, allow access
+          debugError("OwnerDashboardPage: Error in profile check:", error);
+          if (userType === 'owner') return;
+          
           navigate("/");
         }
       } catch (error) {
-        console.error("OwnerDashboardPage: Error checking session:", error);
+        debugError("OwnerDashboardPage: Error checking session:", error);
         navigate("/login");
       }
     };
@@ -89,7 +105,7 @@ const OwnerDashboardPage = () => {
   // Load locations when user is available
   useEffect(() => {
     if (currentUser?.id) {
-      console.log("OwnerDashboardPage: Loading locations for user:", currentUser.id);
+      debugLog("OwnerDashboardPage: Loading locations for user:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
   }, [currentUser, loadUserLocations]);
