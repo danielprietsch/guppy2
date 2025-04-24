@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
@@ -91,67 +92,6 @@ export const handleGlobalAdminRegistration = async (data: {
     toast({
       title: "Erro",
       description: "Não foi possível criar o admin global. Tente novamente mais tarde.",
-      variant: "destructive"
-    });
-    return false;
-  }
-};
-
-// New function to recreate the global admin account
-export const recreateGlobalAdmin = async () => {
-  try {
-    debugLog("Attempting to recreate global admin user");
-    
-    // First, let's try to find if the user exists (just to show better UI feedback)
-    // Remove the filter property since it's not part of the PageParams type
-    const { data, error: fetchError } = await supabase.auth.admin.listUsers({
-      perPage: 1
-    });
-    
-    if (fetchError) {
-      debugError("Error checking if global admin exists:", fetchError);
-      // Continue with creation attempt even if check fails
-    }
-    
-    // Default admin credentials
-    const adminEmail = 'guppyadmin@nuvemtecnologia.com';
-    const adminPassword = 'Guppy@Admin2025'; // More secure default password
-    const adminName = 'Global Admin';
-    
-    const { data: signUpData, error } = await supabase.auth.signUp({
-      email: adminEmail,
-      password: adminPassword,
-      options: {
-        data: {
-          name: adminName,
-          userType: 'global_admin',
-          avatar_url: `https://ui-avatars.com/api/?name=Global+Admin&background=random`
-        }
-      }
-    });
-    
-    if (error) {
-      debugError("Error recreating global admin:", error);
-      toast({
-        title: "Erro ao recriar admin global",
-        description: error.message,
-        variant: "destructive"
-      });
-      return false;
-    }
-    
-    debugLog("Global admin recreated successfully");
-    toast({
-      title: "Admin Global recriado",
-      description: `Uma nova conta foi criada para ${adminEmail} com uma senha padrão. Faça login e depois altere a senha.`,
-    });
-    
-    return true;
-  } catch (error) {
-    debugError("Unexpected error recreating global admin:", error);
-    toast({
-      title: "Erro",
-      description: "Não foi possível recriar o admin global. Tente novamente mais tarde.",
       variant: "destructive"
     });
     return false;

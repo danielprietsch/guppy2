@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -5,19 +6,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
-import { Button } from "@/components/ui/button";
-import { 
-  sendPasswordResetToGlobalAdmin, 
-  recreateGlobalAdmin 
-} from "@/utils/globalAdminUtils";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isAdminResetOpen, setIsAdminResetOpen] = useState(false);
-  const [isAdminActionLoading, setIsAdminActionLoading] = useState(false);
 
   useEffect(() => {
     const checkCurrentSession = async () => {
@@ -66,18 +59,15 @@ const LoginPage = () => {
     setAuthError(null);
     
     try {
-      if (data.email === 'guppyadmin@nuvemtecnologia.com') {
-        console.log("Login de usuário admin detectado");
-      }
+      console.log("Tentando login com:", { email: data.email });
       
-      console.log("Tentando login com email:", data.email);
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
       
       if (error) {
-        console.error("Erro de login:", error);
+        console.error("Erro no login:", error);
         const translatedError = translateSupabaseError(error.message);
         setAuthError(translatedError);
         toast({
@@ -89,7 +79,7 @@ const LoginPage = () => {
         return Promise.reject(error);
       }
       
-      console.log("Login successful, getting user profile...", authData);
+      console.log("Login successful:", authData);
       
       if (authData.user) {
         try {
@@ -102,19 +92,7 @@ const LoginPage = () => {
           if (profile) {
             const dashboardRoute = getDashboardRoute(profile.user_type);
             console.log(`Redirecting to ${dashboardRoute}`);
-            toast({
-              title: "Login realizado com sucesso",
-              description: "Bem-vindo de volta!"
-            });
-            
             navigate(dashboardRoute, { replace: true });
-          } else {
-            console.error("No profile found for user");
-            toast({
-              title: "Erro no login",
-              description: "Perfil de usuário não encontrado.",
-              variant: "destructive"
-            });
           }
         } catch (profileError) {
           console.error("Error fetching profile:", profileError);
@@ -138,19 +116,7 @@ const LoginPage = () => {
       return Promise.reject(error);
     }
   };
-
-  const handleGlobalAdminReset = async () => {
-    setIsAdminActionLoading(true);
-    await sendPasswordResetToGlobalAdmin();
-    setIsAdminActionLoading(false);
-  };
-
-  const handleGlobalAdminRecreate = async () => {
-    setIsAdminActionLoading(true);
-    await recreateGlobalAdmin();
-    setIsAdminActionLoading(false);
-  };
-
+  
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       {authError && (
@@ -159,45 +125,6 @@ const LoginPage = () => {
         </Alert>
       )}
       <AuthForm mode="login" onSubmit={handleLogin} isLoading={isLoggingIn} />
-      
-      <div className="mt-8 border-t pt-6">
-        <h3 className="text-md font-medium mb-2">Área do Administrador</h3>
-        <p className="text-sm text-muted-foreground mb-4">
-          Se você é o administrador global e está com dificuldades para acessar o sistema:
-        </p>
-        
-        <Dialog open={isAdminResetOpen} onOpenChange={setIsAdminResetOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline">
-              Opções de Administrador
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Opções de Administrador Global</DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                Escolha uma das opções abaixo para resolver problemas de acesso ao administrador global.
-              </p>
-              <Button 
-                variant="outline" 
-                onClick={handleGlobalAdminReset}
-                disabled={isAdminActionLoading}
-              >
-                Enviar e-mail de redefinição de senha
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={handleGlobalAdminRecreate}
-                disabled={isAdminActionLoading}
-              >
-                Recriar usuário administrador
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
     </div>
   );
 };
