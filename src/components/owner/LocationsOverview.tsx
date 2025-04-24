@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -58,6 +59,8 @@ export const LocationsOverview = ({
       if (result.success) {
         await fetchApprovalStatus();
       }
+    } catch (error) {
+      console.error("Error requesting approval:", error);
     } finally {
       setIsRequestingApproval(false);
     }
@@ -114,11 +117,11 @@ export const LocationsOverview = ({
               </div>
             </div>
             
-            {/* Approval Status Section */}
+            {/* Approval Status Section - Changed label from "Status de Aprovação" to "Status do Local" */}
             <div className="border-t pt-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium">Status de Aprovação:</span>
+                  <span className="text-sm font-medium">Status do Local:</span>
                   {approvalStatus === "APROVADO" ? (
                     <Badge className="bg-green-500">APROVADO</Badge>
                   ) : approvalStatus === "PENDENTE" ? (
