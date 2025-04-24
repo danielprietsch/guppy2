@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
@@ -104,11 +103,9 @@ export const recreateGlobalAdmin = async () => {
     debugLog("Attempting to recreate global admin user");
     
     // First, let's try to find if the user exists (just to show better UI feedback)
-    const { data: { users }, error: fetchError } = await supabase.auth.admin.listUsers({
-      perPage: 1,
-      filter: {
-        email: 'guppyadmin@nuvemtecnologia.com'
-      }
+    // Remove the filter property since it's not part of the PageParams type
+    const { data, error: fetchError } = await supabase.auth.admin.listUsers({
+      perPage: 1
     });
     
     if (fetchError) {
@@ -121,7 +118,7 @@ export const recreateGlobalAdmin = async () => {
     const adminPassword = 'Guppy@Admin2025'; // More secure default password
     const adminName = 'Global Admin';
     
-    const { data, error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: adminEmail,
       password: adminPassword,
       options: {
