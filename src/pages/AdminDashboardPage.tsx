@@ -10,13 +10,14 @@ import { LocationApprovals } from "@/components/admin/LocationApprovals";
 import { PermissionsManager } from "@/components/admin/PermissionsManager";
 import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileForm";
 import { User } from "@/lib/types";
+import { useGlobalAdminProfile } from "@/hooks/useGlobalAdminProfile";
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("locations");
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { currentUser, updateProfile } = useGlobalAdminProfile();
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -58,27 +59,6 @@ const AdminDashboardPage = () => {
         
         debugLog("AdminDashboardPage: User is confirmed as admin");
         setIsAdmin(true);
-        
-        // Fetch user profile data
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (profileError) {
-          debugError("AdminDashboardPage: Error fetching user profile:", profileError);
-        } else if (profileData) {
-          // Create user object from profile data
-          setCurrentUser({
-            id: profileData.id,
-            name: profileData.name || session.user.email?.split('@')[0] || "Admin",
-            email: profileData.email || session.user.email || "",
-            userType: "global_admin",
-            avatarUrl: profileData.avatar_url,
-            phoneNumber: profileData.phone_number
-          });
-        }
       } catch (error) {
         debugError("AdminDashboardPage: Error:", error);
         toast({
@@ -162,8 +142,8 @@ const AdminDashboardPage = () => {
             <CardContent>
               {currentUser && (
                 <GlobalAdminProfileForm 
-                  currentUser={currentUser} 
-                  setCurrentUser={setCurrentUser} 
+                  currentUser={currentUser}
+                  onSubmit={updateProfile}
                 />
               )}
             </CardContent>
