@@ -92,10 +92,17 @@ export const handleGlobalAdminRegistration = async (data: {
         
       debugLog("Allowed user types:", allowedUserTypes);
       
-      // Determine if global_admin is allowed, otherwise use admin
-      const userType = Array.isArray(allowedUserTypes) && 
-                       (allowedUserTypes as string[]).includes('global_admin') ? 
-                       'global_admin' : 'admin';
+      // ONLY use global_admin, never fallback to admin
+      if (!Array.isArray(allowedUserTypes) || 
+          !(allowedUserTypes as string[]).includes('global_admin')) {
+        debugError("global_admin is not an allowed user type");
+        toast({
+          title: "Erro de configuração",
+          description: "O tipo de usuário 'global_admin' não está disponível no sistema.",
+          variant: "destructive"
+        });
+        return false;
+      }
       
       // Now try to update or insert the profile
       const { error: profileError } = await supabase
@@ -104,7 +111,7 @@ export const handleGlobalAdminRegistration = async (data: {
           id: existingUser.user.id,
           name: data.name,
           email: data.email,
-          user_type: userType,
+          user_type: 'global_admin',
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
         });
         
@@ -134,10 +141,17 @@ export const handleGlobalAdminRegistration = async (data: {
       
     debugLog("Allowed user types for new user:", allowedUserTypes);
     
-    // Determine the user type to use based on what's allowed
-    const userTypeMetadata = Array.isArray(allowedUserTypes) && 
-                     (allowedUserTypes as string[]).includes('global_admin') ? 
-                     'global_admin' : 'admin';
+    // ONLY use global_admin, never fallback to admin
+    if (!Array.isArray(allowedUserTypes) || 
+        !(allowedUserTypes as string[]).includes('global_admin')) {
+      debugError("global_admin is not an allowed user type");
+      toast({
+        title: "Erro de configuração",
+        description: "O tipo de usuário 'global_admin' não está disponível no sistema.",
+        variant: "destructive"
+      });
+      return false;
+    }
     
     // Now create the user with appropriate metadata
     const { data: signUpData, error } = await supabase.auth.signUp({
@@ -146,7 +160,7 @@ export const handleGlobalAdminRegistration = async (data: {
       options: {
         data: {
           name: data.name,
-          userType: userTypeMetadata,
+          userType: 'global_admin',
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
         }
       }
@@ -166,11 +180,6 @@ export const handleGlobalAdminRegistration = async (data: {
     if (signUpData && signUpData.user) {
       debugLog("Auth account created, now creating profile for global admin");
       
-      // Determine the user type for the profile based on what's allowed
-      const profileUserType = Array.isArray(allowedUserTypes) && 
-                       (allowedUserTypes as string[]).includes('global_admin') ? 
-                       'global_admin' : 'admin';
-      
       try {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -178,7 +187,7 @@ export const handleGlobalAdminRegistration = async (data: {
             id: signUpData.user.id,
             name: data.name,
             email: data.email,
-            user_type: profileUserType,
+            user_type: 'global_admin',
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
           });
           
