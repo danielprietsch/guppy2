@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
@@ -37,7 +38,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     currentUser.userType === "provider"
       ? "/provider/profile"
       : currentUser.userType === "owner"
-      ? "/owner/profile"
+      ? "/profile" // Corrigido para "/profile" em vez de "/owner/profile"
       : "/client/profile";
 
   // Extract first letter of name for avatar fallback

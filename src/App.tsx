@@ -14,6 +14,7 @@ import LocationsPage from "@/pages/LocationsPage";
 import ProvidersPage from "@/pages/ProvidersPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
+import ClientProfilePage from "@/pages/ClientProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
       {
         path: "/profile",
         element: <ProfilePage />,
+      },
+      {
+        path: "/client/profile",
+        element: <ClientProfilePage />,
       },
       {
         path: "/reset-password",
