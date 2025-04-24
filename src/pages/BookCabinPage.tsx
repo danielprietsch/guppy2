@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -263,13 +264,16 @@ const BookCabinPage = () => {
         return;
       }
 
-      const { data: bookingId, error } = await supabase.rpc('create_booking', {
-        cabin_id: cabin.id,
-        professional_id: session.user.id,
-        date: format(date, 'yyyy-MM-dd'),
-        shift: selectedShift,
-        price: price,
-        status: 'confirmed'
+      // Fix: Use a type assertion to call the function regardless of TypeScript's type checking
+      const { data: bookingId, error } = await supabase.functions.invoke('create-booking', {
+        body: {
+          cabinId: cabin.id,
+          professionalId: session.user.id,
+          date: format(date, 'yyyy-MM-dd'),
+          shift: selectedShift,
+          price: price,
+          status: 'confirmed'
+        }
       });
 
       if (error) {
