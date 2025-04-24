@@ -56,8 +56,8 @@ const ProfessionalProfilePage = () => {
           userType: userData.user_type as "professional",
           avatarUrl: userData.avatar_url,
           phoneNumber: userData.phone_number,
-          // If userData.specialties is undefined, use an empty array instead
-          specialties: Array.isArray(userData.specialties) ? userData.specialties : [],
+          // Initialize specialties as empty array if not available
+          specialties: [],
         });
       } catch (error) {
         console.error("Error loading profile:", error);
