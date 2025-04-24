@@ -6,12 +6,10 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, DollarSign, PlusCircle, TrendingDown, TrendingUp } from "lucide-react";
+import { Calendar, DollarSign, Eye, EyeOff, PlusCircle, TrendingDown, TrendingUp } from "lucide-react";
 import { Location, Cabin } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useState, useEffect } from "react";
-import { triggerApprovalRequest } from "@/utils/triggerApprovalRequest";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { debugLog, debugError } from "@/utils/debugLogger";
@@ -27,116 +25,40 @@ export const LocationsOverview = ({
   locationCabins,
   onAddCabinClick
 }: LocationsOverviewProps) => {
-  const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
-  const [isRequestingApproval, setIsRequestingApproval] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
-  useEffect(() => {
-    if (selectedLocation) {
-      setIsLoading(true);
-      debugLog("LocationsOverview: Location changed, fetching approval status for:", selectedLocation.id);
-      fetchApprovalStatus();
-    }
-  }, [selectedLocation]);
-
-  const fetchApprovalStatus = async () => {
+  const handleToggleVisibility = async () => {
     if (!selectedLocation) return;
     
+    setIsUpdatingStatus(true);
     try {
-      debugLog("LocationsOverview: Fetching approval status for location", selectedLocation.id);
-      const { data, error } = await supabase
-        .rpc('get_location_approval_status', { loc_id: selectedLocation.id });
-        
+      const { error } = await supabase
+        .from('locations')
+        .update({ active: !selectedLocation.active })
+        .eq('id', selectedLocation.id);
+
       if (error) {
-        debugError("LocationsOverview: Error fetching approval status:", error);
+        debugError("LocationsOverview: Error updating location status:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível verificar o status de aprovação do local.",
+          description: "Não foi possível alterar a visibilidade do local.",
           variant: "destructive",
         });
         return;
       }
-      
-      if (data && data.length > 0) {
-        debugLog("LocationsOverview: Approval status found:", data[0].status);
-        setApprovalStatus(data[0].status);
-      } else {
-        debugLog("LocationsOverview: No approval status found");
-        setApprovalStatus(null);
-      }
-    } catch (error) {
-      debugError("LocationsOverview: Error in fetchApprovalStatus:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleRequestApproval = async () => {
-    if (!selectedLocation) {
-      debugLog("LocationsOverview: No location selected, cannot request approval");
-      return;
-    }
-    
-    // Log cabins count before validation
-    debugLog("LocationsOverview: Cabins count before validation:", locationCabins.length);
-    
-    // Validate that there's at least one cabin
-    if (locationCabins.length === 0) {
-      debugLog("LocationsOverview: Validation failed - No cabins");
-      toast({
-        title: "Erro",
-        description: "É necessário cadastrar pelo menos uma cabine antes de solicitar aprovação.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsRequestingApproval(true);
-    debugLog("LocationsOverview: Starting approval request for location", selectedLocation.id);
-    
-    try {
-      // Log parameters being sent to triggerApprovalRequest
-      debugLog("LocationsOverview: Calling triggerApprovalRequest with params:", {
-        locationId: selectedLocation.id, 
-        cabinsCount: locationCabins.length
-      });
+      // Reload the page to update the location status
+      window.location.reload();
       
-      const result = await triggerApprovalRequest(selectedLocation.id, locationCabins.length);
-      
-      // Enhanced logging of the result
-      debugLog("LocationsOverview: Approval request result:", JSON.stringify(result));
-      
-      if (result.success) {
-        debugLog("LocationsOverview: Approval request was successful");
-        // Immediate update for better UX
-        setApprovalStatus("PENDENTE");
-        // Then fetch from server to confirm
-        await fetchApprovalStatus();
-      } else {
-        // Log specific failure messages
-        if (result.message === "no-cabins") {
-          debugLog("LocationsOverview: Approval request failed - No cabins");
-        } else if (result.message === "already-approved") {
-          debugLog("LocationsOverview: Local already approved");
-        } else if (result.message === "already-pending") {
-          debugLog("LocationsOverview: Approval already pending");
-        } else {
-          debugLog("LocationsOverview: Approval request failed with message:", result.message);
-          if (result.error) {
-            debugError("LocationsOverview: Error details:", result.error);
-          }
-        }
-      }
     } catch (error) {
-      debugError("LocationsOverview: Error requesting approval:", error);
+      debugError("LocationsOverview: Error toggling visibility:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao solicitar a aprovação. Por favor, tente novamente.",
+        description: "Ocorreu um erro ao alterar a visibilidade do local.",
         variant: "destructive",
       });
     } finally {
-      setIsRequestingApproval(false);
-      debugLog("LocationsOverview: Request approval process completed");
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -196,61 +118,35 @@ export const LocationsOverview = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Status do Local:</span>
-                  {isLoading ? (
-                    <span className="text-sm text-muted-foreground">Carregando...</span>
-                  ) : approvalStatus === "APROVADO" ? (
-                    <Badge className="bg-green-500">APROVADO</Badge>
-                  ) : approvalStatus === "PENDENTE" ? (
-                    <Badge variant="secondary" className="bg-yellow-500 text-white">AGUARDANDO APROVAÇÃO</Badge>
-                  ) : approvalStatus === "REJEITADO" ? (
-                    <Badge variant="destructive">REJEITADO</Badge>
-                  ) : (
-                    <Badge variant="outline">INATIVO</Badge>
-                  )}
+                  <Badge 
+                    variant={selectedLocation.active ? "default" : "secondary"}
+                    className={selectedLocation.active ? "bg-green-500" : ""}
+                  >
+                    {selectedLocation.active ? "VISÍVEL" : "OCULTO"}
+                  </Badge>
                 </div>
                 
-                {(!approvalStatus || approvalStatus === "REJEITADO") && (
-                  <Button 
-                    onClick={handleRequestApproval}
-                    disabled={isRequestingApproval || locationCabins.length === 0}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    {isRequestingApproval ? "Enviando..." : "Solicitar Aprovação do Local"}
-                  </Button>
-                )}
+                <Button 
+                  onClick={handleToggleVisibility}
+                  disabled={isUpdatingStatus}
+                  variant="outline"
+                  className={selectedLocation.active ? "border-red-500 text-red-500 hover:bg-red-50" : "border-green-500 text-green-500 hover:bg-green-50"}
+                >
+                  {isUpdatingStatus ? (
+                    "Atualizando..."
+                  ) : selectedLocation.active ? (
+                    <>
+                      <EyeOff className="h-4 w-4 mr-2" />
+                      Ocultar Local
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Tornar Visível
+                    </>
+                  )}
+                </Button>
               </div>
-
-              {locationCabins.length === 0 && (
-                <Alert className="mt-4 border-blue-500/50 bg-blue-500/10">
-                  <AlertDescription className="text-blue-800">
-                    Cadastre pelo menos uma cabine para poder solicitar a aprovação do local.
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {approvalStatus === "PENDENTE" && (
-                <Alert className="mt-4 border-yellow-500/50 bg-yellow-500/10">
-                  <AlertDescription className="text-yellow-800">
-                    Seu local está em análise. Você será notificado quando houver uma decisão.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {approvalStatus === "REJEITADO" && (
-                <Alert className="mt-4 border-red-500/50 bg-red-500/10">
-                  <AlertDescription className="text-red-800">
-                    Seu local foi rejeitado. Por favor, verifique as informações e tente novamente.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {!selectedLocation.active && approvalStatus !== "APROVADO" && (
-                <Alert className="mt-4">
-                  <AlertDescription>
-                    Este local não está visível para os usuários até ser aprovado por um administrador.
-                  </AlertDescription>
-                </Alert>
-              )}
             </div>
           </div>
         </CardContent>

@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  userType: "professional" | "client" | "owner" | "admin";
+  userType: "professional" | "client" | "owner" | "global_admin";
   avatarUrl?: string;
   phoneNumber?: string;
   specialties?: string[];

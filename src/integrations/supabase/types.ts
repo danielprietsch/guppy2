@@ -9,44 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_approvals: {
-        Row: {
-          approved_by: string | null
-          created_at: string | null
-          id: string
-          location_id: string | null
-          notes: string | null
-          status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          approved_by?: string | null
-          created_at?: string | null
-          id?: string
-          location_id?: string | null
-          notes?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          approved_by?: string | null
-          created_at?: string | null
-          id?: string
-          location_id?: string | null
-          notes?: string | null
-          status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_approvals_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: true
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       appointments: {
         Row: {
           client_id: string | null
@@ -394,14 +356,6 @@ export type Database = {
       get_allowed_user_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
-      }
-      get_location_approval_status: {
-        Args: { loc_id: string }
-        Returns: {
-          id: string
-          status: string
-          location_id: string
-        }[]
       }
       get_profile_user_type: {
         Args: { user_id: string }
