@@ -383,6 +383,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_request_approval: {
+        Args: { user_id: string; location_id: string }
+        Returns: boolean
+      }
       check_location_ownership: {
         Args: { loc_id: string; user_id: string }
         Returns: boolean
@@ -402,6 +406,14 @@ export type Database = {
       get_profile_user_type: {
         Args: { user_id: string }
         Returns: string
+      }
+      is_global_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      is_user_owner: {
+        Args: { user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

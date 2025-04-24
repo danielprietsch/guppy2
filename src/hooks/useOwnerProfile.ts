@@ -36,15 +36,18 @@ export const useOwnerProfile = () => {
         const userMetadata = session.user.user_metadata;
         const userTypeFromMetadata = userMetadata?.userType;
         
-        // If metadata confirms owner type, create user from metadata
-        if (userTypeFromMetadata === 'owner') {
-          debugLog("useOwnerProfile: User is owner according to metadata");
+        // Permitir tanto 'owner' quanto 'global_admin'
+        const allowedUserTypes = ['owner', 'global_admin'];
+        
+        // Se o metadado confirmar o tipo de usuário
+        if (allowedUserTypes.includes(userTypeFromMetadata)) {
+          debugLog(`useOwnerProfile: User is ${userTypeFromMetadata} according to metadata`);
           
           const userData: User = {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: "owner",
+            userType: userTypeFromMetadata,
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };
@@ -55,8 +58,7 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // If metadata doesn't confirm owner status, try using the get_profile_user_type function
-        // This function is SECURITY DEFINER and avoids the RLS recursion
+        // Se metadados não confirmarem status, usar função de verificação do tipo de usuário
         try {
           const { data: userType, error: userTypeError } = await supabase
             .rpc('get_profile_user_type', { user_id: session.user.id });
@@ -72,8 +74,8 @@ export const useOwnerProfile = () => {
             return;
           }
           
-          // Check if user type confirms owner status
-          if (userType !== "owner") {
+          // Verificar se o tipo de usuário está na lista de tipos permitidos
+          if (!allowedUserTypes.includes(userType)) {
             toast({
               title: "Acesso restrito",
               description: "Você não tem permissão para acessar esta página.",
@@ -83,12 +85,12 @@ export const useOwnerProfile = () => {
             return;
           }
           
-          // User type confirms owner status, create basic user data
+          // Tipo de usuário confirma status, criar dados básicos do usuário
           const userData: User = {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: "owner",
+            userType: userType,
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };
@@ -117,7 +119,7 @@ export const useOwnerProfile = () => {
       }
     };
     
-    // Set up listener for authentication state changes
+    // Configurar ouvinte para alterações no estado de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       debugLog("useOwnerProfile: Auth state changed:", event);
       if (event === "SIGNED_OUT" || !session) {
@@ -125,9 +127,8 @@ export const useOwnerProfile = () => {
         setCurrentUser(null);
         navigate("/login");
       } else if (event === "SIGNED_IN") {
-        // Re-verify profile on login
+        // Re-verificar perfil no login
         debugLog("useOwnerProfile: User signed in, checking auth status");
-        // Small timeout to avoid race conditions
         setTimeout(() => {
           checkAuthStatus();
         }, 0);
