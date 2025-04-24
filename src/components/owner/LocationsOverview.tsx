@@ -125,7 +125,10 @@ export const LocationsOverview = ({
         } else if (result.message === "already-pending") {
           debugLog("LocationsOverview: Approval already pending");
         } else {
-          debugLog("LocationsOverview: Approval request failed with unknown message:", result.message);
+          debugLog("LocationsOverview: Approval request failed with message:", result.message);
+          if (result.error) {
+            debugError("LocationsOverview: Error details:", result.error);
+          }
         }
       }
     } catch (error) {

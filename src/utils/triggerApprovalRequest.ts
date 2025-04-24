@@ -37,7 +37,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         description: "Não foi possível verificar solicitações existentes.",
         variant: "destructive",
       });
-      return { success: false };
+      return { success: false, message: "check-error", error: checkError };
     }
     
     debugLog("triggerApprovalRequest: Existing approval check result:", existingApproval);
@@ -83,7 +83,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
           description: "Não foi possível solicitar a aprovação do local.",
           variant: "destructive",
         });
-        return { success: false };
+        return { success: false, message: "update-error", error: updateError };
       }
       
       debugLog("triggerApprovalRequest: Approval updated successfully:", updateData);
@@ -109,7 +109,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         description: "Solicitação de aprovação enviada com sucesso.",
       });
       
-      return { success: true };
+      return { success: true, message: "updated-pending" };
     }
     
     // Create a new approval request
@@ -126,10 +126,10 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       debugError("triggerApprovalRequest: Error creating approval request:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível solicitar a aprovação do local.",
+        description: "Não foi possível solicitar a aprovação do local. Erro: " + error.message,
         variant: "destructive",
       });
-      return { success: false };
+      return { success: false, message: "insert-error", error: error };
     }
     
     debugLog("triggerApprovalRequest: Approval request created successfully:", data);
@@ -152,7 +152,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       description: "Solicitação de aprovação enviada com sucesso.",
     });
     
-    return { success: true };
+    return { success: true, message: "created-pending" };
     
   } catch (error) {
     debugError("triggerApprovalRequest: Unexpected error:", error);
@@ -161,6 +161,6 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       description: "Ocorreu um erro ao solicitar a aprovação.",
       variant: "destructive",
     });
-    return { success: false };
+    return { success: false, message: "unexpected-error", error: error };
   }
 };
