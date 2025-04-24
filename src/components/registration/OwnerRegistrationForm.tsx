@@ -85,7 +85,7 @@ export const OwnerRegistrationForm: React.FC = () => {
         toast({
           title: "Alerta",
           description: "Usuário criado, mas houve um erro ao salvar detalhes adicionais do perfil.",
-          variant: "warning"
+          variant: "destructive" // Changed from "warning" to "destructive"
         });
       } else {
         debugLog("OwnerRegistrationForm: Profile updated successfully");
