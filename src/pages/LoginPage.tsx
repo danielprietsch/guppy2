@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -7,12 +6,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
 import { Button } from "@/components/ui/button";
-import { sendPasswordResetToGlobalAdmin } from "@/utils/globalAdminUtils";
+import { 
+  sendPasswordResetToGlobalAdmin, 
+  recreateGlobalAdmin 
+} from "@/utils/globalAdminUtils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isAdminResetOpen, setIsAdminResetOpen] = useState(false);
+  const [isAdminActionLoading, setIsAdminActionLoading] = useState(false);
 
   useEffect(() => {
     const checkCurrentSession = async () => {
@@ -21,7 +26,6 @@ const LoginPage = () => {
         console.log("LoginPage: Checking current session:", session);
         if (session) {
           console.log("LoginPage: Session found, user is authenticated:", session.user);
-          // If user is already logged in, redirect to appropriate dashboard
           const { data: profile } = await supabase
             .from('profiles')
             .select('user_type')
@@ -62,11 +66,7 @@ const LoginPage = () => {
     setAuthError(null);
     
     try {
-      // Adiciona uma verificação extra para o usuário admin
       if (data.email === 'guppyadmin@nuvemtecnologia.com') {
-        // Você pode adicionar validações adicionais aqui, como:
-        // - Verificar se o IP de login está em uma lista de IPs permitidos
-        // - Adicionar autenticação de dois fatores
         console.log("Login de usuário admin detectado");
       }
       
@@ -91,7 +91,6 @@ const LoginPage = () => {
       
       console.log("Login successful, getting user profile...", authData);
       
-      // Get user profile to determine dashboard type
       if (authData.user) {
         try {
           const { data: profile } = await supabase
@@ -108,7 +107,6 @@ const LoginPage = () => {
               description: "Bem-vindo de volta!"
             });
             
-            // Immediate redirect to dashboard
             navigate(dashboardRoute, { replace: true });
           } else {
             console.error("No profile found for user");
@@ -142,7 +140,15 @@ const LoginPage = () => {
   };
 
   const handleGlobalAdminReset = async () => {
+    setIsAdminActionLoading(true);
     await sendPasswordResetToGlobalAdmin();
+    setIsAdminActionLoading(false);
+  };
+
+  const handleGlobalAdminRecreate = async () => {
+    setIsAdminActionLoading(true);
+    await recreateGlobalAdmin();
+    setIsAdminActionLoading(false);
   };
 
   return (
@@ -159,12 +165,38 @@ const LoginPage = () => {
         <p className="text-sm text-muted-foreground mb-4">
           Se você é o administrador global e está com dificuldades para acessar o sistema:
         </p>
-        <Button 
-          variant="outline" 
-          onClick={handleGlobalAdminReset}
-        >
-          Redefinir senha do admin global
-        </Button>
+        
+        <Dialog open={isAdminResetOpen} onOpenChange={setIsAdminResetOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              Opções de Administrador
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Opções de Administrador Global</DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col gap-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Escolha uma das opções abaixo para resolver problemas de acesso ao administrador global.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={handleGlobalAdminReset}
+                disabled={isAdminActionLoading}
+              >
+                Enviar e-mail de redefinição de senha
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={handleGlobalAdminRecreate}
+                disabled={isAdminActionLoading}
+              >
+                Recriar usuário administrador
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

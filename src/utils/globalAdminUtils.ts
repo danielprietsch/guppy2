@@ -9,10 +9,11 @@ export const sendPasswordResetToGlobalAdmin = async () => {
   try {
     debugLog("Sending password reset to global admin");
     
-    const { error } = await supabase.auth.resetPasswordForEmail(
+    // Explicitly specify the redirect URL to ensure it works correctly
+    const { data, error } = await supabase.auth.resetPasswordForEmail(
       adminEmail, 
       {
-        redirectTo: window.location.origin + '/reset-password'
+        redirectTo: `${window.location.origin}/reset-password`
       }
     );
     
@@ -20,16 +21,16 @@ export const sendPasswordResetToGlobalAdmin = async () => {
       debugError("Error sending password reset:", error);
       toast({
         title: "Erro ao redefinir senha",
-        description: error.message,
+        description: `Não foi possível enviar o email de redefinição: ${error.message}`,
         variant: "destructive"
       });
       return false;
     }
     
-    debugLog("Password reset email sent successfully");
+    debugLog("Password reset email sent successfully", data);
     toast({
       title: "Email de redefinição enviado",
-      description: "Um link para redefinir a senha foi enviado para guppyadmin@nuvemtecnologia.com"
+      description: "Um link para redefinir a senha foi enviado para guppyadmin@nuvemtecnologia.com. Verifique sua caixa de entrada e spam."
     });
     
     return true;
@@ -37,7 +38,72 @@ export const sendPasswordResetToGlobalAdmin = async () => {
     debugError("Unexpected error in sendPasswordResetToGlobalAdmin:", error);
     toast({
       title: "Erro",
-      description: "Ocorreu um erro inesperado. Tente novamente.",
+      description: "Ocorreu um erro inesperado. Tente novamente mais tarde.",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
+
+// Alternative approach - create a new admin user if one doesn't exist
+export const recreateGlobalAdmin = async () => {
+  try {
+    debugLog("Attempting to recreate global admin user");
+    
+    // First, check if the user already exists
+    const { data: { users }, error: fetchError } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1,
+      filter: {
+        email: 'guppyadmin@nuvemtecnologia.com'
+      }
+    });
+    
+    if (fetchError) {
+      debugError("Error checking if admin exists:", fetchError);
+      throw fetchError;
+    }
+    
+    // If user exists, try password reset
+    if (users && users.length > 0) {
+      return sendPasswordResetToGlobalAdmin();
+    }
+    
+    // Create new user
+    const { data, error } = await supabase.auth.signUp({
+      email: 'guppyadmin@nuvemtecnologia.com',
+      password: `Admin${Date.now().toString().slice(-6)}!`,
+      options: {
+        data: {
+          name: 'Global Admin',
+          userType: 'global_admin',
+          avatar_url: `https://ui-avatars.com/api/?name=Global+Admin&background=random`
+        }
+      }
+    });
+    
+    if (error) {
+      debugError("Error creating global admin:", error);
+      toast({
+        title: "Erro ao criar admin global",
+        description: error.message,
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    debugLog("Global admin created successfully");
+    toast({
+      title: "Admin Global criado",
+      description: "Um email de confirmação foi enviado para guppyadmin@nuvemtecnologia.com com instruções para acesso."
+    });
+    
+    return true;
+  } catch (error) {
+    debugError("Unexpected error creating global admin:", error);
+    toast({
+      title: "Erro",
+      description: "Não foi possível criar o admin global. Tente novamente mais tarde.",
       variant: "destructive"
     });
     return false;
