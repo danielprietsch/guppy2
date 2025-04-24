@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Scissors, User, Briefcase } from "lucide-react";
+import { Scissors, User, Briefcase, Shield } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type AuthFormMode = "login" | "register";
@@ -42,13 +42,19 @@ const userTypes = [
     desc: "Local de serviços ou franquia",
     icon: <Briefcase className="w-8 h-8 text-blue-400" />,
   },
+  {
+    key: "global_admin",
+    label: "Administrador Global",
+    desc: "Gerenciar toda a plataforma",
+    icon: <Shield className="w-8 h-8 text-red-400" />,
+  },
 ];
 
 const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [userType, setUserType] = useState<"client" | "provider" | "owner">("client");
+  const [userType, setUserType] = useState<"client" | "provider" | "owner" | "global_admin">("client");
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryPhone, setRecoveryPhone] = useState("");
   const [isRecovering, setIsRecovering] = useState(false);
@@ -179,12 +185,12 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
         {mode === "register" && (
           <div className="space-y-2">
             <Label>Tipo de Usuário</Label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {userTypes.map(type => (
                 <button
                   type="button"
                   key={type.key}
-                  onClick={() => setUserType(type.key as "client" | "provider" | "owner")}
+                  onClick={() => setUserType(type.key as typeof userType)}
                   className={[
                     "flex flex-col items-center ring-1 ring-muted p-3 rounded-lg transition shadow-sm group",
                     userType === type.key

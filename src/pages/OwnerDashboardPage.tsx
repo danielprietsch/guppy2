@@ -1,13 +1,17 @@
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
 import { useLocationManagement } from "@/hooks/useLocationManagement";
 import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
 import { DashboardContent } from "@/components/owner/DashboardContent";
 import { OwnerAddLocationModal } from "@/components/owner/OwnerAddLocationModal";
 import { AddCabinModal } from "@/components/owner/AddCabinModal";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const OwnerDashboardPage = () => {
+  const navigate = useNavigate();
   const { currentUser, isLoading } = useOwnerProfile();
   const {
     userLocations,
@@ -26,12 +30,39 @@ const OwnerDashboardPage = () => {
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!profile || profile.user_type !== 'owner') {
+        toast({
+          title: "Acesso Negado",
+          description: "Você não tem permissão para acessar esta área.",
+          variant: "destructive"
+        });
+        navigate("/");
+      }
+    };
+
+    checkSession();
+  }, [navigate]);
+
   // Load locations when user is available
   useEffect(() => {
     if (currentUser?.id) {
       loadUserLocations(currentUser.id);
     }
-  }, [currentUser]);
+  }, [currentUser, loadUserLocations]);
 
   if (isLoading) {
     return (

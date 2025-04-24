@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
@@ -47,42 +46,31 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
 
   // Extract first letter of name for avatar fallback
   const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+  
+  // Get avatar URL, ensuring we use the actual URL from metadata if available
+  const avatarUrl = currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || '?')}&background=random`;
 
   // Translate user type
-  let userTypeLabel = "";
-  switch (currentUser.userType) {
-    case "client":
-      userTypeLabel = "Cliente";
-      break;
-    case "provider":
-      userTypeLabel = "Prestador";
-      break;
-    case "owner":
-      userTypeLabel = "Franqueado";
-      break;
-    case "global_admin":
-      userTypeLabel = "Administrador Global";
-      break;
-    default:
-      userTypeLabel = "Usuário";
-      break;
-  }
+  const userTypeLabel = {
+    client: "Cliente",
+    provider: "Prestador",
+    owner: "Franqueado",
+    global_admin: "Administrador Global"
+  }[currentUser.userType] || "Usuário";
 
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
           <Avatar className="h-8 w-8">
-            {currentUser.avatarUrl ? (
-              <AvatarImage 
-                src={currentUser.avatarUrl} 
-                alt={currentUser.name || "User"} 
-                onError={(e) => {
-                  console.error("Avatar image failed to load");
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
-            ) : null}
+            <AvatarImage 
+              src={avatarUrl}
+              alt={currentUser.name || "User"} 
+              onError={(e) => {
+                console.error("Avatar image failed to load");
+                e.currentTarget.style.display = 'none';
+              }}
+            />
             <AvatarFallback className="bg-primary/10 text-primary font-bold uppercase">
               {firstLetter}
             </AvatarFallback>
