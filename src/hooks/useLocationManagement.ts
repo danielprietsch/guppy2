@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,11 +14,9 @@ export const useLocationManagement = () => {
     try {
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Direct SQL query to avoid RLS recursion
+      // Use the get_owner_locations function to avoid RLS recursion
       const { data: locationsData, error: locationsError } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('owner_id', userId);
+        .rpc('get_owner_locations', { owner_user_id: userId });
           
       if (locationsError) {
         debugError("useLocationManagement: Error fetching locations:", locationsError);
@@ -183,6 +182,7 @@ export const useLocationManagement = () => {
   };
 
   const handleLocationCreated = (location: Location) => {
+    debugLog("useLocationManagement: New location created", location);
     setUserLocations(prev => [...prev, location]);
     setSelectedLocation(location);
     setLocationCabins([]);
