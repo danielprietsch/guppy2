@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -237,17 +238,27 @@ const ProfessionalProfilePage = () => {
       <div className="max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Meu Perfil Profissional</h1>
         
-        {profile && (
-          <div className="mb-8">
-            <ProfileImageUpload
-              userId={profile.id}
-              currentAvatarUrl={profile.avatarUrl}
-              onImageUploaded={(url) => {
-                setProfile(prev => prev ? { ...prev, avatarUrl: url } : null);
-              }}
-            />
-          </div>
-        )}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Foto de Perfil</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            {profile && (
+              <ProfileImageUpload
+                userId={profile.id}
+                currentAvatarUrl={profile.avatarUrl}
+                onImageUploaded={(url) => {
+                  setProfile(prev => prev ? { ...prev, avatarUrl: url } : null);
+                  toast({
+                    title: "Foto atualizada",
+                    description: "Sua foto de perfil foi atualizada com sucesso.",
+                  });
+                }}
+                className="mb-4"
+              />
+            )}
+          </CardContent>
+        </Card>
         
         <form onSubmit={handleSubmit} className="space-y-8">
           <Card>

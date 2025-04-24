@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -92,12 +92,28 @@ export function ProfileImageUpload({
 
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <Avatar className="h-24 w-24">
-        <AvatarImage src={previewUrl || undefined} alt="Foto de perfil" />
-        <AvatarFallback className="bg-primary/10 text-primary text-xl">
-          {firstLetter}
-        </AvatarFallback>
-      </Avatar>
+      <div className="relative">
+        <Avatar className="h-32 w-32 border-2 border-primary/20">
+          <AvatarImage src={previewUrl || undefined} alt="Foto de perfil" />
+          <AvatarFallback className="bg-primary/10 text-primary text-3xl">
+            {firstLetter}
+          </AvatarFallback>
+        </Avatar>
+        
+        <label 
+          className="absolute bottom-0 right-0 p-1 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
+          title="Alterar foto de perfil"
+        >
+          <Camera className="h-5 w-5" />
+          <input
+            type="file"
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+            disabled={isUploading}
+          />
+        </label>
+      </div>
 
       <div className="flex items-center gap-2">
         <Button
