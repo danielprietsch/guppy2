@@ -383,9 +383,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_location_ownership: {
+        Args: { loc_id: string; user_id: string }
+        Returns: boolean
+      }
       get_allowed_user_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
+      }
+      get_location_approval_status: {
+        Args: { loc_id: string }
+        Returns: {
+          id: string
+          status: string
+          location_id: string
+        }[]
       }
       get_profile_user_type: {
         Args: { user_id: string }
