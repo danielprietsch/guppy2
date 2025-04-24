@@ -61,15 +61,25 @@ export function ProfileImageUpload({
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
-      // Use the update_avatar_everywhere function to update in all places
-      const { data, error } = await supabase.rpc(
-        'update_avatar_everywhere',
-        { user_id: userId, avatar_url: publicUrl }
-      );
+      // Update user metadata with new avatar URL
+      const { error: userUpdateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
 
-      if (error) {
-        console.error("Error updating avatar everywhere:", error);
-        throw new Error("Não foi possível atualizar seu avatar em todos os lugares");
+      if (userUpdateError) throw userUpdateError;
+
+      // Update profile in profiles table
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (profileUpdateError) {
+        console.error("Error updating profile:", profileUpdateError);
+        throw new Error("Não foi possível atualizar o perfil no banco de dados");
       }
 
       // Update local preview
