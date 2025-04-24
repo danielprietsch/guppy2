@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock } from "lucide-react";
+import { Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimeSlotCardProps {
@@ -88,16 +88,28 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               onChange={handlePriceChange}
               onBlur={handlePriceSubmit}
               onKeyDown={(e) => e.key === 'Enter' && handlePriceSubmit()}
-              onClick={(e) => e.stopPropagation()} // Prevent card click when editing
+              onClick={(e) => e.stopPropagation()}
               autoFocus
               className="w-24 text-black"
             />
           ) : (
-            <div
-              onDoubleClick={handlePriceDoubleClick}
-              className="cursor-text text-white"
-            >
-              {parseFloat(price.toString()).toFixed(2)}
+            <div className="flex items-center gap-2">
+              <span className="text-white">
+                {parseFloat(price.toString()).toFixed(2)}
+              </span>
+              {!isBooked && !isManuallyClosed && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 p-0 hover:bg-white/20"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingPrice(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 text-white" />
+                </Button>
+              )}
             </div>
           )}
         </div>
@@ -137,3 +149,4 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
+
