@@ -24,7 +24,7 @@ export const useAuth = () => {
               id: profileData.id,
               name: profileData.name || '',
               email: profileData.email || '',
-              user_type: profileData.user_type,
+              user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
               avatarUrl: profileData.avatar_url,
               avatar_url: profileData.avatar_url,
               phoneNumber: profileData.phone_number,
@@ -41,7 +41,7 @@ export const useAuth = () => {
               id: session.user.id,
               name: session.user.user_metadata?.name || '',
               email: session.user.email || '',
-              user_type: session.user.user_metadata?.user_type || 'client',
+              user_type: (session.user.user_metadata?.user_type as "professional" | "client" | "owner" | "global_admin") || 'client',
               avatarUrl: session.user.user_metadata?.avatar_url,
               avatar_url: session.user.user_metadata?.avatar_url,
               specialties: []
