@@ -53,8 +53,7 @@ export const recreateGlobalAdmin = async () => {
     // First, check if the user already exists
     const { data, error: fetchError } = await supabase.auth.admin.listUsers({
       page: 1,
-      perPage: 1,
-      // Remove the filter property as it's not supported in the PageParams type
+      perPage: 100 // Increased to make sure we capture all users
     });
     
     if (fetchError) {
@@ -63,9 +62,10 @@ export const recreateGlobalAdmin = async () => {
     }
     
     // Check if admin email exists in the returned users
-    const adminExists = data?.users?.some(
-      user => user.email === 'guppyadmin@nuvemtecnologia.com'
-    );
+    // Use optional chaining and type guard to ensure users array exists
+    const adminExists = data?.users && Array.isArray(data.users) && 
+      data.users.some(user => user && typeof user === 'object' && 'email' in user && 
+        user.email === 'guppyadmin@nuvemtecnologia.com');
     
     // If user exists, try password reset
     if (adminExists) {
