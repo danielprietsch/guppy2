@@ -97,3 +97,66 @@ export const handleGlobalAdminRegistration = async (data: {
     return false;
   }
 };
+
+// New function to recreate the global admin account
+export const recreateGlobalAdmin = async () => {
+  try {
+    debugLog("Attempting to recreate global admin user");
+    
+    // First, let's try to find if the user exists (just to show better UI feedback)
+    const { data: { users }, error: fetchError } = await supabase.auth.admin.listUsers({
+      perPage: 1,
+      filter: {
+        email: 'guppyadmin@nuvemtecnologia.com'
+      }
+    });
+    
+    if (fetchError) {
+      debugError("Error checking if global admin exists:", fetchError);
+      // Continue with creation attempt even if check fails
+    }
+    
+    // Default admin credentials
+    const adminEmail = 'guppyadmin@nuvemtecnologia.com';
+    const adminPassword = 'Guppy@Admin2025'; // More secure default password
+    const adminName = 'Global Admin';
+    
+    const { data, error } = await supabase.auth.signUp({
+      email: adminEmail,
+      password: adminPassword,
+      options: {
+        data: {
+          name: adminName,
+          userType: 'global_admin',
+          avatar_url: `https://ui-avatars.com/api/?name=Global+Admin&background=random`
+        }
+      }
+    });
+    
+    if (error) {
+      debugError("Error recreating global admin:", error);
+      toast({
+        title: "Erro ao recriar admin global",
+        description: error.message,
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    debugLog("Global admin recreated successfully");
+    toast({
+      title: "Admin Global recriado",
+      description: `Uma nova conta foi criada para ${adminEmail} com uma senha padrão. Faça login e depois altere a senha.`,
+    });
+    
+    return true;
+  } catch (error) {
+    debugError("Unexpected error recreating global admin:", error);
+    toast({
+      title: "Erro",
+      description: "Não foi possível recriar o admin global. Tente novamente mais tarde.",
+      variant: "destructive"
+    });
+    return false;
+  }
+};
