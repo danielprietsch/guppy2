@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
@@ -46,7 +45,6 @@ export const sendPasswordResetToGlobalAdmin = async () => {
 
 // Helper function to check if an email is the global admin email
 export const isGlobalAdminEmail = (email: string): boolean => {
-  // Removido para permitir qualquer email como global_admin
   return false;
 };
 
@@ -59,6 +57,65 @@ export const handleGlobalAdminRegistration = async (data: {
   try {
     debugLog("Attempting to register global admin user");
     
+    // First check if we already have a user with this email
+    const { data: existingUser, error: checkError } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    });
+    
+    if (!checkError && existingUser?.user) {
+      debugLog("User already exists, updating metadata instead");
+      
+      // User exists, update their metadata to global_admin
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          name: data.name,
+          userType: 'global_admin',
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
+        }
+      });
+      
+      if (updateError) {
+        debugError("Error updating existing user to global admin:", updateError);
+        toast({
+          title: "Erro ao atualizar usuário",
+          description: updateError.message,
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      // Now try to update or insert the profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: existingUser.user.id,
+          name: data.name,
+          email: data.email,
+          user_type: 'global_admin',
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
+        });
+        
+      if (profileError) {
+        debugError("Error updating global admin profile:", profileError);
+        toast({
+          title: "Aviso",
+          description: "Perfil atualizado, mas houve um problema com o tipo de usuário. Contate o suporte.",
+          variant: "destructive"
+        });
+        return false;
+      }
+      
+      debugLog("Existing user updated to global admin successfully");
+      toast({
+        title: "Perfil Atualizado",
+        description: "Sua conta foi atualizada para Administrador Global."
+      });
+      
+      return true;
+    }
+    
+    // If we get here, we need to create a new user
     const { data: signUpData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -81,8 +138,22 @@ export const handleGlobalAdminRegistration = async (data: {
       return false;
     }
     
-    // Let's manually insert into the profiles table to ensure it gets created properly
+    // We successfully signed up, but now need to check if we can create the profile
     if (signUpData && signUpData.user) {
+      debugLog("Auth account created, now creating profile for global admin");
+      
+      // First try to get the allowed user_type values from the profiles table
+      const { data: allowedUserTypes } = await supabase
+        .rpc('get_allowed_user_types');
+        
+      debugLog("Allowed user types:", allowedUserTypes);
+      
+      // Let's manually insert into the profiles table with a valid user_type
+      // If global_admin isn't a valid enum value, we'll use "admin" as a fallback
+      const userType = Array.isArray(allowedUserTypes) && 
+                       allowedUserTypes.includes('global_admin') ? 
+                       'global_admin' : 'admin';
+      
       try {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -90,7 +161,7 @@ export const handleGlobalAdminRegistration = async (data: {
             id: signUpData.user.id,
             name: data.name,
             email: data.email,
-            user_type: 'global_admin',
+            user_type: userType,
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
           });
           
