@@ -107,8 +107,8 @@ export const LocationsOverview = ({
       
       const result = await triggerApprovalRequest(selectedLocation.id, locationCabins.length);
       
-      // Log the result from triggerApprovalRequest
-      debugLog("LocationsOverview: Approval request result:", result);
+      // Enhanced logging of the result
+      debugLog("LocationsOverview: Approval request result:", JSON.stringify(result));
       
       if (result.success) {
         debugLog("LocationsOverview: Approval request was successful");
