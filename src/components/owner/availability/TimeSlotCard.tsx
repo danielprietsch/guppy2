@@ -114,7 +114,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               )}>
                 {parseFloat(price.toString()).toFixed(2)}
               </span>
-              {!isBooked && !isManuallyClosed && (
+              {!isBooked && (
                 <button
                   type="button"
                   className="h-6 w-6 p-0 hover:bg-white/20 rounded-full transition-all hover:scale-110 flex items-center justify-center"
