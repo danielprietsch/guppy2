@@ -70,7 +70,7 @@ const OwnerDashboardPage = () => {
         setCurrentUser(userData);
         
         // Fetch user locations
-        const { data: locations, error: locationsError } = await supabase
+        const { data: locationsData, error: locationsError } = await supabase
           .from('locations')
           .select('*')
           .eq('owner_id', session.user.id);
@@ -82,11 +82,27 @@ const OwnerDashboardPage = () => {
             description: "Não foi possível carregar seus locais.",
             variant: "destructive",
           });
-        } else {
-          setUserLocations(locations || []);
-          if (locations && locations.length > 0) {
-            setSelectedLocation(locations[0]);
-          }
+        } else if (locationsData && locationsData.length > 0) {
+          // Transform data from snake_case to camelCase
+          const transformedLocations: Location[] = locationsData.map(location => ({
+            id: location.id,
+            name: location.name,
+            address: location.address,
+            city: location.city,
+            state: location.state,
+            zipCode: location.zip_code,
+            cabinsCount: location.cabins_count || 0,
+            openingHours: {
+              open: location.opening_hours?.open || "09:00",
+              close: location.opening_hours?.close || "18:00"
+            },
+            amenities: location.amenities || [],
+            imageUrl: location.image_url || "",
+            description: location.description
+          }));
+          
+          setUserLocations(transformedLocations);
+          setSelectedLocation(transformedLocations[0]);
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
@@ -168,7 +184,7 @@ const OwnerDashboardPage = () => {
                     <p><strong>Endereço:</strong> {selectedLocation.address}</p>
                     <p><strong>Cidade:</strong> {selectedLocation.city}</p>
                     <p><strong>Estado:</strong> {selectedLocation.state}</p>
-                    <p><strong>CEP:</strong> {selectedLocation.zip_code}</p>
+                    <p><strong>CEP:</strong> {selectedLocation.zipCode}</p>
                     {selectedLocation.description && (
                       <p className="mt-2"><strong>Descrição:</strong> {selectedLocation.description}</p>
                     )}
