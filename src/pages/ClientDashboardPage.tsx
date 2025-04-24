@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,7 +71,7 @@ const ClientDashboardPage = () => {
       <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4">Dashboard do Cliente</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card className="bg-white shadow hover:shadow-md transition-all cursor-pointer" 
                 onClick={() => navigate("/client/reservations")}>
             <CardContent className="p-6">

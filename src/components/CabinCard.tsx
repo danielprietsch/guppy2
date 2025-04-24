@@ -1,8 +1,9 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const cabinImages = [
   "https://images.unsplash.com/photo-1633687367233-b9097e506d60?auto=format&fit=crop&w=800&q=80", // Hair salon station
@@ -18,6 +19,25 @@ interface CabinCardProps {
 }
 
 const CabinCard = ({ cabin, location }: CabinCardProps) => {
+  const [userType, setUserType] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkUserType = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', session.user.id)
+          .single();
+        
+        setUserType(profile?.user_type || null);
+      }
+    };
+
+    checkUserType();
+  }, []);
+
   const imageIndex = parseInt(cabin.id.replace(/\D/g, ""), 10) % cabinImages.length;
   const cabinImage = cabin.imageUrl || cabinImages[imageIndex];
 
@@ -69,11 +89,17 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        <Link to={`/book-cabin/${cabin.id}`} className="w-full">
-          <Button size="sm" className="w-full">
-            Reservar
-          </Button>
-        </Link>
+        {userType === 'professional' ? (
+          <Link to={`/book-cabin/${cabin.id}`} className="w-full">
+            <Button size="sm" className="w-full">
+              Reservar
+            </Button>
+          </Link>
+        ) : userType === 'client' ? (
+          <p className="text-sm text-muted-foreground text-center w-full">
+            Apenas profissionais podem reservar cabines
+          </p>
+        ) : null}
       </CardFooter>
     </Card>
   );
