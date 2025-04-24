@@ -1,5 +1,5 @@
 
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false; // Change to false to disable all debug logs
 
 export const debugLog = (...args: any[]) => {
   if (DEBUG_MODE) {
