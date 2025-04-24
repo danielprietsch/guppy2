@@ -96,11 +96,11 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
       </div>
       <CardContent className="p-4">
         {location && (
-          <h2 className="text-lg font-bold text-primary mb-2">
+          <h2 className="text-2xl font-bold text-primary mb-2">
             {location.name}
           </h2>
         )}
-        <h3 className="font-semibold">
+        <h3 className="text-lg font-semibold">
           Cabine: {cabin.name}
         </h3>
         {location && (
@@ -135,21 +135,21 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         )}
         
         {location && (
-          <div className="mt-4 flex items-center justify-center">
-            <div className="w-full h-48 bg-white flex items-center justify-center border rounded-md">
-              <iframe
-                title={`${location.name} Mapa`}
-                src={googleMapsEmbedUrl || ""}
-                width="100%"
-                height="100%"
-                className="w-full h-full rounded-md"
-                style={{
-                  border: "none",
-                  pointerEvents: 'auto'
-                }}
-                allowFullScreen
-              />
-            </div>
+          <div className="w-full h-60 bg-white flex items-center justify-center mt-4">
+            <iframe
+              title={`${location.name} Mapa`}
+              src={googleMapsEmbedUrl || ""}
+              width="100%"
+              height="100%"
+              className="w-full h-full rounded-lg"
+              style={{
+                minHeight: 180,
+                border: "none",
+                borderRadius: "0.75rem",
+                pointerEvents: 'auto'
+              }}
+              allowFullScreen
+            />
           </div>
         )}
       </CardContent>
@@ -181,3 +181,4 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
 };
 
 export default CabinCard;
+
