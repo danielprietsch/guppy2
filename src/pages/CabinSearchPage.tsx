@@ -24,12 +24,18 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
+// Define an extended cabin type that includes city and state for filtering purposes
+interface CabinWithLocation extends Cabin {
+  city?: string;
+  state?: string;
+}
+
 const CabinSearchPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [cabins, setCabins] = useState<Cabin[]>([]);
-  const [filteredCabins, setFilteredCabins] = useState<Cabin[]>([]);
+  const [cabins, setCabins] = useState<CabinWithLocation[]>([]);
+  const [filteredCabins, setFilteredCabins] = useState<CabinWithLocation[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -143,7 +149,7 @@ const CabinSearchPage = () => {
       if (cabinsError) throw cabinsError;
 
       // Transform cabins
-      const transformedCabins = cabinsData.map((cabin): Cabin => {
+      const transformedCabins = cabinsData.map((cabin): CabinWithLocation => {
         // Parse availability or set defaults
         const availability = cabin.availability 
           ? (typeof cabin.availability === 'string' 
@@ -193,7 +199,7 @@ const CabinSearchPage = () => {
     }
   };
 
-  const sortCabinsByProximity = (cabinsToSort: Cabin[]) => {
+  const sortCabinsByProximity = (cabinsToSort: CabinWithLocation[]) => {
     // If we don't have user location, just return the cabins as is
     if (!userLocation) return cabinsToSort;
 
