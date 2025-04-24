@@ -3,9 +3,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { debugLog, debugError } from "@/utils/debugLogger";
+import { debugLog, debugError, debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
 import { triggerApprovalRequest } from "@/utils/triggerApprovalRequest";
 
 const ClientDashboardPage = () => {
@@ -33,37 +34,67 @@ const ClientDashboardPage = () => {
           return;
         }
 
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('name, user_type')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (error || !profile) {
-          debugError("ClientDashboardPage: Error fetching profile:", error);
-          toast({
-            title: "Erro",
-            description: "Não foi possível carregar seu perfil.",
-            variant: "destructive",
-          });
-          return;
-        }
-          
-        if (profile.user_type !== "client") {
-          debugLog("ClientDashboardPage: Non-client user attempting to access client dashboard");
-          toast({
-            title: "Acesso negado",
-            description: "Esta página é apenas para clientes.",
-            variant: "destructive",
-          });
-          navigate("/");
-          return;
-        }
+        // Get user information from session metadata first
+        const userMetadata = session.user.user_metadata;
+        const userTypeFromMetadata = userMetadata?.userType;
         
-        const name = profile.name || session.user.email?.split('@')[0] || "Cliente";
-        debugLog(`ClientDashboardPage: Setting username to ${name}`);
-        setUserName(name);
+        debugLog("ClientDashboardPage: User metadata:", userMetadata);
+        
+        // If metadata indicates this is a client user, use that data
+        if (userTypeFromMetadata === 'client') {
+          debugLog("ClientDashboardPage: User is client according to metadata");
+          
+          // Use name from metadata or fallback to email
+          const name = userMetadata?.name || session.user.email?.split('@')[0] || "Cliente";
+          debugLog(`ClientDashboardPage: Setting username to ${name} from metadata`);
+          setUserName(name);
+          
+          // Fetch user's locations
+          await fetchUserLocations(session.user.id);
+          return;
+        }
 
+        // Only try the profile table as a fallback
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('name, user_type')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (error) {
+            debugError("ClientDashboardPage: Error fetching profile:", error);
+            // Don't return immediately, try to use session data as fallback
+          } else if (profile) {
+            if (profile.user_type !== "client") {
+              debugLog("ClientDashboardPage: Non-client user attempting to access client dashboard");
+              toast({
+                title: "Acesso negado",
+                description: "Esta página é apenas para clientes.",
+                variant: "destructive",
+              });
+              navigate("/");
+              return;
+            }
+            
+            const name = profile.name || session.user.email?.split('@')[0] || "Cliente";
+            debugLog(`ClientDashboardPage: Setting username to ${name} from profile`);
+            setUserName(name);
+            
+            // Fetch user's locations
+            await fetchUserLocations(session.user.id);
+            return;
+          }
+        } catch (profileError) {
+          debugError("ClientDashboardPage: Error in profile fetch:", profileError);
+          // Continue to fallback approach
+        }
+
+        // Fallback: Use email from session if all else fails
+        const fallbackName = session.user.email?.split('@')[0] || "Cliente";
+        debugLog(`ClientDashboardPage: Using fallback name ${fallbackName}`);
+        setUserName(fallbackName);
+        
         // Fetch user's locations
         await fetchUserLocations(session.user.id);
 
@@ -154,6 +185,7 @@ const ClientDashboardPage = () => {
     return (
       <div className="container py-12 flex items-center justify-center">
         <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
           <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
         </div>
@@ -170,13 +202,20 @@ const ClientDashboardPage = () => {
             Bem-vindo ao seu painel de cliente
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="mt-4 md:mt-0"
-          onClick={handleLogout}
-        >
-          Sair
-        </Button>
+        <div className="mt-4 md:mt-0 flex space-x-2">
+          <Button
+            onClick={() => navigate("/client/profile")}
+            variant="outline"
+          >
+            Meu Perfil
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleLogout}
+          >
+            Sair
+          </Button>
+        </div>
       </div>
       
       <div className="mt-8">
