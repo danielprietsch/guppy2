@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
@@ -29,6 +30,7 @@ const OwnerDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("locations");
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -48,15 +50,17 @@ const OwnerDashboardPage = () => {
         
         debugLog("OwnerDashboardPage: Session found, user:", session.user);
         
-        // First check user metadata
+        // Verificar tipo de usuário diretamente nos metadados - mais confiável
         const userType = session.user.user_metadata?.userType;
-        if (userType && userType === 'owner') {
+        if (userType === 'owner') {
           debugLog("OwnerDashboardPage: User is owner according to metadata");
-          return; // User is owner, allow access
+          setAuthChecked(true);
+          return; // Usuário é franqueado, permitir acesso
         }
 
+        // Se não encontrarmos o tipo nos metadados, verificar no perfil como fallback
         try {
-          // Then check profile if metadata doesn't confirm
+          // Tentar buscar o tipo no perfil como fonte secundária
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('user_type')
@@ -64,37 +68,56 @@ const OwnerDashboardPage = () => {
             .maybeSingle();
 
           if (error) {
-            debugError("OwnerDashboardPage: Error fetching profile:", error);
-            // If there's an error querying profiles but metadata indicates owner, allow access
+            // Se houver erro na consulta de perfil, mas os metadados indicam franqueado, permitir acesso
             if (userType === 'owner') {
-              debugLog("OwnerDashboardPage: Falling back to metadata user type");
+              debugLog("OwnerDashboardPage: Error fetching profile, falling back to metadata");
+              setAuthChecked(true);
               return;
             }
+            
+            throw error; // Re-lançar para tratamento externo
           }
 
-          debugLog("OwnerDashboardPage: Profile data:", profile);
-
-          if (!profile || profile.user_type !== 'owner') {
-            // Only redirect if we can confirm user is not an owner
-            if (userType !== 'owner') {
-              debugLog("OwnerDashboardPage: User is not owner, redirecting");
-              toast({
-                title: "Acesso Negado",
-                description: "Você não tem permissão para acessar esta área.",
-                variant: "destructive"
-              });
-              navigate("/");
-            }
+          if (profile?.user_type === 'owner') {
+            debugLog("OwnerDashboardPage: User is owner according to profile");
+            setAuthChecked(true);
+            return;
           }
-        } catch (error) {
-          // If we can't determine from profile but metadata says owner, allow access
-          debugError("OwnerDashboardPage: Error in profile check:", error);
-          if (userType === 'owner') return;
           
+          // Se chegou aqui, não é franqueado, redirecionar
+          debugLog("OwnerDashboardPage: User is not owner, redirecting");
+          toast({
+            title: "Acesso Negado",
+            description: "Você não tem permissão para acessar o dashboard de franqueado.",
+            variant: "destructive"
+          });
+          navigate("/");
+          
+        } catch (error) {
+          debugError("OwnerDashboardPage: Error in profile check:", error);
+          
+          // Se não podemos determinar com o perfil, mas os metadados dizem que é franqueado, permitir
+          if (userType === 'owner') {
+            debugLog("OwnerDashboardPage: Using metadata as fallback");
+            setAuthChecked(true);
+            return;
+          }
+          
+          // Caso não possamos confirmar que é franqueado, redirecionar para segurança
+          toast({
+            title: "Erro",
+            description: "Não foi possível verificar suas permissões.",
+            variant: "destructive"
+          });
           navigate("/");
         }
       } catch (error) {
         debugError("OwnerDashboardPage: Error checking session:", error);
+        toast({
+          title: "Erro",
+          description: "Ocorreu um erro ao verificar sua sessão.",
+          variant: "destructive"
+        });
         navigate("/login");
       }
     };
@@ -102,15 +125,15 @@ const OwnerDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  // Load locations when user is available
+  // Carregar locais quando o usuário estiver disponível
   useEffect(() => {
-    if (currentUser?.id) {
+    if (currentUser?.id && authChecked) {
       debugLog("OwnerDashboardPage: Loading locations for user:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
-  }, [currentUser, loadUserLocations]);
+  }, [currentUser, loadUserLocations, authChecked]);
 
-  if (isLoading) {
+  if (isLoading || !authChecked) {
     return (
       <div className="container py-12 flex items-center justify-center">
         <div className="text-center">

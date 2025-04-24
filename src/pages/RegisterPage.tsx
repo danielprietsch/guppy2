@@ -13,41 +13,68 @@ const RegisterPage = () => {
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
     const checkSession = async () => {
-      console.log("RegisterPage: Checking for existing session...");
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        console.log("RegisterPage: Found existing session:", data.session);
+      try {
+        debugLog("RegisterPage: Checking for existing session...");
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Use metadata as primary source
-        const userType = data.session.user.user_metadata?.userType;
-        if (userType) {
-          const dashboardRoute = getDashboardRoute(userType);
-          navigate(dashboardRoute, { replace: true });
-          return;
-        }
-        
-        // Try profile as secondary source
-        try {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', data.session.user.id)
-            .single();
-            
-          if (profile) {
-            const dashboardRoute = getDashboardRoute(profile.user_type);
+        if (session) {
+          debugLog("RegisterPage: Found existing session:", session.user.id);
+          
+          // Usar metadados como fonte principal - mais confiável
+          const userType = session.user.user_metadata?.userType;
+          debugLog("RegisterPage: User type from metadata:", userType);
+          
+          if (userType) {
+            const dashboardRoute = getDashboardRoute(userType);
+            debugLog(`RegisterPage: Redirecting to ${dashboardRoute} (from metadata)`);
             navigate(dashboardRoute, { replace: true });
             return;
           }
-        } catch (error) {
-          debugError("RegisterPage: Error fetching profile:", error);
+          
+          // Tentar o perfil como fonte secundária
+          try {
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('user_type')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (error) {
+              debugError("RegisterPage: Error fetching profile:", error);
+              // Se não conseguimos determinar, assumir cliente
+              navigate("/client/dashboard", { replace: true });
+              return;
+            }
+            
+            if (profile) {
+              debugLog("RegisterPage: User type from profile:", profile.user_type);
+              const dashboardRoute = getDashboardRoute(profile.user_type);
+              debugLog(`RegisterPage: Redirecting to ${dashboardRoute} (from profile)`);
+              navigate(dashboardRoute, { replace: true });
+              return;
+            }
+          } catch (error) {
+            debugError("RegisterPage: Error fetching profile:", error);
+            // Por padrão redirecionar para dashboard do cliente
+            navigate("/client/dashboard", { replace: true });
+            return;
+          }
+          
+          // Se chegou aqui, não conseguimos determinar o tipo de usuário
+          // Por padrão redirecionar para dashboard do cliente
+          debugLog("RegisterPage: Unable to determine user type, defaulting to client");
+          navigate("/client/dashboard", { replace: true });
+        } else {
+          debugLog("RegisterPage: No active session");
         }
-        
-        // Default to client if can't determine
-        navigate("/client/dashboard", { replace: true });
+      } catch (error) {
+        debugError("RegisterPage: Error checking session:", error);
+      } finally {
+        setIsCheckingSession(false);
       }
     };
     
@@ -56,7 +83,7 @@ const RegisterPage = () => {
 
   const getDashboardRoute = (userType: string): string => {
     debugLog("RegisterPage: Getting dashboard route for user type:", userType);
-    switch (userType) {
+    switch (userType.toLowerCase()) {
       case "provider":
         return "/provider/dashboard";
       case "owner":
@@ -79,13 +106,14 @@ const RegisterPage = () => {
     setAuthError(null);
     
     try {
+      const userTypeValue = data.userType.toLowerCase();
       debugLog("Tentando registrar com:", { 
         email: data.email, 
-        userType: data.userType 
+        userType: userTypeValue 
       });
 
-      // Special handling for global_admin
-      if (data.userType === "global_admin") {
+      // Tratamento especial para administrador global
+      if (userTypeValue === "global_admin") {
         debugLog("Registrando como administrador global");
         const success = await handleGlobalAdminRegistration({
           email: data.email,
@@ -99,7 +127,7 @@ const RegisterPage = () => {
             description: "Redirecionando para o dashboard de administrador global"
           });
           
-          // Wait a moment for the profile to be created before redirecting
+          // Aguardar um momento para o perfil ser criado antes de redirecionar
           setTimeout(() => {
             navigate("/admin/global", { replace: true });
           }, 1000);
@@ -113,14 +141,14 @@ const RegisterPage = () => {
         }
       }
       
-      // Handle registration for other user types
+      // Tratamento para outros tipos de usuário
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             name: data.name,
-            userType: data.userType,
+            userType: userTypeValue,
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
           }
         }
@@ -147,12 +175,16 @@ const RegisterPage = () => {
       });
       
       if (authData.user) {
-        // Use metadata user type directly - more reliable than waiting for profile
-        const userType = authData.user.user_metadata?.userType || data.userType;
+        // Usar tipo de usuário diretamente dos metadados - mais confiável
+        const userType = authData.user.user_metadata?.userType || userTypeValue;
         const dashboardRoute = getDashboardRoute(userType);
         
         debugLog(`Redirecting to ${dashboardRoute}`);
-        navigate(dashboardRoute, { replace: true });
+        
+        // Pequeno atraso para permitir que a sessão seja totalmente estabelecida
+        setTimeout(() => {
+          navigate(dashboardRoute, { replace: true });
+        }, 500);
       }
       
       setIsRegistering(false);
@@ -172,6 +204,17 @@ const RegisterPage = () => {
       return Promise.reject(error);
     }
   };
+  
+  if (isCheckingSession) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-16">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Verificando sessão...</h1>
+          <p className="text-muted-foreground">Por favor, aguarde.</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">

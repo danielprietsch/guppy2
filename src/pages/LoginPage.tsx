@@ -12,16 +12,18 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   useEffect(() => {
     const checkCurrentSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        debugLog("LoginPage: Checking current session:", session);
+        debugLog("LoginPage: Checking current session:", session?.user?.id);
+        
         if (session) {
-          debugLog("LoginPage: Session found, user is authenticated:", session.user);
+          debugLog("LoginPage: Session found, user is authenticated");
           
-          // Get user type from metadata as primary source
+          // Obter tipo de usuário dos metadados como fonte principal
           const userTypeFromMetadata = session.user.user_metadata?.userType;
           debugLog("LoginPage: User type from metadata:", userTypeFromMetadata);
           
@@ -32,7 +34,7 @@ const LoginPage = () => {
             return;
           }
           
-          // Try to get from profile as secondary source
+          // Tentar obter do perfil como fonte secundária
           try {
             const { data: profile, error } = await supabase
               .from('profiles')
@@ -42,7 +44,7 @@ const LoginPage = () => {
               
             if (error) {
               debugError("LoginPage: Error fetching profile:", error);
-              // Default to client if can't determine user type
+              // Por padrão, ir para cliente se não conseguir determinar
               navigate("/client/dashboard", { replace: true });
               return;
             }
@@ -53,10 +55,14 @@ const LoginPage = () => {
               debugLog("LoginPage: Redirecting to dashboard route:", dashboardRoute);
               navigate(dashboardRoute, { replace: true });
               return;
+            } else {
+              // Nenhum perfil encontrado, usar cliente como padrão
+              debugLog("LoginPage: No profile found, defaulting to client");
+              navigate("/client/dashboard", { replace: true });
             }
           } catch (error) {
             debugError("Error fetching profile:", error);
-            // Default to client if can't determine user type
+            // Por padrão, ir para cliente se não conseguir determinar
             navigate("/client/dashboard", { replace: true });
           }
         } else {
@@ -64,6 +70,8 @@ const LoginPage = () => {
         }
       } catch (error) {
         debugError("Error checking session:", error);
+      } finally {
+        setIsCheckingSession(false);
       }
     };
     
@@ -72,7 +80,8 @@ const LoginPage = () => {
 
   const getDashboardRoute = (userType: string): string => {
     debugLog("LoginPage: Getting dashboard route for user type:", userType);
-    switch (userType) {
+    // Garantir que a comparação seja case-insensitive
+    switch (userType.toLowerCase()) {
       case "global_admin":
         return "/admin/global";
       case "provider":
@@ -110,22 +119,27 @@ const LoginPage = () => {
         return Promise.reject(error);
       }
       
-      debugLog("Login successful:", authData);
+      debugLog("Login successful:", authData?.user?.id);
       
       if (authData.user) {
-        // Get user type directly from metadata - more reliable
+        // Obter tipo de usuário diretamente dos metadados - mais confiável
         const userTypeFromMetadata = authData.user.user_metadata?.userType;
         if (userTypeFromMetadata) {
           debugLog("Login: Using metadata user_type:", userTypeFromMetadata);
           const dashboardRoute = getDashboardRoute(userTypeFromMetadata);
           debugLog(`Redirecting to ${dashboardRoute} (from metadata)`);
-          navigate(dashboardRoute, { replace: true });
+          
+          // Pequeno atraso para permitir que a sessão seja totalmente estabelecida
+          setTimeout(() => {
+            navigate(dashboardRoute, { replace: true });
+          }, 500);
+          
           setIsLoggingIn(false);
           return Promise.resolve();
         }
             
         try {
-          // Only try to get profile if metadata doesn't have user type
+          // Só tentar obter perfil se os metadados não tiverem o tipo de usuário
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('user_type')
@@ -134,22 +148,30 @@ const LoginPage = () => {
             
           if (error) {
             debugError("Login: Error fetching profile:", error);
-            // Default to client
-            navigate("/client/dashboard", { replace: true });
+            // Por padrão, ir para cliente
+            setTimeout(() => {
+              navigate("/client/dashboard", { replace: true });
+            }, 500);
           } else if (profile) {
             debugLog("Login: Found profile with user_type:", profile.user_type);
             const dashboardRoute = getDashboardRoute(profile.user_type);
             debugLog(`Redirecting to ${dashboardRoute} (from profile)`);
-            navigate(dashboardRoute, { replace: true });
+            setTimeout(() => {
+              navigate(dashboardRoute, { replace: true });
+            }, 500);
           } else {
-            // No profile found, default to client
+            // Nenhum perfil encontrado, usar cliente como padrão
             debugLog("Login: No profile found, defaulting to client dashboard");
-            navigate("/client/dashboard", { replace: true });
+            setTimeout(() => {
+              navigate("/client/dashboard", { replace: true });
+            }, 500);
           }
         } catch (profileError) {
           debugError("Error fetching profile:", profileError);
-          // Default to client
-          navigate("/client/dashboard", { replace: true });
+          // Por padrão, ir para cliente
+          setTimeout(() => {
+            navigate("/client/dashboard", { replace: true });
+          }, 500);
         }
       }
       
@@ -170,6 +192,17 @@ const LoginPage = () => {
       return Promise.reject(error);
     }
   };
+  
+  if (isCheckingSession) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-16">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Verificando sessão...</h1>
+          <p className="text-muted-foreground">Por favor, aguarde.</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
