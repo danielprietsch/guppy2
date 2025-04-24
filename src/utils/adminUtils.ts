@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
@@ -46,6 +45,45 @@ export const addAdminRole = async (userId: string): Promise<boolean> => {
     return true;
   } catch (error) {
     debugError("addAdminRole: Unexpected error:", error);
+    return false;
+  }
+};
+
+export const createGlobalAdmin = async () => {
+  try {
+    debugLog("Creating global admin user");
+    
+    const { data, error } = await supabase.auth.signUp({
+      email: 'guppyadmin@nuvemtecnologia.com',
+      password: 'Dani12qw',
+      options: {
+        data: {
+          name: 'Global Admin',
+          userType: 'global_admin',
+          avatar_url: `https://ui-avatars.com/api/?name=Global+Admin&background=random`
+        }
+      }
+    });
+    
+    if (error) {
+      debugError("Error creating global admin:", error);
+      toast({
+        title: "Erro ao criar admin global",
+        description: error.message,
+        variant: "destructive"
+      });
+      return false;
+    }
+    
+    debugLog("Global admin created successfully");
+    toast({
+      title: "Admin Global criado",
+      description: "O usuário global admin foi criado com sucesso."
+    });
+    
+    return true;
+  } catch (error) {
+    debugError("Unexpected error creating global admin:", error);
     return false;
   }
 };
