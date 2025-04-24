@@ -1,4 +1,3 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,10 +81,17 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         />
       </div>
       <CardContent className="p-4">
-        <h3 className="font-semibold">{cabin.name}</h3>
+        {location && (
+          <h2 className="text-lg font-bold text-primary mb-2">
+            {location.name}
+          </h2>
+        )}
+        <h3 className="font-semibold">
+          Cabine: {cabin.name}
+        </h3>
         {location && (
           <p className="text-sm text-muted-foreground">
-            {location.name}, {location.city}
+            {location.city}, {location.state}
           </p>
         )}
         <p className="text-sm mt-2">{cabin.description}</p>
