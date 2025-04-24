@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
-import { handleGlobalAdminRegistration } from "@/utils/globalAdminUtils";
+import { handleGlobalAdminRegistration, isGlobalAdminEmail } from "@/utils/globalAdminUtils";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
 const RegisterPage = () => {
@@ -71,6 +71,7 @@ const RegisterPage = () => {
         userType: data.userType 
       });
 
+      // Special handling for global_admin
       if (data.userType === "global_admin") {
         debugLog("Registrando como administrador global");
         const success = await handleGlobalAdminRegistration({
@@ -99,6 +100,7 @@ const RegisterPage = () => {
         }
       }
       
+      // Handle registration for other user types
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
