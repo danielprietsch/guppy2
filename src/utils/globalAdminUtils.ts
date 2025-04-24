@@ -51,12 +51,10 @@ export const recreateGlobalAdmin = async () => {
     debugLog("Attempting to recreate global admin user");
     
     // First, check if the user already exists
-    const { data: { users }, error: fetchError } = await supabase.auth.admin.listUsers({
+    const { data, error: fetchError } = await supabase.auth.admin.listUsers({
       page: 1,
       perPage: 1,
-      filter: {
-        email: 'guppyadmin@nuvemtecnologia.com'
-      }
+      // Remove the filter property as it's not supported in the PageParams type
     });
     
     if (fetchError) {
@@ -64,13 +62,18 @@ export const recreateGlobalAdmin = async () => {
       throw fetchError;
     }
     
+    // Check if admin email exists in the returned users
+    const adminExists = data?.users?.some(
+      user => user.email === 'guppyadmin@nuvemtecnologia.com'
+    );
+    
     // If user exists, try password reset
-    if (users && users.length > 0) {
+    if (adminExists) {
       return sendPasswordResetToGlobalAdmin();
     }
     
     // Create new user
-    const { data, error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: 'guppyadmin@nuvemtecnologia.com',
       password: `Admin${Date.now().toString().slice(-6)}!`,
       options: {
