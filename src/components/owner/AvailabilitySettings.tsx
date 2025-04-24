@@ -13,6 +13,7 @@ import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { Json } from "@/integrations/supabase/types";
 
 // Define interface for pricing structure
 interface CabinPricing {
@@ -111,6 +112,43 @@ export const AvailabilitySettings = ({
     }
   };
 
+  // Helper function to safely parse pricing data from JSON
+  const parsePricingData = (pricingJson: Json | null): CabinPricing => {
+    // Default pricing structure if nothing is available
+    const defaultPricing: CabinPricing = {
+      defaultPricing: { price: 100 },
+      specificDates: {}
+    };
+
+    if (!pricingJson) return defaultPricing;
+
+    try {
+      // Check if it's an object type of Json
+      if (
+        typeof pricingJson === 'object' && 
+        pricingJson !== null && 
+        !Array.isArray(pricingJson)
+      ) {
+        // Cast to Record<string, any> to access properties safely
+        const pricingObj = pricingJson as Record<string, any>;
+        
+        // Verify if the expected structure exists
+        if (pricingObj.defaultPricing && pricingObj.specificDates) {
+          return {
+            defaultPricing: pricingObj.defaultPricing,
+            specificDates: pricingObj.specificDates
+          };
+        }
+      }
+      
+      // If not valid structure, return default
+      return defaultPricing;
+    } catch (e) {
+      console.error("Error parsing pricing data:", e);
+      return defaultPricing;
+    }
+  };
+
   const loadCabinPrices = async () => {
     try {
       if (!selectedLocation) return;
@@ -128,8 +166,8 @@ export const AvailabilitySettings = ({
         const slotPricingData: { [cabinId: string]: { [date: string]: { [turn: string]: number } } } = {};
 
         cabinsData.forEach(cabin => {
-          // Safely process the cabin pricing data with proper type checking
-          const pricingData = cabin.pricing as CabinPricing | null;
+          // Parse the pricing data safely using our helper function
+          const pricingData = parsePricingData(cabin.pricing);
           
           // Set default cabin price
           const defaultPrice = pricingData?.defaultPricing?.price || 100;
@@ -189,11 +227,8 @@ export const AvailabilitySettings = ({
       if (fetchError) throw fetchError;
 
       if (cabinData) {
-        // Safely cast to our CabinPricing interface
-        const pricingData = cabinData.pricing as CabinPricing || { 
-          defaultPricing: {}, 
-          specificDates: {} 
-        };
+        // Parse the pricing data safely
+        const pricingData = parsePricingData(cabinData.pricing);
         
         // Make sure structures exist
         if (!pricingData.specificDates) {
@@ -216,10 +251,16 @@ export const AvailabilitySettings = ({
           pricingData.specificDates[date][turn].available = !isManualClose;
         }
         
+        // Convert CabinPricing back to Json for database update
+        const pricingJson = {
+          defaultPricing: pricingData.defaultPricing,
+          specificDates: pricingData.specificDates
+        };
+
         // Update the database
         const { error: updateError } = await supabase
           .from('cabins')
-          .update({ pricing: pricingData })
+          .update({ pricing: pricingJson as Json })
           .eq('id', cabinId);
           
         if (updateError) throw updateError;
@@ -270,11 +311,8 @@ export const AvailabilitySettings = ({
       if (fetchError) throw fetchError;
 
       if (cabinData) {
-        // Safely cast to our CabinPricing interface
-        const pricingData = cabinData.pricing as CabinPricing || {
-          defaultPricing: {},
-          specificDates: {}
-        };
+        // Parse the pricing data safely
+        const pricingData = parsePricingData(cabinData.pricing);
         
         // Make sure specificDates exists
         if (!pricingData.specificDates) {
@@ -297,10 +335,16 @@ export const AvailabilitySettings = ({
           pricingData.specificDates[date][turn].price = price;
         }
         
+        // Convert CabinPricing back to Json for database update
+        const pricingJson = {
+          defaultPricing: pricingData.defaultPricing,
+          specificDates: pricingData.specificDates
+        };
+        
         // Update the database
         const { error: updateError } = await supabase
           .from('cabins')
-          .update({ pricing: pricingData })
+          .update({ pricing: pricingJson as Json })
           .eq('id', cabinId);
           
         if (updateError) throw updateError;
