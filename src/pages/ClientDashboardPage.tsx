@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
@@ -12,9 +13,11 @@ const ClientDashboardPage = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        debugLog("ClientDashboardPage: Checking authentication");
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
+          debugLog("ClientDashboardPage: No active session");
           toast({
             title: "Acesso negado",
             description: "Você precisa estar logado para acessar esta página.",
@@ -32,7 +35,7 @@ const ClientDashboardPage = () => {
           .single();
           
         if (error || !profile) {
-          console.error("Erro ao buscar perfil:", error);
+          debugError("ClientDashboardPage: Error fetching profile:", error);
           toast({
             title: "Erro",
             description: "Não foi possível carregar seu perfil.",
@@ -43,6 +46,7 @@ const ClientDashboardPage = () => {
           
         // Check if user is client type
         if (profile.user_type !== "client") {
+          debugLog("ClientDashboardPage: Non-client user attempting to access client dashboard");
           toast({
             title: "Acesso negado",
             description: "Esta página é apenas para clientes.",
@@ -52,15 +56,18 @@ const ClientDashboardPage = () => {
           return;
         }
         
-        setUserName(profile.name || session.user.email?.split('@')[0] || "Cliente");
+        const name = profile.name || session.user.email?.split('@')[0] || "Cliente";
+        debugLog(`ClientDashboardPage: Setting username to ${name}`);
+        setUserName(name);
       } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
+        debugError("ClientDashboardPage: Authentication verification error:", error);
         toast({
           title: "Erro",
           description: "Erro ao verificar autenticação",
           variant: "destructive",
         });
       } finally {
+        debugLog("ClientDashboardPage: Finished authentication check");
         setLoading(false);
       }
     };

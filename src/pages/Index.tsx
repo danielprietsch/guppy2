@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import NavBar from "@/components/NavBar";
@@ -6,6 +5,7 @@ import Footer from "@/components/Footer";
 import { User } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const Index = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -15,12 +15,12 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("Index: Initializing auth management");
+    debugLog("Index: Initializing auth management");
     
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("Index: Auth state changed:", event);
+        debugLog("Index: Auth state changed:", event);
         
         // For syncing auth state without redirects
         if (session?.user) {
@@ -29,6 +29,7 @@ const Index = () => {
             loadUserProfile(session.user.id);
           }, 0);
         } else {
+          debugLog("Index: No active session, resetting user state");
           setCurrentUser(null);
           setUserRoles([]);
           setIsLoading(false);
@@ -38,6 +39,7 @@ const Index = () => {
           if (currentPath.includes('/dashboard') || 
               currentPath.includes('/profile') ||
               currentPath.includes('/admin')) {
+            debugLog(`Index: Redirecting to login from path: ${currentPath}`);
             navigate('/login', { replace: true });
           }
         }
@@ -46,15 +48,15 @@ const Index = () => {
     
     // Check for existing session
     const checkSession = async () => {
-      console.log("Index: Checking current session");
+      debugLog("Index: Checking current session");
       setIsLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        console.log("Index: Found existing session, loading profile");
+        debugLog("Index: Found existing session, loading profile");
         loadUserProfile(session.user.id);
       } else {
-        console.log("Index: No active session found");
+        debugLog("Index: No active session found");
         setIsLoading(false);
         
         // Only redirect to login if on a protected page
@@ -62,6 +64,7 @@ const Index = () => {
         if (currentPath.includes('/dashboard') || 
             currentPath.includes('/profile') ||
             currentPath.includes('/admin')) {
+          debugLog(`Index: Redirecting to login from path: ${currentPath}`);
           navigate('/login', { replace: true });
         }
       }
@@ -69,7 +72,7 @@ const Index = () => {
     
     const loadUserProfile = async (userId: string) => {
       try {
-        console.log("Index: Loading profile for user:", userId);
+        debugLog("Index: Loading profile for user:", userId);
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
@@ -77,7 +80,7 @@ const Index = () => {
           .maybeSingle();
         
         if (error) {
-          console.error("Index: Error loading profile:", error);
+          debugError("Index: Error loading profile:", error);
           setIsLoading(false);
           return;
         }
@@ -89,15 +92,15 @@ const Index = () => {
           .eq('user_id', userId);
           
         if (rolesError) {
-          console.error("Index: Error loading user roles:", rolesError);
+          debugError("Index: Error loading user roles:", rolesError);
         } else {
           const userRolesList = roles?.map(r => r.role) || [];
-          console.log("Index: User roles loaded:", userRolesList);
+          debugLog("Index: User roles loaded:", userRolesList);
           setUserRoles(userRolesList);
         }
         
         if (profile) {
-          console.log("Index: Profile loaded successfully:", profile);
+          debugLog("Index: Profile loaded successfully:", profile);
           const { data: { user } } = await supabase.auth.getUser();
           
           const userData: User = {
@@ -111,10 +114,11 @@ const Index = () => {
           };
           
           setCurrentUser(userData);
-          console.log("Index: User data set:", userData);
+          debugLog("Index: User data set:", userData);
           
           // Redirect from admin page if user isn't admin
           if (location.pathname.includes('/admin') && !userRoles.includes('admin')) {
+            debugLog("Index: Unauthorized admin page access attempt");
             toast({
               title: "Acesso restrito",
               description: "Você não tem permissão para acessar esta página.",
@@ -123,7 +127,7 @@ const Index = () => {
             navigate('/', { replace: true });
           }
         } else {
-          console.log("Index: No profile found, trying to create one");
+          debugLog("Index: No profile found, trying to create one");
           
           // Try to create profile from user metadata
           const { data: { user } } = await supabase.auth.getUser();
@@ -151,12 +155,12 @@ const Index = () => {
             
             setCurrentUser(userData);
           } else {
-            console.error("Index: No user metadata available to create profile");
+            debugError("Index: No user metadata available to create profile");
             setCurrentUser(null);
           }
         }
       } catch (error) {
-        console.error("Index: Error in loadUserProfile:", error);
+        debugError("Index: Error in loadUserProfile:", error);
         setCurrentUser(null);
       } finally {
         setIsLoading(false);
@@ -166,7 +170,7 @@ const Index = () => {
     checkSession();
     
     return () => {
-      console.log("Index: Cleaning up auth listeners");
+      debugLog("Index: Cleaning up auth listeners");
       subscription.unsubscribe();
     };
   }, [location.pathname, navigate]);
