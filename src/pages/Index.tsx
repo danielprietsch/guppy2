@@ -107,14 +107,14 @@ const Index = () => {
             userType: profile.user_type as "client" | "provider" | "owner",
             avatarUrl: profile.avatar_url,
             phoneNumber: profile.phone_number,
-            roles: userRolesList
+            roles: userRoles
           };
           
           setCurrentUser(userData);
           console.log("Index: User data set:", userData);
           
           // Redirect from admin page if user isn't admin
-          if (location.pathname.includes('/admin') && !userRolesList.includes('admin')) {
+          if (location.pathname.includes('/admin') && !userRoles.includes('admin')) {
             toast({
               title: "Acesso restrito",
               description: "Você não tem permissão para acessar esta página.",
@@ -146,7 +146,7 @@ const Index = () => {
               userType: newProfile.user_type as "client" | "provider" | "owner",
               avatarUrl: newProfile.avatar_url,
               phoneNumber: null,
-              roles: userRolesList
+              roles: userRoles
             };
             
             setCurrentUser(userData);
