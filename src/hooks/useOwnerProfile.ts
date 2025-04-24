@@ -80,17 +80,24 @@ export const useOwnerProfile = () => {
         }
         
         // Fix type issue: ensure userType is one of the allowed values
-        let validUserType: "owner" | "professional" | "client" | "global_admin" = "owner"; // Default to owner
+        const userTypeFromProfile = profileData.user_type;
+        let validUserType: "owner" | "professional" | "client" | "global_admin";
         
-        // Check if the profile data contains a valid user_type
-        if (profileData.user_type === "owner" || 
-            profileData.user_type === "professional" || 
-            profileData.user_type === "client" || 
-            profileData.user_type === "global_admin") {
-          validUserType = profileData.user_type as "owner" | "professional" | "client" | "global_admin";
+        // Check if the profile data contains a valid user_type and assign the appropriate type
+        if (userTypeFromProfile === "owner") {
+          validUserType = "owner";
+        } else if (userTypeFromProfile === "professional") {
+          validUserType = "professional";
+        } else if (userTypeFromProfile === "client") {
+          validUserType = "client";
+        } else if (userTypeFromProfile === "global_admin") {
+          validUserType = "global_admin";
+        } else {
+          // Default fallback
+          validUserType = "owner";
         }
         
-        // User is confirmed as owner
+        // User is confirmed as owner or global_admin
         const userData: User = {
           id: profileData.id,
           name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
