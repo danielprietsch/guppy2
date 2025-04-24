@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -11,13 +10,62 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
+const validateCPF = (cpf: string): boolean => {
+  cpf = cpf.replace(/[^\d]/g, '');
+  if (cpf.length !== 11) return false;
+  if (/^(\d)\1+$/.test(cpf)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cpf.charAt(i)) * (10 - i);
+  }
+  let remainder = 11 - (sum % 11);
+  let checkDigit1 = remainder === 10 || remainder === 11 ? 0 : remainder;
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cpf.charAt(i)) * (11 - i);
+  }
+  remainder = 11 - (sum % 11);
+  let checkDigit2 = remainder === 10 || remainder === 11 ? 0 : remainder;
+
+  return cpf.charAt(9) === checkDigit1.toString() && cpf.charAt(10) === checkDigit2.toString();
+};
+
+const validateCNPJ = (cnpj: string): boolean => {
+  cnpj = cnpj.replace(/[^\d]/g, '');
+  if (cnpj.length !== 14) return false;
+  if (/^(\d)\1+$/.test(cnpj)) return false;
+
+  let sum = 0;
+  let weight = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(cnpj.charAt(i)) * weight[i];
+  }
+  let remainder = sum % 11;
+  let checkDigit1 = remainder < 2 ? 0 : 11 - remainder;
+
+  sum = 0;
+  weight = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  for (let i = 0; i < 13; i++) {
+    sum += parseInt(cnpj.charAt(i)) * weight[i];
+  }
+  remainder = sum % 11;
+  let checkDigit2 = remainder < 2 ? 0 : 11 - remainder;
+
+  return cnpj.charAt(12) === checkDigit1.toString() && cnpj.charAt(13) === checkDigit2.toString();
+};
+
 const ownerFormSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   companyName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres"),
   phone: z.string().optional(),
-  cnpj: z.string().min(14, "CNPJ inválido").max(18, "CNPJ inválido")
+  taxId: z.string().refine((value) => {
+    const cleanValue = value.replace(/[^\d]/g, '');
+    return cleanValue.length === 11 ? validateCPF(cleanValue) : validateCNPJ(cleanValue);
+  }, { message: "CPF ou CNPJ inválido" })
 });
 
 type OwnerFormValues = z.infer<typeof ownerFormSchema>;
@@ -25,6 +73,7 @@ type OwnerFormValues = z.infer<typeof ownerFormSchema>;
 export const OwnerRegistrationForm: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [taxIdType, setTaxIdType] = useState<'cpf' | 'cnpj'>('cpf');
 
   const form = useForm<OwnerFormValues>({
     resolver: zodResolver(ownerFormSchema),
@@ -34,7 +83,7 @@ export const OwnerRegistrationForm: React.FC = () => {
       password: "",
       companyName: "",
       phone: "",
-      cnpj: ""
+      taxId: ""
     },
   });
 
@@ -76,7 +125,7 @@ export const OwnerRegistrationForm: React.FC = () => {
         .update({
           company_name: data.companyName,
           phone_number: data.phone || null,
-          cnpj: data.cnpj
+          [taxIdType === 'cpf' ? 'cpf' : 'cnpj']: data.taxId.replace(/[^\d]/g, '')
         })
         .eq('id', authData.user.id);
 
@@ -85,7 +134,7 @@ export const OwnerRegistrationForm: React.FC = () => {
         toast({
           title: "Alerta",
           description: "Usuário criado, mas houve um erro ao salvar detalhes adicionais do perfil.",
-          variant: "destructive" // Changed from "warning" to "destructive"
+          variant: "destructive"
         });
       } else {
         debugLog("OwnerRegistrationForm: Profile updated successfully");
@@ -192,12 +241,23 @@ export const OwnerRegistrationForm: React.FC = () => {
 
             <FormField
               control={form.control}
-              name="cnpj"
+              name="taxId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>CNPJ</FormLabel>
+                  <FormLabel>
+                    {taxIdType === 'cpf' ? 'CPF' : 'CNPJ'}
+                    <span 
+                      className="text-blue-500 text-sm ml-2 cursor-pointer"
+                      onClick={() => setTaxIdType(taxIdType === 'cpf' ? 'cnpj' : 'cpf')}
+                    >
+                      (Mudar para {taxIdType === 'cpf' ? 'CNPJ' : 'CPF'})
+                    </span>
+                  </FormLabel>
                   <FormControl>
-                    <Input placeholder="00.000.000/0000-00" {...field} />
+                    <Input 
+                      placeholder={taxIdType === 'cpf' ? '000.000.000-00' : '00.000.000/0000-00'} 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
