@@ -56,9 +56,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     const turnos = ["morning", "afternoon", "evening"];
 
     return (
-      <div className="flex flex-col gap-1 p-1 h-full">
+      <div className="flex flex-col gap-2 p-2 h-full">
         <div className="text-sm font-medium text-center">{format(day, "d")}</div>
-        <div className="grid gap-1">
+        <div className="grid gap-2">
           {turnos.map((turno) => (
             <TimeSlotCard
               key={`${dateStr}-${turno}`}
@@ -66,7 +66,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
               price={getSlotPrice(dateStr, turno)}
               isBooked={daysBooked[dateStr]?.[turno] || false}
               isManuallyClosed={manuallyClosedDates[dateStr]?.[turno] || false}
-              onPriceEdit={(newPrice) => onPriceChange?.(dateStr, turno, newPrice)}
+              onPriceEdit={(newPrice) => handlePriceEdit(dateStr, turno, newPrice)}
               onManualClose={() => onStatusChange?.(dateStr, turno, true)}
               onRelease={() => onStatusChange?.(dateStr, turno, false)}
               onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}
@@ -89,9 +89,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           months: "w-full",
           month: "w-full",
           table: "w-full border-collapse",
-          head_cell: "text-muted-foreground font-normal w-full text-center px-1", 
-          cell: "h-[180px] min-h-[180px] p-0 border border-border relative",
-          day: "h-full w-full p-0 font-normal text-lg", 
+          head_cell: "text-muted-foreground font-normal w-full text-center px-2", 
+          cell: "h-auto min-h-[240px] p-0 border border-border relative",
+          day: "h-full w-full p-0 font-normal text-2xl font-bold", 
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
           day_today: "bg-accent text-accent-foreground",
           day_outside: "text-muted-foreground opacity-50",
