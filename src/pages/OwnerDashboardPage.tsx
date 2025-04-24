@@ -159,12 +159,13 @@ const OwnerDashboardPage = () => {
       }
       
       const transformedCabins: Cabin[] = data.map(cabin => {
-        // Initialize default structures
+        // Initialize default structures for pricing
         const defaultPricing = {
           defaultPricing: {},
           specificDates: {}
         };
         
+        // Initialize default structure for availability
         const defaultAvailability = {
           morning: true,
           afternoon: true, 
@@ -179,16 +180,17 @@ const OwnerDashboardPage = () => {
             if (typeof cabin.pricing === 'string') {
               cabinPricing = JSON.parse(cabin.pricing);
             } else if (typeof cabin.pricing === 'object' && cabin.pricing !== null) {
-              // Check if the object has the expected structure
-              const pricingObj = cabin.pricing as Record<string, unknown>;
-              cabinPricing = {
-                defaultPricing: pricingObj.defaultPricing !== undefined ? pricingObj.defaultPricing : {},
-                specificDates: pricingObj.specificDates !== undefined ? pricingObj.specificDates : {}
-              };
+              const pricingObj = cabin.pricing as any;
+              if (pricingObj.defaultPricing !== undefined || pricingObj.specificDates !== undefined) {
+                cabinPricing = {
+                  defaultPricing: pricingObj.defaultPricing || {},
+                  specificDates: pricingObj.specificDates || {}
+                };
+              }
             }
           }
         } catch (e) {
-          console.error("Error parsing pricing data:", e);
+          console.error("Error parsing pricing data for cabin:", cabin.id, e);
         }
         
         // Process availability data
@@ -199,8 +201,7 @@ const OwnerDashboardPage = () => {
             if (typeof cabin.availability === 'string') {
               cabinAvailability = JSON.parse(cabin.availability);
             } else if (typeof cabin.availability === 'object' && cabin.availability !== null) {
-              // Check if the object has the expected structure
-              const availObj = cabin.availability as Record<string, unknown>;
+              const availObj = cabin.availability as any;
               cabinAvailability = {
                 morning: availObj.morning !== false,
                 afternoon: availObj.afternoon !== false,
@@ -209,9 +210,10 @@ const OwnerDashboardPage = () => {
             }
           }
         } catch (e) {
-          console.error("Error parsing availability data:", e);
+          console.error("Error parsing availability data for cabin:", cabin.id, e);
         }
         
+        // Construct the cabin object with properly typed data
         return {
           id: cabin.id,
           locationId: cabin.location_id,
