@@ -1,5 +1,5 @@
 
-export const DEBUG_MODE = false; // Change to true to enable all debug logs
+export const DEBUG_MODE = true; // Enable global debugging in development
 
 // Specific areas of the system can be enabled individually for debugging
 export const DEBUG_AREAS = {
@@ -42,7 +42,7 @@ export const debugAreaLog = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => 
 // Critical logs that should be logged regardless of verbosity
 export const debugAreaCritical = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => {
   if (DEBUG_MODE || DEBUG_AREAS[area]) {
-    console.log(`[DEBUG:${area}:CRITICAL]`, ...args);
+    console.error(`[DEBUG:${area}:CRITICAL]`, ...args);
   }
 };
 
@@ -63,4 +63,3 @@ export const debugGroup = (label: string, fn: () => void) => {
     console.groupEnd();
   }
 };
-

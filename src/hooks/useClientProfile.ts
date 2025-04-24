@@ -23,30 +23,26 @@ export const useClientProfile = () => {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
+          debugAreaCritical("CLIENT_PROFILE", "Session error:", sessionError);
           throw new Error(`Erro ao buscar sessão: ${sessionError.message}`);
         }
         
         if (!session) {
-          debugAreaCritical("CLIENT_PROFILE", "No session found, redirecting to login");
+          debugAreaCritical("CLIENT_PROFILE", "No session found");
           setError("Você precisa fazer login para acessar esta página.");
-          toast({
-            title: "Não autenticado",
-            description: "Você precisa fazer login para acessar esta página.",
-            variant: "destructive",
-          });
           navigate("/login");
           return;
         }
         
-        debugAreaLog("CLIENT_PROFILE", "Session found, checking user type");
+        debugAreaLog("CLIENT_PROFILE", "Session found, fetching user details");
         
-        // First priority: use user metadata (most reliable)
+        // First try to get user type from metadata
         const userMetadata = session.user.user_metadata;
         const userTypeFromMetadata = userMetadata?.userType;
         
         debugAreaLog("CLIENT_PROFILE", "User metadata:", userMetadata);
         
-        // Client profile should only be accessible to clients
+        // If metadata indicates this is a client user, use that data
         if (userTypeFromMetadata === 'client') {
           debugAreaLog("CLIENT_PROFILE", "User is client according to metadata");
           
@@ -65,77 +61,55 @@ export const useClientProfile = () => {
           return;
         }
         
-        // If metadata doesn't confirm status, use the profiles table
-        try {
-          debugAreaLog("CLIENT_PROFILE", "Fetching profile from database");
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (profileError) {
-            debugAreaCritical("CLIENT_PROFILE", "Error fetching profile:", profileError);
-            throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
-          }
+        // If metadata doesn't confirm status, check the profiles table
+        debugAreaLog("CLIENT_PROFILE", "Fetching profile from database");
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
           
-          if (!profile) {
-            debugAreaCritical("CLIENT_PROFILE", "Profile not found");
-            throw new Error("Perfil não encontrado no banco de dados.");
-          }
-          
-          debugAreaLog("CLIENT_PROFILE", "Profile data:", profile);
-          
-          if (!profile.user_type) {
-            debugAreaCritical("CLIENT_PROFILE", "User type not defined in profile");
-            throw new Error("Tipo de usuário não definido no perfil.");
-          }
-          
-          if (profile.user_type !== 'client') {
-            debugAreaCritical("CLIENT_PROFILE", "User is not a client", profile.user_type);
-            setError("Você não tem permissão para acessar esta página.");
-            toast({
-              title: "Acesso restrito",
-              description: "Você não tem permissão para acessar esta página.",
-              variant: "destructive",
-            });
-            navigate("/");
-            return;
-          }
-          
-          const userData: User = {
-            id: session.user.id,
-            name: profile.name || session.user.email?.split('@')[0] || "Usuário",
-            email: profile.email || session.user.email || "",
-            userType: 'client',
-            avatarUrl: profile.avatar_url,
-            phoneNumber: profile.phone_number
-          };
-          
-          debugAreaLog("CLIENT_PROFILE", "Setting currentUser from database:", userData);
-          setCurrentUser(userData);
-        } catch (error: any) {
-          debugAreaCritical("CLIENT_PROFILE", "Error in profile verification:", error);
-          setError(error.message || "Ocorreu um erro ao verificar seu perfil.");
-          toast({
-            title: "Erro",
-            description: error.message || "Ocorreu um erro ao verificar seu perfil.",
-            variant: "destructive",
-          });
-          // Only redirect to login if it's an authentication error
-          if (error.message?.includes("autenticação")) {
-            navigate("/login");
-          }
+        if (profileError) {
+          debugAreaCritical("CLIENT_PROFILE", "Profile fetch error:", profileError);
+          throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
         }
+        
+        if (!profile) {
+          debugAreaCritical("CLIENT_PROFILE", "Profile not found in database");
+          throw new Error("Perfil não encontrado no banco de dados.");
+        }
+        
+        debugAreaLog("CLIENT_PROFILE", "Profile data retrieved:", profile);
+        
+        // Verify this is a client user
+        if (profile.user_type !== 'client') {
+          debugAreaCritical("CLIENT_PROFILE", "User is not a client:", profile.user_type);
+          setError("Você não tem permissão para acessar esta página de perfil de cliente.");
+          navigate("/");
+          return;
+        }
+        
+        // Build user data from profile
+        const userData: User = {
+          id: session.user.id,
+          name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+          email: profile.email || session.user.email || "",
+          userType: 'client',
+          avatarUrl: profile.avatar_url,
+          phoneNumber: profile.phone_number
+        };
+        
+        debugAreaLog("CLIENT_PROFILE", "Setting currentUser from database:", userData);
+        setCurrentUser(userData);
+        
       } catch (error: any) {
-        debugAreaCritical("CLIENT_PROFILE", "Error checking auth status:", error);
-        setError(error.message || "Ocorreu um erro ao verificar sua autenticação.");
+        debugAreaCritical("CLIENT_PROFILE", "Error in checkAuthStatus:", error);
+        setError(error.message || "Ocorreu um erro ao verificar suas credenciais.");
         toast({
           title: "Erro",
-          description: error.message || "Ocorreu um erro ao verificar sua autenticação.",
+          description: error.message || "Ocorreu um erro ao verificar suas credenciais.",
           variant: "destructive",
         });
-        navigate("/login");
       } finally {
         setIsLoading(false);
       }
@@ -145,12 +119,12 @@ export const useClientProfile = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       debugAreaLog("CLIENT_PROFILE", "Auth state changed:", event);
       if (event === "SIGNED_OUT" || !session) {
-        debugAreaLog("CLIENT_PROFILE", "User signed out, redirecting to login");
+        debugAreaLog("CLIENT_PROFILE", "User signed out, resetting state");
         setCurrentUser(null);
         navigate("/login");
       } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         // Re-verify profile on login
-        debugAreaLog("CLIENT_PROFILE", "User signed in, checking auth status");
+        debugAreaLog("CLIENT_PROFILE", "User signed in, checking profile");
         // Using setTimeout to avoid deadlocks with Supabase auth state changes
         setTimeout(() => {
           checkAuthStatus();
@@ -161,7 +135,7 @@ export const useClientProfile = () => {
     checkAuthStatus();
     
     return () => {
-      debugAreaLog("CLIENT_PROFILE", "Cleaning up");
+      debugAreaLog("CLIENT_PROFILE", "Cleaning up useClientProfile");
       subscription.unsubscribe();
     };
   }, [navigate]);
@@ -171,9 +145,10 @@ export const useClientProfile = () => {
       if (!currentUser) {
         throw new Error("Nenhum usuário está logado no momento");
       }
-
+      
       debugAreaLog("CLIENT_PROFILE", "Updating profile with data:", data);
       
+      // Update the profile in the database
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -185,32 +160,43 @@ export const useClientProfile = () => {
         .eq('id', currentUser.id);
         
       if (error) {
-        debugAreaCritical("CLIENT_PROFILE", "Error updating profile:", error);
+        debugAreaCritical("CLIENT_PROFILE", "Error updating profile in database:", error);
         throw new Error(`Erro ao atualizar perfil: ${error.message}`);
       }
       
       // Also update user metadata to keep things in sync
-      try {
-        await supabase.auth.updateUser({
-          data: {
-            name: data.name,
-            phone_number: data.phoneNumber
-          }
-        });
-      } catch (metadataError) {
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: {
+          name: data.name,
+          phone_number: data.phoneNumber
+        }
+      });
+      
+      if (metadataError) {
         debugAreaCritical("CLIENT_PROFILE", "Error updating user metadata:", metadataError);
-        // Continue anyway since the profile was updated successfully
+        // Don't fail the whole operation if metadata update fails
+        console.warn("Metadata update failed but profile was updated successfully");
       }
       
+      // Update local state
       setCurrentUser(prev => prev ? { ...prev, ...data } : null);
       
-      debugAreaLog("CLIENT_PROFILE", "Profile updated successfully");
+      debugAreaLog("CLIENT_PROFILE", "Profile successfully updated");
+      
+      toast({
+        title: "Perfil atualizado",
+        description: "Suas informações foram atualizadas com sucesso.",
+      });
+      
       return { success: true };
     } catch (error: any) {
-      debugAreaCritical("CLIENT_PROFILE", "Error updating profile:", error);
-      return { success: false, error: error.message || "Erro desconhecido ao atualizar perfil" };
+      debugAreaCritical("CLIENT_PROFILE", "Error in updateProfile:", error);
+      return { 
+        success: false, 
+        error: error.message || "Erro desconhecido ao atualizar perfil" 
+      };
     }
   };
 
-  return { currentUser, isLoading, error, setCurrentUser, updateProfile };
+  return { currentUser, isLoading, error, updateProfile };
 };

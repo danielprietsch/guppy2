@@ -3,6 +3,7 @@ import { useClientProfile } from "@/hooks/useClientProfile";
 import { ClientProfileForm } from "@/components/client/ClientProfileForm";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 
 const ClientProfilePage = () => {
@@ -25,9 +26,9 @@ const ClientProfilePage = () => {
         phoneNumber: data.phoneNumber,
       });
       
-      if (!result.success) {
-        debugAreaCritical("CLIENT_PROFILE", "Error updating profile:", result.error);
-        throw new Error(result.error);
+      if (!result?.success) {
+        debugAreaCritical("CLIENT_PROFILE", "Error updating profile:", result?.error);
+        throw new Error(result?.error || "Erro desconhecido ao atualizar perfil");
       }
       
       debugAreaLog("CLIENT_PROFILE", "Profile update successful");
@@ -42,6 +43,7 @@ const ClientProfilePage = () => {
       <div className="container py-8">
         <div className="flex items-center justify-center">
           <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
             <h1 className="text-2xl font-bold mb-2">Carregando...</h1>
             <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
           </div>
@@ -51,6 +53,7 @@ const ClientProfilePage = () => {
   }
 
   if (error || !currentUser) {
+    debugAreaCritical("CLIENT_PROFILE", "Error or no user found:", { error, currentUser });
     return (
       <div className="container py-8">
         <div className="flex items-center justify-center">
