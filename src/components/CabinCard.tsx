@@ -1,9 +1,11 @@
+
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { MapPin } from "lucide-react";
 
 const cabinImages = [
   "https://images.unsplash.com/photo-1633687367233-b9097e506d60?auto=format&fit=crop&w=800&q=80", // Hair salon station
@@ -18,9 +20,15 @@ interface CabinCardProps {
   location?: Location;
 }
 
+function formatAddressForMaps(address: string, city: string, state: string) {
+  const full = `${address}, ${city}, ${state}`;
+  return encodeURIComponent(full);
+}
+
 const CabinCard = ({ cabin, location }: CabinCardProps) => {
   const [isProfessional, setIsProfessional] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
   useEffect(() => {
     const checkUserType = async () => {
@@ -30,6 +38,8 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          setIsAuthenticated(true);
+          
           // Verificar primeiro nos metadados do usuário (mais confiável)
           const userType = session.user.user_metadata?.userType;
           
@@ -70,6 +80,10 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
       <span className="text-red-500">Indisponível</span>
     );
   };
+
+  const googleMapsEmbedUrl = location ? 
+    `https://www.google.com/maps?&q=${formatAddressForMaps(location.address, location.city, location.state)}&z=18&output=embed` 
+    : null;
 
   return (
     <Card className="overflow-hidden">
@@ -119,16 +133,41 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         {cabin.price && (
           <p className="mt-3 font-semibold">R$ {cabin.price.toFixed(2)}</p>
         )}
+        
+        {location && (
+          <div className="mt-4 flex items-center justify-center">
+            <div className="w-full h-48 bg-white flex items-center justify-center border rounded-md">
+              <iframe
+                title={`${location.name} Mapa`}
+                src={googleMapsEmbedUrl || ""}
+                width="100%"
+                height="100%"
+                className="w-full h-full rounded-md"
+                style={{
+                  border: "none",
+                  pointerEvents: 'auto'
+                }}
+                allowFullScreen
+              />
+            </div>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="p-4 pt-0">
         {isLoading ? (
           <p className="text-sm text-muted-foreground text-center w-full">
             Verificando permissões...
           </p>
-        ) : isProfessional ? (
+        ) : isAuthenticated && isProfessional ? (
           <Link to={`/book-cabin/${cabin.id}`} className="w-full">
             <Button size="sm" className="w-full">
               Reservar Cabine
+            </Button>
+          </Link>
+        ) : !isAuthenticated ? (
+          <Link to="/login" className="w-full">
+            <Button size="sm" variant="outline" className="w-full">
+              Faça login para reservar
             </Button>
           </Link>
         ) : (

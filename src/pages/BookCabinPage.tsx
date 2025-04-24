@@ -240,37 +240,38 @@ const BookCabinPage = () => {
   }, [date, cabin]);
 
   const handleBookCabin = async () => {
-    const currentUser = localStorage.getItem("currentUser");
-    
-    if (!currentUser) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para fazer uma reserva.",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
-    
-    if (!date || !selectedShift) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione uma data e um turno.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!acceptTerms) {
-      toast({
-        title: "Erro",
-        description: "Você precisa aceitar os termos de uso.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      // Verificar se o usuário está logado
+      if (!session?.user) {
+        toast({
+          title: "Erro",
+          description: "Você precisa estar logado para fazer uma reserva.",
+          variant: "destructive",
+        });
+        navigate("/login");
+        return;
+      }
+      
+      if (!date || !selectedShift) {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione uma data e um turno.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!acceptTerms) {
+        toast({
+          title: "Erro",
+          description: "Você precisa aceitar os termos de uso.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // In a real implementation, this would create a booking record in Supabase
       // For now, we'll just simulate a successful booking with a toast notification
       
