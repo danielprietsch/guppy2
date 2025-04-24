@@ -7,7 +7,7 @@ export const users: User[] = [
     id: "1",
     name: "Ana Silva",
     email: "ana.silva@example.com",
-    userType: "provider",
+    userType: "professional",
     phoneNumber: "(71) 98765-4321",
     avatarUrl: "https://randomuser.me/api/portraits/women/1.jpg",
     specialties: ["Cabelereiro", "Colorista"]
@@ -16,7 +16,7 @@ export const users: User[] = [
     id: "2",
     name: "Carlos Oliveira",
     email: "carlos.oliveira@example.com",
-    userType: "provider",
+    userType: "professional",
     phoneNumber: "(71) 91234-5678",
     avatarUrl: "https://randomuser.me/api/portraits/men/2.jpg",
     specialties: ["Barbeiro", "Barba Designer"]
@@ -25,7 +25,7 @@ export const users: User[] = [
     id: "3",
     name: "Mariana Santos",
     email: "mariana.santos@example.com",
-    userType: "provider",
+    userType: "professional",
     phoneNumber: "(71) 99876-5432",
     avatarUrl: "https://randomuser.me/api/portraits/women/3.jpg",
     specialties: ["Manicure", "Pedicure"]

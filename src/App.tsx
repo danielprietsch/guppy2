@@ -4,14 +4,14 @@ import Index from "@/pages/Index";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import NotFound from "@/pages/NotFound";
-import ProviderDashboardPage from "@/pages/ProviderDashboardPage";
+import ProfessionalDashboardPage from "@/pages/ProfessionalDashboardPage";
 import ClientDashboardPage from "@/pages/ClientDashboardPage";
 import OwnerDashboardPage from "@/pages/OwnerDashboardPage";
 import ProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import LocationsPage from "@/pages/LocationsPage";
-import ProvidersPage from "@/pages/ProvidersPage";
+import ProfessionalsPage from "@/pages/ProvidersPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
@@ -38,8 +38,8 @@ const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: "/provider/dashboard",
-        element: <ProviderDashboardPage />,
+        path: "/professional/dashboard",
+        element: <ProfessionalDashboardPage />,
       },
       {
         path: "/client/dashboard",
@@ -66,8 +66,8 @@ const router = createBrowserRouter([
         element: <LocationsPage />,
       },
       {
-        path: "/providers",
-        element: <ProvidersPage />,
+        path: "/professionals",
+        element: <ProfessionalsPage />,
       },
       {
         path: "/about",
