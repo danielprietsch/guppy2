@@ -41,7 +41,28 @@ const LocationDetailPage = () => {
 
         if (locationError) throw locationError;
 
-        setLocation(locationData);
+        // Transform the data to match our Location interface
+        const transformedLocation: Location = {
+          id: locationData.id,
+          name: locationData.name,
+          address: locationData.address,
+          city: locationData.city,
+          state: locationData.state,
+          zipCode: locationData.zip_code,
+          cabinsCount: locationData.cabins_count || 0,
+          openingHours: locationData.opening_hours 
+            ? (typeof locationData.opening_hours === 'string' 
+                ? JSON.parse(locationData.opening_hours) 
+                : locationData.opening_hours)
+            : { open: "09:00", close: "18:00" },
+          amenities: locationData.amenities || [],
+          imageUrl: locationData.image_url || "",
+          description: locationData.description,
+          active: locationData.active,
+          ownerId: locationData.owner_id
+        };
+
+        setLocation(transformedLocation);
 
         // Fetch cabins for this location
         const { data: cabinsData, error: cabinsError } = await supabase
@@ -51,7 +72,36 @@ const LocationDetailPage = () => {
 
         if (cabinsError) throw cabinsError;
 
-        setCabins(cabinsData || []);
+        // Transform the data to match our Cabin interface
+        const transformedCabins: Cabin[] = (cabinsData || []).map(cabin => {
+          // Parse availability or set defaults
+          const availability = cabin.availability 
+            ? (typeof cabin.availability === 'string' 
+                ? JSON.parse(cabin.availability) 
+                : cabin.availability)
+            : { morning: true, afternoon: true, evening: true };
+
+          // Parse pricing or set defaults
+          const pricing = cabin.pricing 
+            ? (typeof cabin.pricing === 'string' 
+                ? JSON.parse(cabin.pricing) 
+                : cabin.pricing)
+            : { defaultPricing: {} };
+
+          return {
+            id: cabin.id,
+            locationId: cabin.location_id,
+            name: cabin.name,
+            description: cabin.description || "",
+            equipment: cabin.equipment || [],
+            imageUrl: cabin.image_url || "",
+            availability: availability,
+            price: 0,
+            pricing: pricing
+          };
+        });
+
+        setCabins(transformedCabins);
       } catch (error) {
         console.error("Error fetching location details:", error);
         toast({
