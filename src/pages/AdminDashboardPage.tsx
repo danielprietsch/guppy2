@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { debugError } from "@/utils/debugLogger";
 
 interface LocationApproval {
   id: string;
@@ -27,11 +28,15 @@ const AdminDashboardPage = () => {
         address,
         city,
         state,
-        admin_approvals!inner(status, created_at)
+        admin_approvals!inner (
+          status, 
+          created_at
+        )
       `)
-      .eq('admin_approvals.status', 'pending');
+      .eq('admin_approvals.status', 'PENDENTE');
 
     if (error) {
+      debugError("AdminDashboardPage: Error fetching locations:", error);
       toast({
         title: "Erro",
         description: "Não foi possível carregar os locais pendentes",
@@ -47,8 +52,8 @@ const AdminDashboardPage = () => {
       address: location.address,
       city: location.city,
       state: location.state,
-      status: location.admin_approvals.status,
-      created_at: location.admin_approvals.created_at
+      status: location.admin_approvals[0]?.status || 'PENDENTE',
+      created_at: location.admin_approvals[0]?.created_at || new Date().toISOString()
     })) || [];
 
     setPendingLocations(formattedLocations);
@@ -72,7 +77,7 @@ const AdminDashboardPage = () => {
     const { error: approvalError } = await supabase
       .from('admin_approvals')
       .update({ 
-        status: 'approved',
+        status: 'APROVADO',
         approved_by: (await supabase.auth.getUser()).data.user?.id
       })
       .eq('location_id', locationId);
