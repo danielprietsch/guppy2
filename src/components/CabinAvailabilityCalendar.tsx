@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
 import { useNavigate } from "react-router-dom";
+import { debugAreaLog } from "@/utils/debugLogger";
 
 interface CabinAvailabilityCalendarProps {
   selectedTurn: "morning" | "afternoon" | "evening";
@@ -41,25 +42,24 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   };
 
   const handlePriceEdit = (date: string, turno: string, newPrice: number) => {
-    console.log("Price edit:", date, turno, newPrice);
+    debugAreaLog('PRICE_EDIT', 'Handling price edit:', { date, turno, newPrice });
     if (onPriceChange) {
       onPriceChange(date, turno, newPrice);
     }
   };
 
   const handleStatusChange = (date: string, turno: string, isManualClose: boolean) => {
-    console.log("Status change:", date, turno, isManualClose);
     if (onStatusChange) {
       onStatusChange(date, turno, isManualClose);
     }
   };
 
   const getSlotPrice = (dateStr: string, turno: string): number => {
-    // Get specific slot price if available, otherwise use default price
     return slotPrices?.[dateStr]?.[turno] || pricePerDay;
   };
 
-  const renderDayContent = (day: Date) => {
+  // Memoize the day content rendering function
+  const renderDayContent = React.useCallback((day: Date) => {
     const dateStr = fmtDate(day);
     const turnos = ["morning", "afternoon", "evening"];
 
@@ -83,35 +83,40 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         </div>
       </div>
     );
-  };
+  }, [daysBooked, manuallyClosedDates, slotPrices, pricePerDay, navigate]);
+
+  // Memoize the calendar component
+  const MemoizedCalendar = React.useMemo(() => (
+    <Calendar
+      mode="single"
+      month={viewMonth}
+      onMonthChange={setViewMonth}
+      locale={ptBR}
+      className="w-full rounded-md border"
+      classNames={{
+        months: "w-full",
+        month: "w-full",
+        table: "w-full border-collapse",
+        head_cell: "text-muted-foreground font-normal w-full text-center px-2",
+        cell: "h-auto min-h-[160px] p-0 border border-border relative",
+        day: "h-full w-full p-0 font-normal text-lg font-bold",
+        day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+        day_today: "bg-accent text-accent-foreground",
+        day_outside: "text-muted-foreground opacity-50",
+        day_disabled: "text-muted-foreground opacity-50",
+        day_hidden: "invisible",
+      }}
+      components={{
+        DayContent: ({ date }) => renderDayContent(date)
+      }}
+    />
+  ), [viewMonth, renderDayContent]);
 
   return (
     <div className="space-y-4">
-      <Calendar
-        mode="single"
-        month={viewMonth}
-        onMonthChange={setViewMonth}
-        locale={ptBR}
-        className="w-full rounded-md border"
-        classNames={{
-          months: "w-full",
-          month: "w-full",
-          table: "w-full border-collapse",
-          head_cell: "text-muted-foreground font-normal w-full text-center px-2", 
-          cell: "h-auto min-h-[160px] p-0 border border-border relative",
-          day: "h-full w-full p-0 font-normal text-lg font-bold", 
-          day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-          day_today: "bg-accent text-accent-foreground",
-          day_outside: "text-muted-foreground opacity-50",
-          day_disabled: "text-muted-foreground opacity-50",
-          day_hidden: "invisible",
-        }}
-        components={{
-          DayContent: ({ date }) => renderDayContent(date)
-        }}
-      />
+      {MemoizedCalendar}
     </div>
   );
 };
 
-export default CabinAvailabilityCalendar;
+export default React.memo(CabinAvailabilityCalendar);
