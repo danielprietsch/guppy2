@@ -14,9 +14,11 @@ export const useLocationManagement = () => {
       console.log("🔄 Loading locations for user:", userId);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Use the security definer function to bypass RLS
+      // Direct query instead of RPC to fetch user locations
       const { data: locationsData, error: locationsError } = await supabase
-        .rpc('get_user_locations', { user_id: userId });
+        .from('locations')
+        .select('*')
+        .eq('owner_id', userId);
           
       if (locationsError) {
         console.error("❌ ERROR LOADING LOCATIONS:", locationsError);

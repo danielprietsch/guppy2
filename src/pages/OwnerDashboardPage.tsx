@@ -49,17 +49,16 @@ const OwnerDashboardPage = () => {
         
         debugLog("OwnerDashboardPage: Session found, user:", session.user);
         
-        // Verificar se o usuário é um franqueado diretamente nos metadados
+        // Simplify user type check - accept owner or global_admin
         const userType = session.user.user_metadata?.userType;
         
-        // Simplificar verificação - permitir owner e global_admin
         if (userType === 'owner' || userType === 'global_admin') {
           debugLog("OwnerDashboardPage: User is authorized according to metadata");
           setAuthChecked(true);
           return;
         }
 
-        // Se não for um tipo de usuário válido nos metadados, redirecionar
+        // Redirect unauthorized users
         debugLog("OwnerDashboardPage: User is not authorized, redirecting");
         toast({
           title: "Acesso Negado",
@@ -81,7 +80,7 @@ const OwnerDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  // Carregar locais quando o usuário estiver disponível
+  // Load locations when user is available
   useEffect(() => {
     if (currentUser?.id && authChecked) {
       debugLog("OwnerDashboardPage: Loading locations for user:", currentUser.id);
