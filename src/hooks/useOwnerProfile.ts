@@ -79,21 +79,21 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Fix type issue: ensure userType is one of the allowed values
+        // Convert the user_type string to a valid type for our User interface
         const userTypeFromProfile = profileData.user_type as string;
         let validUserType: "owner" | "professional" | "client" | "global_admin";
         
-        // Check if the profile data contains a valid user_type and assign the appropriate type
+        // Safely determine the user type with proper type checking
         if (userTypeFromProfile === "owner") {
           validUserType = "owner";
+        } else if (userTypeFromProfile === "global_admin") {
+          validUserType = "global_admin";
         } else if (userTypeFromProfile === "professional") {
           validUserType = "professional";
         } else if (userTypeFromProfile === "client") {
           validUserType = "client";
-        } else if (userTypeFromProfile === "global_admin") {
-          validUserType = "global_admin";
         } else {
-          // Default fallback
+          // Default fallback for owner dashboard
           validUserType = "owner";
         }
         
