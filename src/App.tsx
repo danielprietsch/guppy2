@@ -1,4 +1,3 @@
-
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
 import LoginPage from "@/pages/LoginPage";
@@ -15,6 +14,7 @@ import ProvidersPage from "@/pages/ProvidersPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
+import AdminDashboardPage from "@/pages/AdminDashboardPage";
 
 const router = createBrowserRouter([
   {
@@ -73,6 +73,10 @@ const router = createBrowserRouter([
       {
         path: "/contact",
         element: <ContactPage />,
+      },
+      {
+        path: "/admin/dashboard",
+        element: <AdminDashboardPage />,
       },
     ],
   },

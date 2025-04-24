@@ -1,7 +1,23 @@
-
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Footer = () => {
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id);
+
+      setIsAdmin(roles?.some(role => role.role === 'admin') || false);
+    };
+
+    checkAdminStatus();
+  }, []);
+
   return (
     <footer className="bg-gradient-to-br from-[#D6BCFA]/10 to-[#9b87f5]/10 border-t">
       <div className="mx-auto max-w-7xl px-4 py-10 md:px-8">
@@ -54,6 +70,16 @@ const Footer = () => {
                   Preços
                 </Link>
               </li>
+              {isAdmin && (
+                <li>
+                  <Link 
+                    to="/admin/dashboard" 
+                    className="text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    Dashboard Admin
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
 
