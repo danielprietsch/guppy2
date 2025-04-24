@@ -129,11 +129,33 @@ const LocationDetailPage = () => {
               }
             }
             
-            // Default pricing structure
-            const defaultPricing = {
+            // Parse and transform pricing data to match Cabin type
+            let pricingObject = {
               defaultPricing: {},
               specificDates: {}
             };
+            
+            try {
+              if (cabin.pricing) {
+                if (typeof cabin.pricing === 'string') {
+                  const parsedPricing = JSON.parse(cabin.pricing);
+                  if (parsedPricing && typeof parsedPricing === 'object') {
+                    pricingObject = {
+                      defaultPricing: parsedPricing.defaultPricing || {},
+                      specificDates: parsedPricing.specificDates || {}
+                    };
+                  }
+                } else if (typeof cabin.pricing === 'object' && cabin.pricing !== null) {
+                  const pricingData = cabin.pricing as any;
+                  pricingObject = {
+                    defaultPricing: pricingData.defaultPricing || {},
+                    specificDates: pricingData.specificDates || {}
+                  };
+                }
+              }
+            } catch (e) {
+              debugError("LocationDetailPage: Error parsing cabin pricing:", e);
+            }
             
             return {
               id: cabin.id,
@@ -142,9 +164,9 @@ const LocationDetailPage = () => {
               description: cabin.description || "",
               equipment: cabin.equipment || [],
               imageUrl: cabin.image_url || "",
-              price: 0,
               availability: availability,
-              pricing: cabin.pricing || defaultPricing
+              price: cabin.price || 0,
+              pricing: pricingObject
             };
           });
           
@@ -304,7 +326,7 @@ const LocationDetailPage = () => {
           <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {locationCabins.length > 0 ? (
               locationCabins.map((cabin) => (
-                <CabinCard key={cabin.id} cabin={cabin} />
+                <CabinCard key={cabin.id} cabin={cabin} location={location} />
               ))
             ) : (
               <div className="col-span-full text-center py-12">
