@@ -41,12 +41,14 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   };
 
   const handlePriceEdit = (date: string, turno: string, newPrice: number) => {
+    console.log("Price edit:", date, turno, newPrice);
     if (onPriceChange) {
       onPriceChange(date, turno, newPrice);
     }
   };
 
   const handleStatusChange = (date: string, turno: string, isManualClose: boolean) => {
+    console.log("Status change:", date, turno, isManualClose);
     if (onStatusChange) {
       onStatusChange(date, turno, isManualClose);
     }
@@ -62,9 +64,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     const turnos = ["morning", "afternoon", "evening"];
 
     return (
-      <div className="flex flex-col gap-2 p-2 h-full">
+      <div className="flex flex-col p-1 h-full">
         <div className="text-sm font-medium text-center">{format(day, "d")}</div>
-        <div className="grid gap-1">
+        <div className="grid gap-1 mt-1">
           {turnos.map((turno) => (
             <TimeSlotCard
               key={`${dateStr}-${turno}`}
@@ -96,8 +98,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           month: "w-full",
           table: "w-full border-collapse",
           head_cell: "text-muted-foreground font-normal w-full text-center px-2", 
-          cell: "h-auto min-h-[180px] p-0 border border-border relative",
-          day: "h-full w-full p-0 font-normal text-2xl font-bold", 
+          cell: "h-auto min-h-[160px] p-0 border border-border relative",
+          day: "h-full w-full p-0 font-normal text-lg font-bold", 
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
           day_today: "bg-accent text-accent-foreground",
           day_outside: "text-muted-foreground opacity-50",
