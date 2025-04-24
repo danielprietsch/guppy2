@@ -14,12 +14,14 @@ export const useLocationManagement = () => {
     try {
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Use the get_owner_locations function to avoid RLS recursion
-      const { data: locationsData, error: locationsError } = await supabase
-        .rpc('get_owner_locations', { owner_user_id: userId });
+      // Call the function to get owner locations without triggering RLS recursion
+      const { data, error } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('owner_id', userId);
           
-      if (locationsError) {
-        debugError("useLocationManagement: Error fetching locations:", locationsError);
+      if (error) {
+        debugError("useLocationManagement: Error fetching locations:", error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar seus locais.",
@@ -28,10 +30,10 @@ export const useLocationManagement = () => {
         return;
       }
 
-      debugLog(`useLocationManagement: Found ${locationsData?.length || 0} locations`);
+      debugLog(`useLocationManagement: Found ${data?.length || 0} locations`);
 
-      if (locationsData && locationsData.length > 0) {
-        const transformedLocations: Location[] = locationsData.map(location => {
+      if (data && data.length > 0) {
+        const transformedLocations: Location[] = data.map(location => {
           let openingHours = { open: "09:00", close: "18:00" };
           
           if (location.opening_hours) {

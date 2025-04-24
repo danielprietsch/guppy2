@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
@@ -33,96 +32,50 @@ const OwnerDashboardPage = () => {
   const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
+    let isMounted = true; // Add mounting state to prevent state updates after unmounting
+    
     const checkSession = async () => {
+      if (!isMounted) return;
+      
       try {
         debugLog("OwnerDashboardPage: Checking session...");
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (!session) {
           debugLog("OwnerDashboardPage: No session found, redirecting to login");
-          toast({
-            title: "Acesso Negado",
-            description: "Você precisa estar logado para acessar esta página.",
-            variant: "destructive"
-          });
-          navigate("/login");
+          if (isMounted) {
+            toast({
+              title: "Acesso Negado",
+              description: "Você precisa estar logado para acessar esta página.",
+              variant: "destructive"
+            });
+            navigate("/login");
+          }
           return;
         }
         
-        debugLog("OwnerDashboardPage: Session found, user:", session.user);
-        
-        // Verificar tipo de usuário diretamente nos metadados - mais confiável
-        const userType = session.user.user_metadata?.userType;
-        if (userType === 'owner') {
-          debugLog("OwnerDashboardPage: User is owner according to metadata");
+        // Simple check - if we have a session and made it here, we can load locations
+        if (isMounted) {
           setAuthChecked(true);
-          return; // Usuário é franqueado, permitir acesso
-        }
-
-        // Se não encontrarmos o tipo nos metadados, verificar no perfil como fallback
-        try {
-          // Tentar buscar o tipo no perfil como fonte secundária
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (error) {
-            // Se houver erro na consulta de perfil, mas os metadados indicam franqueado, permitir acesso
-            if (userType === 'owner') {
-              debugLog("OwnerDashboardPage: Error fetching profile, falling back to metadata");
-              setAuthChecked(true);
-              return;
-            }
-            
-            throw error; // Re-lançar para tratamento externo
-          }
-
-          if (profile?.user_type === 'owner') {
-            debugLog("OwnerDashboardPage: User is owner according to profile");
-            setAuthChecked(true);
-            return;
-          }
-          
-          // Se chegou aqui, não é franqueado, redirecionar
-          debugLog("OwnerDashboardPage: User is not owner, redirecting");
-          toast({
-            title: "Acesso Negado",
-            description: "Você não tem permissão para acessar o dashboard de franqueado.",
-            variant: "destructive"
-          });
-          navigate("/");
-          
-        } catch (error) {
-          debugError("OwnerDashboardPage: Error in profile check:", error);
-          
-          // Se não podemos determinar com o perfil, mas os metadados dizem que é franqueado, permitir
-          if (userType === 'owner') {
-            debugLog("OwnerDashboardPage: Using metadata as fallback");
-            setAuthChecked(true);
-            return;
-          }
-          
-          // Caso não possamos confirmar que é franqueado, redirecionar para segurança
-          toast({
-            title: "Erro",
-            description: "Não foi possível verificar suas permissões.",
-            variant: "destructive"
-          });
-          navigate("/");
         }
       } catch (error) {
         debugError("OwnerDashboardPage: Error checking session:", error);
-        toast({
-          title: "Erro",
-          description: "Ocorreu um erro ao verificar sua sessão.",
-          variant: "destructive"
-        });
-        navigate("/login");
+        if (isMounted) {
+          toast({
+            title: "Erro",
+            description: "Ocorreu um erro ao verificar sua sessão.",
+            variant: "destructive"
+          });
+          navigate("/login");
+        }
       }
     };
 
     checkSession();
+    
+    return () => {
+      isMounted = false; // Cleanup to prevent state updates after unmount
+    };
   }, [navigate]);
 
   // Carregar locais quando o usuário estiver disponível

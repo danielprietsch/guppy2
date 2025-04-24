@@ -33,16 +33,16 @@ export const useOwnerProfile = () => {
         
         debugLog("useOwnerProfile: Session found, checking user type");
         
-        // Use the RPC function to check if the user is an owner
-        const { data: isOwnerData, error: ownerCheckError } = await supabase
-          .rpc('check_owner_status', { user_id: session.user.id });
+        // Use is_user_owner function to check if the user is an owner
+        const { data: isOwner, error: ownerCheckError } = await supabase
+          .rpc('is_user_owner', { user_id: session.user.id });
           
         if (ownerCheckError) {
           debugError("useOwnerProfile: Error checking owner status:", ownerCheckError);
           throw ownerCheckError;
         }
         
-        if (!isOwnerData || isOwnerData.length === 0) {
+        if (!isOwner) {
           debugLog("useOwnerProfile: User is not an owner");
           setError("Você não tem permissão para acessar esta página.");
           toast({
@@ -54,18 +54,29 @@ export const useOwnerProfile = () => {
           return;
         }
         
+        // Get user profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profileError) {
+          debugError("useOwnerProfile: Error fetching profile:", profileError);
+          throw profileError;
+        }
+        
         // User is confirmed as owner
-        const ownerData = isOwnerData[0];
         const userData: User = {
-          id: ownerData.id,
-          name: ownerData.name || session.user.email?.split('@')[0] || "Usuário",
-          email: ownerData.email || session.user.email || "",
-          userType: "owner",
-          avatarUrl: ownerData.avatar_url,
-          phoneNumber: ownerData.phone_number
+          id: profileData.id,
+          name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
+          email: profileData.email || session.user.email || "",
+          userType: profileData.user_type || "owner",
+          avatarUrl: profileData.avatar_url,
+          phoneNumber: profileData.phone_number
         };
         
-        debugLog("useOwnerProfile: Setting currentUser from owner check:", userData);
+        debugLog("useOwnerProfile: Setting currentUser from profile check:", userData);
         setCurrentUser(userData);
       } catch (error) {
         debugError("useOwnerProfile: Error checking auth status:", error);
