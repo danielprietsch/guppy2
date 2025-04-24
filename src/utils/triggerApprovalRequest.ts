@@ -32,15 +32,17 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         return { success: false, message: "not-authenticated" };
       }
 
-      // Manual query that doesn't rely on RLS for checking approvals
-      // Since we have the user authenticated, this is secure
+      // Instead of using RPC which is causing TypeScript errors, use a direct query
+      // Since the RPC function is defined in the database but not in the TypeScript types
       const { data: existingApproval, error: checkError } = await supabase
-        .rpc('get_location_approval_status', { loc_id: locationId })
+        .from('admin_approvals')
+        .select('id, status')
+        .eq('location_id', locationId)
         .maybeSingle();
 
       if (checkError) {
-        // If the RPC is not defined yet, fall back to direct query with owner_id check
-        debugLog("triggerApprovalRequest: RPC failed, falling back to direct query");
+        // If there's an error with the direct query, fallback to location check
+        debugLog("triggerApprovalRequest: Direct query failed, falling back to location check");
         const userId = sessionData.session.user.id;
         
         const { data: locationCheck } = await supabase
@@ -165,7 +167,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         
         return { success: true, message: "created-pending" };
       } else {
-        // If RPC worked, use its result
+        // If direct query worked, use its result
         if (existingApproval) {
           if (existingApproval.status === "APROVADO") {
             debugLog("triggerApprovalRequest: Location already approved");
@@ -268,3 +270,4 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     return { success: false, message: "unexpected-error", error };
   }
 };
+
