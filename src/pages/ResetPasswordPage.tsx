@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -31,7 +30,10 @@ const ResetPasswordPage = () => {
         password: newPassword
       });
 
-      if (error) throw error;
+      if (error) {
+        const translatedError = translateSupabaseError(error.message);
+        throw new Error(translatedError);
+      }
 
       toast({
         title: "Senha atualizada",
@@ -43,7 +45,7 @@ const ResetPasswordPage = () => {
       console.error("Erro ao redefinir senha:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao redefinir sua senha. Por favor, tente novamente.",
+        description: error.message || "Ocorreu um erro ao redefinir sua senha. Por favor, tente novamente.",
         variant: "destructive"
       });
     } finally {

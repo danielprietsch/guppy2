@@ -53,17 +53,16 @@ const RegisterPage = () => {
     password: string;
     userType: "client" | "provider" | "owner";
   }) => {
-    console.log("Starting registration process...");
+    console.log("Iniciando processo de registro...");
     setIsRegistering(true);
     setAuthError(null);
     
     try {
-      console.log("Attempting to register with:", { 
+      console.log("Tentando registrar com:", { 
         email: data.email, 
         userType: data.userType 
       });
       
-      // Register user with Supabase
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -77,11 +76,12 @@ const RegisterPage = () => {
       });
       
       if (error) {
-        console.error("Registration error:", error);
-        setAuthError(error.message);
+        console.error("Erro no registro:", error);
+        const translatedError = translateSupabaseError(error.message);
+        setAuthError(translatedError);
         toast({
           title: "Erro no cadastro",
-          description: error.message,
+          description: translatedError,
           variant: "destructive"
         });
         setIsRegistering(false);
@@ -134,11 +134,12 @@ const RegisterPage = () => {
       return Promise.resolve();
       
     } catch (error: any) {
-      console.error("Error processing registration:", error);
-      setAuthError(error.message);
+      console.error("Erro ao processar registro:", error);
+      const translatedError = translateSupabaseError(error.message);
+      setAuthError(translatedError);
       toast({
         title: "Erro no cadastro",
-        description: "Ocorreu um problema ao processar o cadastro.",
+        description: translatedError,
         variant: "destructive"
       });
       

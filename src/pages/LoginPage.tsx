@@ -53,23 +53,24 @@ const LoginPage = () => {
   };
 
   const handleLogin = async (data: { email: string; password: string }) => {
-    console.log("Starting login process...");
+    console.log("Iniciando processo de login...");
     setIsLoggingIn(true);
     setAuthError(null);
     
     try {
-      console.log("Attempting to login with email:", data.email);
+      console.log("Tentando login com email:", data.email);
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
       
       if (error) {
-        console.error("Login error:", error);
-        setAuthError(error.message);
+        console.error("Erro de login:", error);
+        const translatedError = translateSupabaseError(error.message);
+        setAuthError(translatedError);
         toast({
           title: "Erro no login",
-          description: "Email ou senha incorretos.",
+          description: translatedError,
           variant: "destructive"
         });
         setIsLoggingIn(false);
@@ -114,11 +115,12 @@ const LoginPage = () => {
       return Promise.resolve();
       
     } catch (error: any) {
-      console.error("Error processing login:", error);
-      setAuthError(error.message);
+      console.error("Erro ao processar login:", error);
+      const translatedError = translateSupabaseError(error.message);
+      setAuthError(translatedError);
       toast({
         title: "Erro no login",
-        description: "Ocorreu um problema ao processar o login.",
+        description: translatedError,
         variant: "destructive"
       });
       
