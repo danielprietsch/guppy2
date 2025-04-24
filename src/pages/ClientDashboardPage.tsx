@@ -193,6 +193,11 @@ const ClientDashboardPage = () => {
     );
   }
 
+  const handleNavigate = (path: string) => {
+    debugLog(`ClientDashboardPage: Navigating to ${path}`);
+    navigate(path);
+  };
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -225,20 +230,29 @@ const ClientDashboardPage = () => {
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-2">Minhas Reservas</h3>
-            <p className="text-gray-500">Veja suas reservas e agendamentos.</p>
-          </div>
+          <Card className="bg-white shadow hover:shadow-md transition-all cursor-pointer" 
+                onClick={() => handleNavigate("/client/reservations")}>
+            <CardContent className="p-6">
+              <h3 className="font-medium text-lg mb-2">Minhas Reservas</h3>
+              <p className="text-gray-500">Veja suas reservas e agendamentos.</p>
+            </CardContent>
+          </Card>
           
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-2">Descobrir Profissionais</h3>
-            <p className="text-gray-500">Encontre profissionais disponíveis.</p>
-          </div>
+          <Card className="bg-white shadow hover:shadow-md transition-all cursor-pointer" 
+                onClick={() => handleNavigate("/professionals")}>
+            <CardContent className="p-6">
+              <h3 className="font-medium text-lg mb-2">Descobrir Profissionais</h3>
+              <p className="text-gray-500">Encontre profissionais disponíveis.</p>
+            </CardContent>
+          </Card>
           
-          <div className="bg-white shadow rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-2">Meu Perfil</h3>
-            <p className="text-gray-500">Atualize suas informações pessoais.</p>
-          </div>
+          <Card className="bg-white shadow hover:shadow-md transition-all cursor-pointer" 
+                onClick={() => handleNavigate("/client/profile")}>
+            <CardContent className="p-6">
+              <h3 className="font-medium text-lg mb-2">Meu Perfil</h3>
+              <p className="text-gray-500">Atualize suas informações pessoais.</p>
+            </CardContent>
+          </Card>
         </div>
         
         {userLocations.length > 0 && (

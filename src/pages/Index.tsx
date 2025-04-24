@@ -24,6 +24,7 @@ import ResetPasswordPage from "./ResetPasswordPage";
 
 // Dashboard Pages
 import ClientDashboardPage from "./ClientDashboardPage";
+import ClientReservationsPage from "./ClientReservationsPage";
 import ProfessionalDashboardPage from "./ProfessionalDashboardPage";
 import OwnerDashboardPage from "./OwnerDashboardPage";
 import AdminDashboardPage from "./AdminDashboardPage";
@@ -72,6 +73,7 @@ export default function Index() {
 
             {/* Dashboard Routes */}
             <Route path="/client/dashboard" element={<ClientDashboardPage />} />
+            <Route path="/client/reservations" element={<ClientReservationsPage />} />
             <Route path="/professional/dashboard" element={<ProfessionalDashboardPage />} />
             <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />

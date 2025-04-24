@@ -15,6 +15,7 @@ import ProfessionalsPage from "@/pages/ProvidersPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
+import ClientReservationsPage from "@/pages/ClientReservationsPage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
 import GlobalAdminProfilePage from "@/pages/GlobalAdminProfilePage";
@@ -51,6 +52,14 @@ const router = createBrowserRouter([
         element: <ClientDashboardPage />,
       },
       {
+        path: "/client/profile",
+        element: <ClientProfilePage />,
+      },
+      {
+        path: "/client/reservations",
+        element: <ClientReservationsPage />,
+      },
+      {
         path: "/owner/dashboard",
         element: <OwnerDashboardPage />,
       },
@@ -61,10 +70,6 @@ const router = createBrowserRouter([
       {
         path: "/profile",
         element: <OwnerProfilePage />,
-      },
-      {
-        path: "/client/profile",
-        element: <ClientProfilePage />,
       },
       {
         path: "/reset-password",
