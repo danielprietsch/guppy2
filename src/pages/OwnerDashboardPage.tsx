@@ -374,12 +374,11 @@ const OwnerDashboardPage = () => {
           <div className="space-y-6">
             {selectedLocation && (
               <>
-                <LocationOverview location={selectedLocation} />
-                
                 {activeTab === "locations" && (
                   <LocationsOverview 
                     selectedLocation={selectedLocation}
-                    locationCabins={locationCabins} 
+                    locationCabins={locationCabins}
+                    onAddCabinClick={() => setAddModalOpen(true)}
                   />
                 )}
                 
