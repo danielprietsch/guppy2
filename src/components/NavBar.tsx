@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -177,7 +176,7 @@ const NavBar = () => {
         <div className="flex items-center gap-4">
           <div className="block">
             <Button 
-              onClick={navigateToSearch}
+              onClick={() => navigate("/locations")}
               size="icon" 
               variant="outline"
               title="Pesquisar locais e cabines"
@@ -188,7 +187,22 @@ const NavBar = () => {
           </div>
 
           {currentUser ? (
-            <UserMenu currentUser={currentUser} onLogout={handleLogout} />
+            <UserMenu currentUser={currentUser} onLogout={() => {
+              supabase.auth.signOut().then(() => {
+                toast({
+                  title: "Logout realizado",
+                  description: "Você foi desconectado com sucesso.",
+                });
+                navigate("/login");
+              }).catch(error => {
+                console.error("Error signing out:", error);
+                toast({
+                  title: "Erro",
+                  description: "Não foi possível desconectar. Tente novamente.",
+                  variant: "destructive",
+                });
+              });
+            }} />
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/login">

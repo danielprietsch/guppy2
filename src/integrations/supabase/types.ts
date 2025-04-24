@@ -527,6 +527,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      is_same_user: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       is_user_global_admin: {
         Args: { user_id: string }
         Returns: boolean
