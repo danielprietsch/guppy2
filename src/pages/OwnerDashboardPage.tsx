@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
 import { useLocationManagement } from "@/hooks/useLocationManagement";
@@ -96,18 +96,21 @@ const OwnerDashboardPage = () => {
     loadLocations();
   }, [loadLocations]);
   
-  // Monitorar mudanças nos locais e cabines para debugging com dependências explícitas
-  useEffect(() => {
-    if (selectedLocation) {
-      debugLog("OwnerDashboardPage: Estado atualizado:", {
-        locaisCount: userLocations.length,
-        selectedLocation: selectedLocation.name,
-        cabinesCount: locationCabins.length
-      });
-    }
-  }, [userLocations.length, selectedLocation, locationCabins.length]);
+  // Usar useMemo para calcular estados derivados
+  const isLoading = useMemo(() => 
+    userLoading || locationsLoading || !authChecked, 
+    [userLoading, locationsLoading, authChecked]
+  );
 
-  const isLoading = userLoading || locationsLoading || !authChecked;
+  // Handler para abertura do modal de adicionar cabine
+  const handleAddCabinClick = useCallback(() => {
+    setAddCabinModalOpen(true);
+  }, []);
+
+  // Handler para abertura do modal de adicionar local
+  const handleAddLocationClick = useCallback(() => {
+    setAddLocationModalOpen(true);
+  }, []);
 
   if (isLoading) {
     return (
@@ -157,8 +160,8 @@ const OwnerDashboardPage = () => {
             userLocations={userLocations}
             locationCabins={locationCabins}
             activeTab={activeTab}
-            onAddLocation={() => setAddLocationModalOpen(true)}
-            onAddCabin={() => setAddCabinModalOpen(true)}
+            onAddLocation={handleAddLocationClick}
+            onAddCabin={handleAddCabinClick}
             onCabinAdded={handleCabinAdded}
             onCabinUpdated={handleCabinUpdated}
             onCabinDeleted={handleCabinDeleted}

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -10,13 +10,18 @@ export const useLocationManagement = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Usar refs para evitar consultas repetidas
+  const loadedLocations = useRef<Set<string>>(new Set());
+  const loadedCabins = useRef<Set<string>>(new Set());
 
-  const loadUserLocations = async (userId: string) => {
+  const loadUserLocations = useCallback(async (userId: string) => {
+    if (!userId) return;
+    
     try {
       setIsLoading(true);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Usar a função fetch_user_locations que criamos no SQL
       const { data: locationsData, error: locationsError } = await supabase
         .rpc('fetch_user_locations', { p_owner_id: userId });
           
@@ -30,8 +35,6 @@ export const useLocationManagement = () => {
         });
         return;
       }
-
-      console.log("📋 Locations data received:", locationsData);
       
       // Handle null/undefined data
       if (!locationsData) {
@@ -54,9 +57,9 @@ export const useLocationManagement = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const processLocationData = (locationsData: any[]) => {
+  const processLocationData = useCallback((locationsData: any[]) => {
     if (locationsData && locationsData.length > 0) {
       const transformedLocations: Location[] = locationsData.map(location => {
         let openingHours = { open: "09:00", close: "18:00" };
@@ -107,11 +110,17 @@ export const useLocationManagement = () => {
       debugLog("useLocationManagement: No locations found for user");
       setUserLocations([]);
     }
-  };
+  }, [selectedLocation, loadCabinsForLocation]);
 
-  const loadCabinsForLocation = async (locationId: string) => {
+  const loadCabinsForLocation = useCallback(async (locationId: string) => {
     if (!locationId) {
       debugLog("useLocationManagement: No location ID provided for loading cabins");
+      return;
+    }
+    
+    // Evitar carregar cabines já carregadas
+    if (loadedCabins.current.has(locationId)) {
+      debugLog(`useLocationManagement: Cabins for location ${locationId} already loaded, skipping`);
       return;
     }
     
@@ -138,6 +147,7 @@ export const useLocationManagement = () => {
       if (!data || data.length === 0) {
         debugLog("useLocationManagement: No cabins found for location", locationId);
         setLocationCabins([]);
+        loadedCabins.current.add(locationId);
         return;
       }
       
@@ -206,31 +216,34 @@ export const useLocationManagement = () => {
       });
       
       setLocationCabins(transformedCabins);
+      loadedCabins.current.add(locationId);
     } catch (error) {
       debugError("Error processing cabins:", error);
       setLocationCabins([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleLocationChange = async (locationId: string) => {
+  const handleLocationChange = useCallback(async (locationId: string) => {
     debugLog("useLocationManagement: Changing selected location to", locationId);
     const location = userLocations.find(loc => loc.id === locationId);
     if (location) {
       setSelectedLocation(location);
       await loadCabinsForLocation(locationId);
     }
-  };
+  }, [userLocations, loadCabinsForLocation]);
 
-  const handleLocationCreated = (location: Location) => {
+  const handleLocationCreated = useCallback((location: Location) => {
     debugLog("useLocationManagement: New location created", location.id);
     setUserLocations(prev => [...prev, location]);
     setSelectedLocation(location);
     setLocationCabins([]);
-  };
+    // Limpar o cache para a nova localização
+    loadedCabins.current = new Set();
+  }, []);
 
-  const handleCabinAdded = async (cabin: Cabin) => {
+  const handleCabinAdded = useCallback(async (cabin: Cabin) => {
     debugLog("useLocationManagement: New cabin added", cabin.id);
     setLocationCabins(prev => [...prev, cabin]);
     
@@ -251,16 +264,16 @@ export const useLocationManagement = () => {
         .update({ cabins_count: updatedLocation.cabinsCount })
         .eq('id', updatedLocation.id);
     }
-  };
+  }, [selectedLocation]);
 
-  const handleCabinUpdated = (cabin: Cabin) => {
+  const handleCabinUpdated = useCallback((cabin: Cabin) => {
     debugLog("useLocationManagement: Cabin updated", cabin.id);
     setLocationCabins(prev => prev.map(c => 
       c.id === cabin.id ? cabin : c
     ));
-  };
+  }, []);
 
-  const handleLocationDeleted = async (locationId: string) => {
+  const handleLocationDeleted = useCallback(async (locationId: string) => {
     try {
       debugLog("useLocationManagement: Deleting location", locationId);
       
@@ -286,6 +299,9 @@ export const useLocationManagement = () => {
           setLocationCabins([]);
         }
       }
+      
+      // Remover a localização do cache
+      loadedCabins.current.delete(locationId);
     } catch (error: any) {
       debugError("Error deleting location:", error);
       toast({
@@ -294,9 +310,9 @@ export const useLocationManagement = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [userLocations, selectedLocation, loadCabinsForLocation]);
 
-  const handleCabinDeleted = async (cabinId: string) => {
+  const handleCabinDeleted = useCallback(async (cabinId: string) => {
     try {
       debugLog("useLocationManagement: Deleting cabin", cabinId);
       
@@ -342,7 +358,7 @@ export const useLocationManagement = () => {
         variant: "destructive"
       });
     }
-  };
+  }, [selectedLocation]);
 
   return {
     userLocations,
