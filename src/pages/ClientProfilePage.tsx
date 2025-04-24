@@ -1,127 +1,80 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { User } from "@/lib/types";
+import { useClientProfile } from "@/hooks/useClientProfile";
+import { ClientProfileForm } from "@/components/client/ClientProfileForm";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import { 
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-
-const formSchema = z.object({
-  name: z.string().min(2, {
-    message: "O nome deve ter pelo menos 2 caracteres.",
-  }),
-  email: z.string().email({
-    message: "Por favor, insira um email válido.",
-  }),
-  phoneNumber: z.string().optional(),
-});
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 
 const ClientProfilePage = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (!storedUser) {
-      navigate("/login");
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(storedUser) as User;
-      
-      // Check if user is client type
-      if (user.userType !== "client") {
-        navigate("/");
-        toast({
-          title: "Acesso restrito",
-          description: "Você não tem permissão para acessar esta página.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      setCurrentUser(user);
-    } catch (error) {
-      console.error("Error parsing user data:", error);
-      localStorage.removeItem("currentUser");
-      navigate("/login");
-    }
-  }, [navigate]);
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: currentUser?.name || "",
-      email: currentUser?.email || "",
-      phoneNumber: currentUser?.phoneNumber || "",
-    },
+  const { currentUser, isLoading, error, updateProfile } = useClientProfile();
+  
+  debugAreaLog("CLIENT_PROFILE", "ClientProfilePage rendered", { 
+    isLoading, 
+    hasUser: !!currentUser,
+    error
   });
 
-  // Update form values when user data is loaded
-  useEffect(() => {
-    if (currentUser) {
-      form.reset({
-        name: currentUser.name,
-        email: currentUser.email,
-        phoneNumber: currentUser.phoneNumber || "",
-      });
-    }
-  }, [currentUser, form]);
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
+  const handleUpdateProfile = async (data: any) => {
+    debugAreaLog("CLIENT_PROFILE", "Handling profile update with data:", data);
     
-    // In a real app, we would submit to an API
-    // For this example, we'll just update localStorage
     try {
-      if (currentUser) {
-        const updatedUser = {
-          ...currentUser,
-          name: values.name,
-          email: values.email,
-          phoneNumber: values.phoneNumber,
-        };
-        
-        localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-        setCurrentUser(updatedUser);
-        
-        toast({
-          title: "Perfil atualizado",
-          description: "Seus dados foram atualizados com sucesso.",
-        });
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar seus dados.",
-        variant: "destructive",
+      const result = await updateProfile({
+        name: data.name,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
       });
-    } finally {
-      setIsLoading(false);
+      
+      if (!result?.success) {
+        debugAreaCritical("CLIENT_PROFILE", "Error updating profile:", result?.error);
+        throw new Error(result?.error || "Erro desconhecido ao atualizar perfil");
+      }
+      
+      debugAreaLog("CLIENT_PROFILE", "Profile update successful");
+    } catch (error: any) {
+      debugAreaCritical("CLIENT_PROFILE", "Error in handleUpdateProfile:", error);
+      throw new Error(error.message || "Ocorreu um erro ao atualizar o perfil");
     }
-  }
+  };
 
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <div className="container py-8">
-        <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Carregando...</h1>
+            <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !currentUser) {
+    debugAreaCritical("CLIENT_PROFILE", "Error or no user found:", { error, currentUser });
+    return (
+      <div className="container py-8">
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-2">Erro</h1>
+            <p className="text-red-500 mb-4">{error || "Não foi possível carregar seu perfil."}</p>
+            <div className="space-x-4">
+              <Button 
+                onClick={() => navigate("/")}
+                variant="outline"
+              >
+                Voltar para a página inicial
+              </Button>
+              <Button 
+                onClick={() => navigate("/login")}
+              >
+                Ir para o login
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -133,67 +86,12 @@ const ClientProfilePage = () => {
         Atualize suas informações pessoais
       </p>
 
-      <div className="max-w-2xl mx-auto">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Seu nome completo" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="seu@email.com" {...field} type="email" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phoneNumber"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone</FormLabel>
-                  <FormControl>
-                    <Input placeholder="(00) 00000-0000" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate(-1)}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={isLoading}
-              >
-                {isLoading ? "Salvando..." : "Salvar alterações"}
-              </Button>
-            </div>
-          </form>
-        </Form>
+      <div className="max-w-2xl mx-auto bg-card p-6 rounded-lg shadow">
+        <ClientProfileForm 
+          currentUser={currentUser} 
+          onSave={handleUpdateProfile} 
+          isLoading={isLoading} 
+        />
       </div>
     </div>
   );

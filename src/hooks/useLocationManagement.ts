@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,7 +57,8 @@ export const useLocationManagement = () => {
             openingHours: openingHours,
             amenities: location.amenities || [],
             imageUrl: location.image_url || "",
-            description: location.description
+            description: location.description,
+            active: location.active
           };
         });
         

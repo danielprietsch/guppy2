@@ -1,14 +1,20 @@
-
 export interface User {
   id: string;
   name: string;
   email: string;
-  userType: "client" | "provider" | "owner" | "global_admin";
-  avatarUrl?: string | null;
-  phoneNumber?: string | null;
-  roles?: string[];
+  userType: "professional" | "client" | "owner" | "global_admin";
+  avatarUrl?: string;
+  phoneNumber?: string;
   specialties?: string[];
-  ownedLocationIds?: string[];
+  bio?: string;
+  companyName?: string;
+  cnpj?: string;
+  ownedLocationIds?: string[]; 
+  cpf?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
 }
 
 export interface Location {
@@ -48,7 +54,8 @@ export interface Cabin {
 
 export interface Service {
   id: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   name: string;
   description: string;
   duration: number;
@@ -59,7 +66,8 @@ export interface Service {
 export interface Booking {
   id: string;
   cabinId: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   date: string;
   shift: "morning" | "afternoon" | "evening";
   status: "pending" | "confirmed" | "cancelled";
@@ -68,7 +76,8 @@ export interface Booking {
 
 export interface Appointment {
   id: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   clientId: string;
   serviceId: string;
   date: string;
@@ -79,7 +88,8 @@ export interface Appointment {
 
 export interface Review {
   id: string;
-  providerId: string;
+  providerId?: string;
+  professionalId?: string; // Added this property for backwards compatibility
   clientId: string;
   rating: number;
   comment?: string;
@@ -92,7 +102,6 @@ export interface SystemEquipment {
   description?: string;
 }
 
-// Predefined equipment options for cabins
 export const PREDEFINED_EQUIPMENT: SystemEquipment[] = [
   {
     id: "1",
@@ -155,3 +164,11 @@ export const PREDEFINED_EQUIPMENT: SystemEquipment[] = [
     description: "Lavatório para procedimentos"
   }
 ];
+
+export interface OwnerProfileHook {
+  currentUser: User | null;
+  isLoading: boolean;
+  error?: string;
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
+  updateProfile?: (data: Partial<User>) => Promise<void>;
+}

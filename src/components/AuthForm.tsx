@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Scissors, User, Briefcase, Shield } from "lucide-react";
+import { Scissors, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type AuthFormMode = "login" | "register";
@@ -32,21 +33,9 @@ const userTypes = [
   },
   {
     key: "provider",
-    label: "Prestador de Serviço",
+    label: "Profissional",
     desc: "Cabeleireiro, barbeiro, manicure etc.",
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
-  },
-  {
-    key: "owner",
-    label: "Dono/Franqueado",
-    desc: "Local de serviços ou franquia",
-    icon: <Briefcase className="w-8 h-8 text-blue-400" />,
-  },
-  {
-    key: "global_admin",
-    label: "Administrador Global",
-    desc: "Gerenciar toda a plataforma",
-    icon: <Shield className="w-8 h-8 text-red-400" />,
   },
 ];
 
@@ -67,7 +56,9 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
       if (mode === "login") {
         await onSubmit({ email, password });
       } else {
-        await onSubmit({ name, email, password, userType });
+        // When registering, map 'provider' to 'professional' for database consistency
+        const mappedUserType = userType === 'provider' ? 'professional' : userType;
+        await onSubmit({ name, email, password, userType: mappedUserType });
       }
     } catch (error) {
       console.error(error);

@@ -9,44 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      admin_approvals: {
-        Row: {
-          approved_by: string | null
-          created_at: string | null
-          id: string
-          location_id: string
-          notes: string | null
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          approved_by?: string | null
-          created_at?: string | null
-          id?: string
-          location_id: string
-          notes?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          approved_by?: string | null
-          created_at?: string | null
-          id?: string
-          location_id?: string
-          notes?: string | null
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_approvals_location_id_fkey"
-            columns: ["location_id"]
-            isOneToOne: false
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       appointments: {
         Row: {
           client_id: string | null
@@ -182,7 +144,6 @@ export type Database = {
           active: boolean | null
           address: string
           amenities: string[] | null
-          approval_status: string
           cabins_count: number | null
           city: string
           created_at: string | null
@@ -200,7 +161,6 @@ export type Database = {
           active?: boolean | null
           address: string
           amenities?: string[] | null
-          approval_status?: string
           cabins_count?: number | null
           city: string
           created_at?: string | null
@@ -218,7 +178,6 @@ export type Database = {
           active?: boolean | null
           address?: string
           amenities?: string[] | null
-          approval_status?: string
           cabins_count?: number | null
           city?: string
           created_at?: string | null
@@ -409,17 +368,6 @@ export type Database = {
         Args: { loc_id: string; user_id: string }
         Returns: boolean
       }
-      create_booking: {
-        Args: {
-          cabin_id: string
-          professional_id: string
-          date: string
-          shift: string
-          price: number
-          status?: string
-        }
-        Returns: string
-      }
       get_allowed_user_types: {
         Args: Record<PropertyKey, never>
         Returns: string[]
@@ -434,10 +382,6 @@ export type Database = {
       }
       is_user_owner: {
         Args: { user_id: string }
-        Returns: boolean
-      }
-      update_location_approval_status: {
-        Args: { location_id: string; new_status: string; admin_id: string }
         Returns: boolean
       }
     }

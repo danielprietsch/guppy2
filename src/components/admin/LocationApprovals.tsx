@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -5,90 +6,92 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
-type LocationApproval = {
+type LocationListItem = {
   id: string;
-  location_id: string;
-  location_name: string;
+  name: string;
   owner_name: string;
   owner_email: string;
-  status: "PENDENTE" | "APROVADO" | "REJEITADO";
+  active: boolean;
+  cabins_count: number;
   created_at: string;
-  notes?: string;
 };
 
 export const LocationApprovals = () => {
-  const [approvals, setApprovals] = useState<LocationApproval[]>([]);
+  const [locations, setLocations] = useState<LocationListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    fetchApprovals();
+    fetchLocations();
   }, []);
 
-  const fetchApprovals = async () => {
+  const fetchLocations = async () => {
     try {
       setLoading(true);
       
-      const { data: approvalsData, error: approvalsError } = await supabase
-        .from('admin_approvals')
+      // Fetch all locations with owner details
+      debugLog("LocationApprovals: Starting to fetch locations");
+      const { data, error } = await supabase
+        .from('locations')
         .select(`
-          *,
-          location:locations(
-            name,
-            owner_id
-          )
-        `);
+          id,
+          name,
+          active,
+          cabins_count,
+          created_at,
+          owner_id
+        `)
+        .order('created_at', { ascending: false });
       
-      if (approvalsError) {
-        debugError("LocationApprovals: Error fetching approvals:", approvalsError);
+      if (error) {
+        debugError("LocationApprovals: Error fetching locations:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar as solicitações de aprovação.",
+          description: "Não foi possível carregar os locais.",
           variant: "destructive",
         });
         return;
       }
 
       // Now, fetch owner details for each location
-      const approvalsList = await Promise.all((approvalsData || []).map(async (approval) => {
+      const locationsWithOwners = await Promise.all((data || []).map(async (location) => {
         const { data: ownerData, error: ownerError } = await supabase
           .from('profiles')
           .select('name, email')
-          .eq('id', approval.location.owner_id)
+          .eq('id', location.owner_id)
           .single();
           
         if (ownerError) {
-          debugError(`LocationApprovals: Error fetching owner for location ${approval.location_id}:`, ownerError);
+          debugError(`LocationApprovals: Error fetching owner for location ${location.id}:`, ownerError);
           return {
-            id: approval.id,
-            location_id: approval.location_id,
-            location_name: approval.location.name,
+            id: location.id,
+            name: location.name,
+            cabins_count: location.cabins_count,
+            active: location.active,
             owner_name: "Desconhecido",
             owner_email: "Desconhecido",
-            status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
-            created_at: approval.created_at,
-            notes: approval.notes
+            created_at: location.created_at
           };
         }
         
         return {
-          id: approval.id,
-          location_id: approval.location_id,
-          location_name: approval.location.name,
+          id: location.id,
+          name: location.name,
+          cabins_count: location.cabins_count,
+          active: location.active,
           owner_name: ownerData?.name || "Desconhecido",
           owner_email: ownerData?.email || "Desconhecido",
-          status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
-          created_at: approval.created_at,
-          notes: approval.notes
+          created_at: location.created_at
         };
       }));
       
-      setApprovals(approvalsList);
+      setLocations(locationsWithOwners);
       
     } catch (error) {
-      debugError("LocationApprovals: Error in fetchApprovals:", error);
+      debugError("LocationApprovals: Error in fetchLocations:", error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao carregar os dados.",
@@ -96,10 +99,16 @@ export const LocationApprovals = () => {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  const handleApprove = async (approvalId: string, locationId: string) => {
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchLocations();
+  };
+
+  const handleToggleVisibility = async (locationId: string, currentStatus: boolean) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -111,86 +120,17 @@ export const LocationApprovals = () => {
         return;
       }
       
+      debugLog(`LocationApprovals: Toggling location visibility for ${locationId} to ${!currentStatus}`);
       const { error } = await supabase
-        .from('admin_approvals')
-        .update({ 
-          status: 'APROVADO',
-          approved_by: session.user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', approvalId);
-        
-      if (error) {
-        debugError("LocationApprovals: Error approving location:", error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível aprovar o local.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Also update the location's active status
-      const { error: locationError } = await supabase
         .from('locations')
-        .update({ active: true })
+        .update({ active: !currentStatus })
         .eq('id', locationId);
         
-      if (locationError) {
-        debugError("LocationApprovals: Error activating location:", locationError);
-        toast({
-          title: "Atenção",
-          description: "Local aprovado, mas não foi possível ativá-lo automaticamente.",
-          variant: "destructive",
-        });
-      }
-      
-      toast({
-        title: "Sucesso",
-        description: "Local aprovado com sucesso.",
-      });
-      
-      // Refresh the approvals list
-      fetchApprovals();
-      
-    } catch (error) {
-      debugError("LocationApprovals: Error in handleApprove:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao aprovar o local.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleReject = async (approvalId: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Erro",
-          description: "Você precisa estar logado para realizar esta ação.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // For now, we'll just update the status to REJEITADO
-      // In a real implementation, you might want to ask for rejection reason
-      const { error } = await supabase
-        .from('admin_approvals')
-        .update({ 
-          status: 'REJEITADO',
-          approved_by: session.user.id,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', approvalId);
-        
       if (error) {
-        debugError("LocationApprovals: Error rejecting location:", error);
+        debugError("LocationApprovals: Error toggling location visibility:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível rejeitar o local.",
+          description: "Não foi possível alterar a visibilidade do local.",
           variant: "destructive",
         });
         return;
@@ -198,17 +138,21 @@ export const LocationApprovals = () => {
       
       toast({
         title: "Sucesso",
-        description: "Local rejeitado com sucesso.",
+        description: `Local ${!currentStatus ? 'ativado' : 'desativado'} com sucesso.`,
       });
       
-      // Refresh the approvals list
-      fetchApprovals();
+      // Update local state
+      setLocations(prevLocations => 
+        prevLocations.map(loc => 
+          loc.id === locationId ? { ...loc, active: !currentStatus } : loc
+        )
+      );
       
     } catch (error) {
-      debugError("LocationApprovals: Error in handleReject:", error);
+      debugError("LocationApprovals: Error in handleToggleVisibility:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao rejeitar o local.",
+        description: "Ocorreu um erro ao alterar a visibilidade do local.",
         variant: "destructive",
       });
     }
@@ -216,17 +160,28 @@ export const LocationApprovals = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Aprovação de Locais</CardTitle>
-        <CardDescription>
-          Gerencie as solicitações de aprovação de locais
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Gestão de Locais</CardTitle>
+          <CardDescription>
+            Gerencie a visibilidade dos locais na plataforma
+          </CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={refreshing || loading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-1 ${refreshing ? 'animate-spin' : ''}`} />
+          Atualizar
+        </Button>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <p className="text-center py-4">Carregando solicitações...</p>
-        ) : approvals.length === 0 ? (
-          <p className="text-center py-4">Não há solicitações de aprovação pendentes.</p>
+          <p className="text-center py-4">Carregando locais...</p>
+        ) : locations.length === 0 ? (
+          <p className="text-center py-4">Não há locais cadastrados.</p>
         ) : (
           <div className="rounded-md border overflow-hidden">
             <Table>
@@ -234,58 +189,55 @@ export const LocationApprovals = () => {
                 <TableRow>
                   <TableHead>Local</TableHead>
                   <TableHead>Proprietário</TableHead>
-                  <TableHead>Data</TableHead>
+                  <TableHead>Cabines</TableHead>
+                  <TableHead>Data de Criação</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {approvals.map((approval) => (
-                  <TableRow key={approval.id}>
-                    <TableCell>{approval.location_name}</TableCell>
+                {locations.map((location) => (
+                  <TableRow key={location.id}>
+                    <TableCell>{location.name}</TableCell>
                     <TableCell>
-                      <div>{approval.owner_name}</div>
-                      <div className="text-xs text-muted-foreground">{approval.owner_email}</div>
+                      <div>{location.owner_name}</div>
+                      <div className="text-xs text-muted-foreground">{location.owner_email}</div>
+                    </TableCell>
+                    <TableCell>{location.cabins_count}</TableCell>
+                    <TableCell>
+                      {new Date(location.created_at).toLocaleDateString('pt-BR')}
                     </TableCell>
                     <TableCell>
-                      {new Date(approval.created_at).toLocaleDateString('pt-BR')}
-                    </TableCell>
-                    <TableCell>
-                      {approval.status === "APROVADO" ? (
+                      {location.active ? (
                         <Badge className="bg-green-500 hover:bg-green-600">
-                          <CheckCircle className="h-4 w-4 mr-1" /> APROVADO
-                        </Badge>
-                      ) : approval.status === "REJEITADO" ? (
-                        <Badge variant="destructive">
-                          <XCircle className="h-4 w-4 mr-1" /> REJEITADO
+                          <Eye className="h-4 w-4 mr-1" /> VISÍVEL
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-amber-100 text-amber-800 hover:bg-amber-200">
-                          PENDENTE
+                        <Badge variant="secondary">
+                          <EyeOff className="h-4 w-4 mr-1" /> OCULTO
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {approval.status === "PENDENTE" && (
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600"
-                            onClick={() => handleApprove(approval.id, approval.location_id)}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" /> Aprovar
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600"
-                            onClick={() => handleReject(approval.id)}
-                          >
-                            <XCircle className="h-4 w-4 mr-1" /> Rejeitar
-                          </Button>
-                        </div>
-                      )}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className={location.active ? 
+                          "border-red-500 text-red-500 hover:bg-red-50 hover:text-red-600" : 
+                          "border-green-500 text-green-500 hover:bg-green-50 hover:text-green-600"
+                        }
+                        onClick={() => handleToggleVisibility(location.id, location.active)}
+                      >
+                        {location.active ? (
+                          <>
+                            <EyeOff className="h-4 w-4 mr-1" /> Ocultar
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-4 w-4 mr-1" /> Tornar Visível
+                          </>
+                        )}
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

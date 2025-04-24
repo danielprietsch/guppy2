@@ -7,7 +7,7 @@ export const users: User[] = [
     id: "1",
     name: "Ana Silva",
     email: "ana.silva@example.com",
-    userType: "provider",
+    userType: "professional",
     phoneNumber: "(71) 98765-4321",
     avatarUrl: "https://randomuser.me/api/portraits/women/1.jpg",
     specialties: ["Cabelereiro", "Colorista"]
@@ -16,7 +16,7 @@ export const users: User[] = [
     id: "2",
     name: "Carlos Oliveira",
     email: "carlos.oliveira@example.com",
-    userType: "provider",
+    userType: "professional",
     phoneNumber: "(71) 91234-5678",
     avatarUrl: "https://randomuser.me/api/portraits/men/2.jpg",
     specialties: ["Barbeiro", "Barba Designer"]
@@ -25,7 +25,7 @@ export const users: User[] = [
     id: "3",
     name: "Mariana Santos",
     email: "mariana.santos@example.com",
-    userType: "provider",
+    userType: "professional",
     phoneNumber: "(71) 99876-5432",
     avatarUrl: "https://randomuser.me/api/portraits/women/3.jpg",
     specialties: ["Manicure", "Pedicure"]
@@ -186,7 +186,7 @@ export const cabins: Cabin[] = [
 export const services: Service[] = [
   {
     id: "1",
-    providerId: "1",
+    professionalId: "1",
     name: "Corte Feminino",
     description: "Corte feminino personalizado com análise de face e estilo",
     duration: 60,
@@ -195,7 +195,7 @@ export const services: Service[] = [
   },
   {
     id: "2",
-    providerId: "1",
+    professionalId: "1",
     name: "Coloração",
     description: "Coloração completa com produtos de qualidade",
     duration: 120,
@@ -204,7 +204,7 @@ export const services: Service[] = [
   },
   {
     id: "3",
-    providerId: "2",
+    professionalId: "2",
     name: "Corte Masculino",
     description: "Corte masculino com acabamento de navalha",
     duration: 45,
@@ -213,7 +213,7 @@ export const services: Service[] = [
   },
   {
     id: "4",
-    providerId: "2",
+    professionalId: "2",
     name: "Barba Completa",
     description: "Barba com toalha quente e produtos especializados",
     duration: 30,
@@ -222,7 +222,7 @@ export const services: Service[] = [
   },
   {
     id: "5",
-    providerId: "3",
+    professionalId: "3",
     name: "Manicure",
     description: "Tratamento completo para unhas das mãos",
     duration: 45,
@@ -236,7 +236,7 @@ export const bookings: Booking[] = [
   {
     id: "1",
     cabinId: "1",
-    providerId: "1",
+    professionalId: "1",
     date: "2025-04-25",
     shift: "morning",
     status: "confirmed",
@@ -245,7 +245,7 @@ export const bookings: Booking[] = [
   {
     id: "2",
     cabinId: "2",
-    providerId: "2",
+    professionalId: "2",
     date: "2025-04-26",
     shift: "afternoon",
     status: "confirmed",
@@ -254,7 +254,7 @@ export const bookings: Booking[] = [
   {
     id: "3",
     cabinId: "3",
-    providerId: "3",
+    professionalId: "3",
     date: "2025-04-27",
     shift: "evening",
     status: "pending",
@@ -265,7 +265,7 @@ export const bookings: Booking[] = [
 export const appointments: Appointment[] = [
   {
     id: "1",
-    providerId: "1",
+    professionalId: "1",
     clientId: "4",
     serviceId: "1",
     date: "2025-04-25",
@@ -275,7 +275,7 @@ export const appointments: Appointment[] = [
   },
   {
     id: "2",
-    providerId: "2",
+    professionalId: "2",
     clientId: "5",
     serviceId: "3",
     date: "2025-04-26",
@@ -285,7 +285,7 @@ export const appointments: Appointment[] = [
   },
   {
     id: "3",
-    providerId: "3",
+    professionalId: "3",
     clientId: "4",
     serviceId: "5",
     date: "2025-04-27",
@@ -298,7 +298,7 @@ export const appointments: Appointment[] = [
 export const reviews: Review[] = [
   {
     id: "1",
-    providerId: "1",
+    professionalId: "1",
     clientId: "4",
     rating: 5,
     comment: "Excelente profissional, resultado perfeito!",
@@ -306,7 +306,7 @@ export const reviews: Review[] = [
   },
   {
     id: "2",
-    providerId: "2",
+    professionalId: "2",
     clientId: "5",
     rating: 4,
     comment: "Muito bom, apenas um pouco de atraso no atendimento.",
@@ -314,7 +314,7 @@ export const reviews: Review[] = [
   },
   {
     id: "3",
-    providerId: "3",
+    professionalId: "3",
     clientId: "4",
     rating: 5,
     comment: "Serviço impecável, voltarei sempre!",

@@ -1,23 +1,28 @@
-
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import NotFound from "@/pages/NotFound";
-import ProviderDashboardPage from "@/pages/ProviderDashboardPage";
+import ProfessionalDashboardPage from "@/pages/ProfessionalDashboardPage";
 import ClientDashboardPage from "@/pages/ClientDashboardPage";
 import OwnerDashboardPage from "@/pages/OwnerDashboardPage";
-import ProfilePage from "@/pages/OwnerProfilePage";
+import OwnerProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import LocationsPage from "@/pages/LocationsPage";
-import ProvidersPage from "@/pages/ProvidersPage";
+import LocationDetailPage from "@/pages/LocationDetailPage";
+import BookCabinPage from "@/pages/BookCabinPage";
+import ProfessionalsPage from "@/pages/ProfessionalsPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
+import ClientReservationsPage from "@/pages/ClientReservationsPage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
 import GlobalAdminProfilePage from "@/pages/GlobalAdminProfilePage";
+import ProfessionalProfilePage from "@/pages/ProfessionalProfilePage";
+import ProfessionalDetailPage from "@/pages/ProfessionalDetailPage";
+import CabinSearchPage from "@/pages/CabinSearchPage";
 
 const router = createBrowserRouter([
   {
@@ -38,24 +43,40 @@ const router = createBrowserRouter([
         element: <RegisterPage />,
       },
       {
-        path: "/provider/dashboard",
-        element: <ProviderDashboardPage />,
+        path: "/professional/dashboard",
+        element: <ProfessionalDashboardPage />,
+      },
+      {
+        path: "/professional/profile",
+        element: <ProfessionalProfilePage />,
+      },
+      {
+        path: "/professional/:id",
+        element: <ProfessionalDetailPage />,
       },
       {
         path: "/client/dashboard",
         element: <ClientDashboardPage />,
       },
       {
+        path: "/client/profile",
+        element: <ClientProfilePage />,
+      },
+      {
+        path: "/client/reservations",
+        element: <ClientReservationsPage />,
+      },
+      {
         path: "/owner/dashboard",
         element: <OwnerDashboardPage />,
       },
       {
-        path: "/profile",
-        element: <ProfilePage />,
+        path: "/owner/profile",
+        element: <OwnerProfilePage />,
       },
       {
-        path: "/client/profile",
-        element: <ClientProfilePage />,
+        path: "/profile",
+        element: <OwnerProfilePage />,
       },
       {
         path: "/reset-password",
@@ -66,8 +87,24 @@ const router = createBrowserRouter([
         element: <LocationsPage />,
       },
       {
-        path: "/providers",
-        element: <ProvidersPage />,
+        path: "/locations/:id",
+        element: <LocationDetailPage />,
+      },
+      {
+        path: "/book-cabin/:id",
+        element: <BookCabinPage />,
+      },
+      {
+        path: "/search-cabins",
+        element: <CabinSearchPage />,
+      },
+      {
+        path: "/cabin-search",
+        element: <CabinSearchPage />,
+      },
+      {
+        path: "/professionals",
+        element: <ProfessionalsPage />,
       },
       {
         path: "/about",

@@ -1,21 +1,22 @@
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { users } from "@/lib/mock-data";
-import ProviderCard from "@/components/ProviderCard";
+import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { User } from "@/lib/types";
 
-const ProvidersPage = () => {
+const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter users to only include providers
-  const providers: User[] = users.filter((user) => user.userType === "provider");
+  // Filter users to only include professionals
+  const professionals: User[] = users.filter((user) => user.userType === "professional");
+  console.log("Found professionals:", professionals.length);
   
-  // Filter providers based on search query
-  const filteredProviders = providers.filter(provider => 
-    provider.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (provider.specialties && provider.specialties.some(specialty => 
+  // Filter professionals based on search query
+  const filteredProfessionals = professionals.filter(professional => 
+    professional.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (professional.specialties && professional.specialties.some(specialty => 
       specialty.toLowerCase().includes(searchQuery.toLowerCase())
     ))
   );
@@ -42,9 +43,9 @@ const ProvidersPage = () => {
       </div>
       
       <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {filteredProviders.length > 0 ? (
-          filteredProviders.map((provider) => (
-            <ProviderCard key={provider.id} provider={provider} />
+        {filteredProfessionals.length > 0 ? (
+          filteredProfessionals.map((professional) => (
+            <ProfessionalCard key={professional.id} professional={professional} />
           ))
         ) : (
           <div className="col-span-full text-center py-12">
@@ -59,4 +60,4 @@ const ProvidersPage = () => {
   );
 };
 
-export default ProvidersPage;
+export default ProfessionalsPage;

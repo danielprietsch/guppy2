@@ -1,164 +1,187 @@
 
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { ChevronRight, CalendarDays, MapPin, Users } from "lucide-react";
 import { locations, users } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import ProfessionalCard from "@/components/ProfessionalCard";
 import LocationCard from "@/components/LocationCard";
-import ProviderCard from "@/components/ProviderCard";
-import { ArrowRight, CheckCircle, Search, Star } from "lucide-react";
 
 const HomePage = () => {
-  // Filter users to only include providers
-  const providers = users.filter((user) => user.userType === "provider");
-  
+  // Filter featured professionals (3 for the home page)
+  const featuredProfessionals = users
+    .filter(user => user.userType === "professional")
+    .slice(0, 3);
+
+  // Filter featured locations (3 for the home page)
+  const featuredLocations = locations.slice(0, 3);
+
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-primary/5 to-background">
-        <div className="container px-4 py-20 md:px-6 md:py-24">
-          <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-            <div className="flex flex-col justify-center space-y-4">
-              <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  Encontre o espaço ideal para seus serviços de beleza
-                </h1>
-                <p className="max-w-[600px] text-gray-500 md:text-xl">
-                  Guppy conecta profissionais da beleza com espaços totalmente equipados para atender seus clientes. Alugue cabines por turno e impulsione seu negócio.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Link to="/locations">
-                  <Button size="lg">Ver Locais Disponíveis</Button>
-                </Link>
-                <Link to="/providers">
-                  <Button size="lg" variant="outline">
-                    Encontrar Profissionais
-                  </Button>
-                </Link>
-                <Link to="/register?userType=owner">
-                  <Button size="lg" variant="secondary">
-                    Seja um Franqueado
-                  </Button>
-                </Link>
-              </div>
-            </div>
-            <img
-              src="https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NXx8c2Fsb258ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60"
-              alt="Salão de beleza"
-              className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:aspect-square"
-            />
-          </div>
+      <section className="relative bg-gradient-to-r from-primary/90 to-primary/70 py-16 md:py-24 overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-10">
+          <div className="absolute inset-0 bg-grid-white/20" />
         </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="container px-4 py-12 md:px-6 md:py-16">
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold tracking-tight">Como Funciona</h2>
-          <p className="mt-4 text-gray-500">
-            Um processo simples para encontrar ou oferecer serviços de qualidade
-          </p>
-        </div>
-        <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-3">
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Search className="h-8 w-8" />
-            </div>
-            <h3 className="mt-4 text-xl font-semibold">1. Encontre</h3>
-            <p className="mt-2 text-gray-500">
-              {providers.length > 0 ? "Clientes encontram profissionais" : "Prestadores encontram cabines"} que atendam suas necessidades.
-            </p>
-          </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <CheckCircle className="h-8 w-8" />
-            </div>
-            <h3 className="mt-4 text-xl font-semibold">2. Reserve</h3>
-            <p className="mt-2 text-gray-500">
-              {providers.length > 0 ? "Marque um horário com o profissional" : "Reserve uma cabine no local de sua preferência"}.
-            </p>
-          </div>
-          <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Star className="h-8 w-8" />
-            </div>
-            <h3 className="mt-4 text-xl font-semibold">3. Aproveite</h3>
-            <p className="mt-2 text-gray-500">
-              {providers.length > 0 ? "Receba um atendimento de qualidade" : "Ofereça seus serviços em um ambiente profissional"}.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Locations Section */}
-      <section className="container px-4 py-12 md:px-6 md:py-16">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-3xl font-bold tracking-tight">Locais em Destaque</h2>
-            <p className="mt-2 text-gray-500">
-              Espaços cuidadosamente selecionados para sua conveniência
-            </p>
-          </div>
-          <Link to="/locations" className="mt-4 md:mt-0">
-            <Button variant="outline" className="flex items-center gap-2">
-              Ver Todos
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-        </div>
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {locations.slice(0, 3).map((location) => (
-            <LocationCard key={location.id} location={location} />
-          ))}
-        </div>
-      </section>
-
-      {/* Featured Providers Section */}
-      {providers.length > 0 && (
-        <section className="container px-4 py-12 md:px-6 md:py-16">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+        
+        <div className="container relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">
-                Profissionais em Destaque
-              </h2>
-              <p className="mt-2 text-gray-500">
-                Os melhores prestadores de serviços da nossa plataforma
-              </p>
+              <motion.h1 
+                className="text-4xl md:text-5xl font-bold text-white mb-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                Espaço para Profissionais da Beleza
+              </motion.h1>
+              
+              <motion.p 
+                className="text-lg text-white/90 mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                Cabines equipadas para aluguel diário ou mensal para cabeleireiros, manicures, esteticistas e outros profissionais da beleza.
+              </motion.p>
+              
+              <motion.div 
+                className="flex flex-col sm:flex-row gap-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <Button asChild size="lg" className="font-semibold">
+                  <Link to="/register">Cadastre-se Gratuitamente</Link>
+                </Button>
+                <Button asChild size="lg" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20">
+                  <Link to="/locations">Ver Localização</Link>
+                </Button>
+              </motion.div>
             </div>
-            <Link to="/providers" className="mt-4 md:mt-0">
-              <Button variant="outline" className="flex items-center gap-2">
-                Ver Todos
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            
+            <motion.div 
+              className="relative hidden md:block"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <img 
+                src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80" 
+                alt="Salon Space" 
+                className="rounded-lg shadow-lg"
+              />
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="text-primary h-5 w-5" />
+                  <span className="font-medium">Reserva Flexível</span>
+                </div>
+              </div>
+              <div className="absolute -top-6 -right-6 bg-white p-4 rounded-lg shadow-lg">
+                <div className="flex items-center gap-2">
+                  <MapPin className="text-primary h-5 w-5" />
+                  <span className="font-medium">Ótima Localização</span>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Features Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="container">
+          <h2 className="text-3xl font-bold text-center mb-12">Como Funciona</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Para Profissionais</h3>
+              <p className="text-gray-600 mb-4">Alugue espaços equipados por dia ou mês para atender seus clientes com flexibilidade e sem burocracia.</p>
+              <Link to="/register" className="text-primary font-medium inline-flex items-center">
+                Saiba mais <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Localizações</h3>
+              <p className="text-gray-600 mb-4">Encontre espaços em pontos estratégicos da cidade, de fácil acesso para você e seus clientes.</p>
+              <Link to="/locations" className="text-primary font-medium inline-flex items-center">
+                Ver localizações <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 text-center">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CalendarDays className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Reservas</h3>
+              <p className="text-gray-600 mb-4">Sistema de reservas simples e rápido. Escolha o dia, período e confirme sua reserva em poucos cliques.</p>
+              <Link to="/register" className="text-primary font-medium inline-flex items-center">
+                Comece agora <ChevronRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Featured Professionals */}
+      <section className="py-16">
+        <div className="container">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold">Profissionais em Destaque</h2>
+            <Link to="/professionals" className="text-primary font-medium inline-flex items-center">
+              Ver todos <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
-          <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {providers.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} />
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {featuredProfessionals.map((professional) => (
+              <ProfessionalCard key={professional.id} professional={professional} />
             ))}
           </div>
-        </section>
-      )}
-
+        </div>
+      </section>
+      
+      {/* Featured Locations */}
+      <section className="py-16 bg-gray-50">
+        <div className="container">
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-2xl font-bold">Localizações em Destaque</h2>
+            <Link to="/locations" className="text-primary font-medium inline-flex items-center">
+              Ver todas <ChevronRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {featuredLocations.map((location) => (
+              <LocationCard key={location.id} location={location} />
+            ))}
+          </div>
+        </div>
+      </section>
+      
       {/* CTA Section */}
-      <section className="bg-primary/5">
-        <div className="container px-4 py-12 md:px-6 md:py-16">
-          <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-3xl font-bold tracking-tight">
-              Pronto para começar?
-            </h2>
-            <p className="mt-4 text-gray-500">
-              Junte-se a nossa comunidade de profissionais e clientes. 
-              Transforme a maneira como você trabalha ou encontra serviços de beleza.
+      <section className="bg-primary py-16">
+        <div className="container">
+          <div className="max-w-3xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-white mb-4">Pronto para começar?</h2>
+            <p className="text-white/90 text-lg mb-8">
+              Junte-se a nossa comunidade de profissionais da beleza e transforme a maneira como você trabalha.
             </p>
-            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Link to="/register">
-                <Button size="lg">Criar Conta</Button>
-              </Link>
-              <Link to="/contact">
-                <Button size="lg" variant="outline">
-                  Fale Conosco
-                </Button>
-              </Link>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button asChild size="lg" variant="secondary" className="font-semibold">
+                <Link to="/register">Cadastre-se Gratuitamente</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline" className="bg-white/10 text-white border-white/30 hover:bg-white/20">
+                <Link to="/about">Saiba mais</Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -168,4 +191,3 @@ const HomePage = () => {
 };
 
 export default HomePage;
-
