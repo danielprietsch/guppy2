@@ -19,9 +19,7 @@ interface CabinCardProps {
 
 const CabinCard = ({ cabin, location }: CabinCardProps) => {
   const imageIndex = parseInt(cabin.id.replace(/\D/g, ""), 10) % cabinImages.length;
-  const cabinImage = cabinImages[imageIndex];
-
-  const displayImage = cabinImage;
+  const cabinImage = cabin.imageUrl || cabinImages[imageIndex];
 
   const formatShiftStatus = (isAvailable: boolean) => {
     return isAvailable ? (
@@ -35,7 +33,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     <Card className="overflow-hidden">
       <div className="aspect-video overflow-hidden">
         <img
-          src={displayImage}
+          src={cabinImage}
           alt={cabin.name}
           className="h-full w-full object-cover"
         />

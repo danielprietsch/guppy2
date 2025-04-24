@@ -11,6 +11,7 @@ import OwnerProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import LocationsPage from "@/pages/LocationsPage";
+import LocationDetailPage from "@/pages/LocationDetailPage";
 import ProfessionalsPage from "@/pages/ProfessionalsPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
@@ -83,6 +84,10 @@ const router = createBrowserRouter([
       {
         path: "/locations",
         element: <LocationsPage />,
+      },
+      {
+        path: "/locations/:id",
+        element: <LocationDetailPage />,
       },
       {
         path: "/professionals",

@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Location, Cabin } from "@/lib/types";
-import { locations, cabins } from "@/lib/mock-data";
 import CabinCard from "@/components/CabinCard";
 import { Button } from "@/components/ui/button";
 import { Clock, MapPin, ArrowLeft } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const beautySalonImage =
   "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
@@ -19,16 +20,153 @@ const LocationDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const [location, setLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      const foundLocation = locations.find(loc => loc.id === id);
-      setLocation(foundLocation || null);
+    const fetchLocationDetails = async () => {
+      try {
+        if (!id) return;
+        
+        debugLog(`LocationDetailPage: Fetching location with id ${id}`);
+        
+        // Fetch location details
+        const { data: locationData, error: locationError } = await supabase
+          .from('locations')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (locationError) {
+          debugError("LocationDetailPage: Error fetching location:", locationError);
+          setLoading(false);
+          return;
+        }
 
-      const foundCabins = cabins.filter(cabin => cabin.locationId === id);
-      setLocationCabins(foundCabins);
-    }
+        if (!locationData) {
+          debugLog("LocationDetailPage: No location found with id:", id);
+          setLoading(false);
+          return;
+        }
+        
+        // Parse opening_hours safely
+        let openingHours = { open: "09:00", close: "18:00" };
+        
+        if (locationData.opening_hours) {
+          try {
+            if (typeof locationData.opening_hours === 'string') {
+              const parsed = JSON.parse(locationData.opening_hours);
+              if (parsed && typeof parsed === 'object' && 'open' in parsed && 'close' in parsed) {
+                openingHours = {
+                  open: String(parsed.open),
+                  close: String(parsed.close)
+                };
+              }
+            } else if (typeof locationData.opening_hours === 'object' && locationData.opening_hours !== null) {
+              const hours = locationData.opening_hours as any;
+              if ('open' in hours && 'close' in hours) {
+                openingHours = {
+                  open: String(hours.open),
+                  close: String(hours.close)
+                };
+              }
+            }
+          } catch (e) {
+            debugError("LocationDetailPage: Error parsing opening hours:", e);
+          }
+        }
+        
+        // Transform location data
+        const transformedLocation: Location = {
+          id: locationData.id,
+          name: locationData.name,
+          address: locationData.address,
+          city: locationData.city,
+          state: locationData.state,
+          zipCode: locationData.zip_code,
+          cabinsCount: locationData.cabins_count || 0,
+          openingHours: openingHours,
+          amenities: locationData.amenities || [],
+          imageUrl: locationData.image_url || beautySalonImage,
+          description: locationData.description || "",
+          active: locationData.active
+        };
+        
+        setLocation(transformedLocation);
+        
+        // Fetch cabins for this location
+        const { data: cabinsData, error: cabinsError } = await supabase
+          .from('cabins')
+          .select('*')
+          .eq('location_id', id);
+        
+        if (cabinsError) {
+          debugError("LocationDetailPage: Error fetching cabins:", cabinsError);
+        } else {
+          // Transform cabins data
+          const transformedCabins: Cabin[] = cabinsData.map(cabin => {
+            let availability = { morning: true, afternoon: true, evening: true };
+            if (cabin.availability) {
+              if (typeof cabin.availability === 'string') {
+                try {
+                  const parsed = JSON.parse(cabin.availability);
+                  if (parsed && typeof parsed === 'object') {
+                    availability = {
+                      morning: parsed.morning !== false,
+                      afternoon: parsed.afternoon !== false,
+                      evening: parsed.evening !== false
+                    };
+                  }
+                } catch (e) {
+                  debugError("LocationDetailPage: Error parsing cabin availability:", e);
+                }
+              } else if (typeof cabin.availability === 'object' && cabin.availability !== null) {
+                const avail = cabin.availability as any;
+                availability = {
+                  morning: avail.morning !== false,
+                  afternoon: avail.afternoon !== false,
+                  evening: avail.evening !== false
+                };
+              }
+            }
+            
+            // Default pricing structure
+            const defaultPricing = {
+              defaultPricing: {},
+              specificDates: {}
+            };
+            
+            return {
+              id: cabin.id,
+              locationId: cabin.location_id,
+              name: cabin.name,
+              description: cabin.description || "",
+              equipment: cabin.equipment || [],
+              imageUrl: cabin.image_url || "",
+              price: 0,
+              availability: availability,
+              pricing: cabin.pricing || defaultPricing
+            };
+          });
+          
+          setLocationCabins(transformedCabins);
+        }
+      } catch (error) {
+        debugError("LocationDetailPage: Unexpected error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLocationDetails();
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-16 text-center">
+        <p className="text-lg">Carregando informações do local...</p>
+      </div>
+    );
+  }
 
   if (!location) {
     return (
@@ -48,7 +186,7 @@ const LocationDetailPage = () => {
       <div className="relative h-64 md:h-96 flex flex-col md:flex-row">
         <div className="relative w-full md:w-3/4 h-64 md:h-96">
           <img
-            src={beautySalonImage}
+            src={location.imageUrl || beautySalonImage}
             alt="Salão de beleza"
             className="absolute inset-0 h-full w-full object-cover"
           />
@@ -115,6 +253,12 @@ const LocationDetailPage = () => {
                   ))}
                 </div>
               </div>
+              {location.description && (
+                <div>
+                  <h3 className="font-medium">Descrição</h3>
+                  <p className="text-gray-500 mt-1">{location.description}</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="rounded-lg border p-4">

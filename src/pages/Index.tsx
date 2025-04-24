@@ -61,8 +61,8 @@ export default function Index() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="/locations" element={<LocationsPage />} />
-            <Route path="/location/:id" element={<LocationDetailPage />} />
-            <Route path="/book/:cabinId" element={<BookCabinPage />} />
+            <Route path="/locations/:id" element={<LocationDetailPage />} />
+            <Route path="/book-cabin/:cabinId" element={<BookCabinPage />} />
             <Route path="/professionals" element={<ProfessionalsPage />} />
             <Route path="/professional/:id" element={<ProfessionalDetailPage />} />
 
