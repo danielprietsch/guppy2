@@ -1,3 +1,4 @@
+
 import { Navigate } from "react-router-dom";
 import { useGlobalAdminProfile } from "@/hooks/useGlobalAdminProfile";
 import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileForm";
@@ -35,17 +36,22 @@ const GlobalAdminProfilePage = () => {
 
       <div className="max-w-2xl mx-auto">
         {currentUser && (
-          <div className="mb-8">
-            <ProfileImageUpload
-              userId={currentUser.id}
-              currentAvatarUrl={currentUser.avatarUrl}
-              onImageUploaded={(url) => {
-                if (updateProfile) {
-                  updateProfile({ ...currentUser, avatarUrl: url });
-                }
-              }}
-            />
-          </div>
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Foto de Perfil</CardTitle>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <ProfileImageUpload
+                userId={currentUser.id}
+                currentAvatarUrl={currentUser.avatarUrl}
+                onImageUploaded={(url) => {
+                  if (updateProfile) {
+                    updateProfile({ ...currentUser, avatarUrl: url });
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
         )}
 
         <Card>

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ClientProfilePage = () => {
   const navigate = useNavigate();
@@ -89,17 +90,22 @@ const ClientProfilePage = () => {
 
       <div className="max-w-2xl mx-auto">
         {currentUser && (
-          <div className="mb-8">
-            <ProfileImageUpload
-              userId={currentUser.id}
-              currentAvatarUrl={currentUser.avatarUrl}
-              onImageUploaded={(url) => {
-                if (updateProfile) {
-                  updateProfile({ ...currentUser, avatarUrl: url });
-                }
-              }}
-            />
-          </div>
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Foto de Perfil</CardTitle>
+            </CardHeader>
+            <CardContent className="flex justify-center">
+              <ProfileImageUpload
+                userId={currentUser.id}
+                currentAvatarUrl={currentUser.avatarUrl}
+                onImageUploaded={(url) => {
+                  if (updateProfile) {
+                    updateProfile({ ...currentUser, avatarUrl: url });
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
         )}
         
         <div className="bg-card p-6 rounded-lg shadow">
