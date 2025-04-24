@@ -2,11 +2,12 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit, Trash } from "lucide-react";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Cabin, Location } from "@/lib/types";
 import { AddCabinModal } from "./AddCabinModal";
 import { EditCabinModal } from "./EditCabinModal";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 
 interface CabinManagementProps {
   selectedLocation: Location | null;
@@ -25,20 +26,38 @@ export const CabinManagement = ({
 }: CabinManagementProps) => {
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(null);
+  const [cabinToDelete, setCabinToDelete] = useState<Cabin | null>(null);
 
   const handleEditCabin = (cabin: Cabin) => {
     setSelectedCabin(cabin);
     setEditModalOpen(true);
   };
 
-  const handleDeleteCabin = (cabinId: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta cabine?")) {
-      onCabinDeleted?.(cabinId);
+  const handleDeleteClick = (cabin: Cabin) => {
+    setCabinToDelete(cabin);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!cabinToDelete) return;
+
+    try {
+      onCabinDeleted?.(cabinToDelete.id);
       toast({
         title: "Cabine excluída",
         description: "A cabine foi excluída com sucesso."
       });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a cabine.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteModalOpen(false);
+      setCabinToDelete(null);
     }
   };
 
@@ -58,7 +77,7 @@ export const CabinManagement = ({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Cabines de {selectedLocation.name}</CardTitle>
+        <CardTitle>Cabines de {selectedLocation?.name}</CardTitle>
         <Button
           variant="default"
           className="bg-gradient-to-r from-guppy-primary to-guppy-secondary hover:from-guppy-secondary hover:to-guppy-primary transition-all duration-300 ease-in-out transform hover:scale-105 shadow-lg"
@@ -85,8 +104,13 @@ export const CabinManagement = ({
                         <Button variant="ghost" size="icon" onClick={() => handleEditCabin(cabin)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteCabin(cabin.id)}>
-                          <Trash className="h-4 w-4" />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteClick(cabin)}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -114,7 +138,7 @@ export const CabinManagement = ({
         <AddCabinModal 
           open={addModalOpen} 
           onOpenChange={setAddModalOpen} 
-          locationId={selectedLocation.id}
+          locationId={selectedLocation?.id || ""}
           onCabinCreated={onCabinAdded}
         />
 
@@ -124,6 +148,16 @@ export const CabinManagement = ({
             onOpenChange={setEditModalOpen}
             cabin={selectedCabin}
             onCabinUpdated={onCabinUpdated}
+          />
+        )}
+
+        {cabinToDelete && (
+          <DeleteConfirmationDialog
+            open={deleteModalOpen}
+            onOpenChange={setDeleteModalOpen}
+            onConfirm={handleDeleteConfirm}
+            title="Excluir Cabine"
+            description={`Tem certeza que deseja excluir a cabine "${cabinToDelete.name}"? Esta ação não pode ser desfeita.`}
           />
         )}
       </CardContent>

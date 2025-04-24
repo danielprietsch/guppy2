@@ -9,27 +9,60 @@ import {
 import { Button } from "@/components/ui/button";
 import { Location } from "@/lib/types";
 import { OwnerAddLocationModal } from "./OwnerAddLocationModal";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { toast } from "@/hooks/use-toast";
 
 interface LocationSelectorProps {
   userLocations: Location[];
   selectedLocation: Location | null;
   onLocationChange: (locationId: string) => void;
   onLocationCreated?: (loc: Location) => void;
+  onLocationDeleted?: (locationId: string) => void;
 }
 
 export const LocationSelector = ({
   userLocations,
   selectedLocation,
   onLocationChange,
-  onLocationCreated
+  onLocationCreated,
+  onLocationDeleted
 }: LocationSelectorProps) => {
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [locationToDelete, setLocationToDelete] = useState<Location | null>(null);
 
   const handleLocationCreated = (newLocation: Location) => {
     if (onLocationCreated) {
       onLocationCreated(newLocation);
+    }
+  };
+
+  const handleDeleteClick = (location: Location, event: React.MouseEvent) => {
+    event.stopPropagation();
+    setLocationToDelete(location);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!locationToDelete) return;
+
+    try {
+      onLocationDeleted?.(locationToDelete.id);
+      toast({
+        title: "Local excluído",
+        description: "O local foi excluído com sucesso."
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o local.",
+        variant: "destructive"
+      });
+    } finally {
+      setDeleteModalOpen(false);
+      setLocationToDelete(null);
     }
   };
 
@@ -71,6 +104,14 @@ export const LocationSelector = ({
                       </span>
                     </div>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-destructive"
+                    onClick={(e) => handleDeleteClick(location, e)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </CardContent>
               </Card>
             </button>
@@ -91,6 +132,16 @@ export const LocationSelector = ({
           onOpenChange={setAddModalOpen}
           onLocationCreated={handleLocationCreated}
         />
+
+        {locationToDelete && (
+          <DeleteConfirmationDialog
+            open={deleteModalOpen}
+            onOpenChange={setDeleteModalOpen}
+            onConfirm={handleDeleteConfirm}
+            title="Excluir Local"
+            description={`Tem certeza que deseja excluir o local "${locationToDelete.name}"? Esta ação não pode ser desfeita e todas as cabines associadas serão excluídas também.`}
+          />
+        )}
       </CardContent>
     </Card>
   );

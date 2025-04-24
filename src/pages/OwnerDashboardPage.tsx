@@ -302,6 +302,37 @@ const OwnerDashboardPage = () => {
     }
   };
 
+  const handleLocationDeleted = async (locationId: string) => {
+    try {
+      const { error } = await supabase
+        .from('locations')
+        .delete()
+        .eq('id', locationId);
+      
+      if (error) throw error;
+
+      setUserLocations(prev => prev.filter(loc => loc.id !== locationId));
+      
+      if (selectedLocation?.id === locationId) {
+        const nextLocation = userLocations.find(loc => loc.id !== locationId);
+        setSelectedLocation(nextLocation || null);
+        
+        if (nextLocation) {
+          loadCabinsForLocation(nextLocation.id);
+        } else {
+          setLocationCabins([]);
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao excluir local:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o local.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container py-12 flex items-center justify-center">
@@ -335,6 +366,7 @@ const OwnerDashboardPage = () => {
             selectedLocation={selectedLocation}
             onLocationChange={handleLocationChange}
             onLocationCreated={handleLocationCreated}
+            onLocationDeleted={handleLocationDeleted}
             activeTab={activeTab}
             setActiveTab={setActiveTab}
           />
