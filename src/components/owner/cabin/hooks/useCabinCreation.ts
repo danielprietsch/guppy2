@@ -6,6 +6,7 @@ import { Cabin } from "@/lib/types";
 import { Json } from "@/integrations/supabase/types";
 import { getPricesFromCalendar } from "../cabinUtils";
 import { CabinFormState } from "../types/cabinTypes";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 export const useCabinCreation = (
   locationId: string,
@@ -20,20 +21,33 @@ export const useCabinCreation = (
       return;
     }
     
+    if (!locationId) {
+      toast({ title: "ID do local não fornecido", variant: "destructive" });
+      return;
+    }
+    
     setIsSubmitting(true);
     
     try {
-      console.log("Criando nova cabine para o local:", locationId);
+      debugLog("useCabinCreation: Criando nova cabine para o local:", locationId);
       
       const pricing = getPricesFromCalendar(formState.precosPorDiaSemana, formState.precosPorDia);
+      
+      debugLog("useCabinCreation: Dados da cabine:", {
+        location_id: locationId,
+        name: formState.name,
+        description: formState.description || "",
+        equipment: formState.equipment || [],
+        availability: formState.turnoDisponibilidade
+      });
       
       const { data, error } = await supabase
         .from('cabins')
         .insert({
           location_id: locationId,
           name: formState.name,
-          description: formState.description,
-          equipment: formState.equipment,
+          description: formState.description || "",
+          equipment: formState.equipment || [],
           image_url: "",
           availability: formState.turnoDisponibilidade as unknown as Json,
           pricing: pricing as unknown as Json
@@ -42,7 +56,7 @@ export const useCabinCreation = (
         .single();
       
       if (error) {
-        console.error("Erro ao adicionar cabine:", error);
+        debugError("useCabinCreation: Erro ao adicionar cabine:", error);
         
         if (error.code === '23505') {
           toast({ 
@@ -57,7 +71,17 @@ export const useCabinCreation = (
         return;
       }
       
-      console.log("Cabine adicionada com sucesso:", data);
+      debugLog("useCabinCreation: Cabine adicionada com sucesso:", data);
+      
+      // Atualizar o contador de cabines da localização
+      const { error: updateError } = await supabase
+        .from('locations')
+        .update({ cabins_count: supabase.rpc('increment', { row_id: locationId, table_name: 'locations', column_name: 'cabins_count' }) })
+        .eq('id', locationId);
+      
+      if (updateError) {
+        debugError("useCabinCreation: Erro ao atualizar contador de cabines:", updateError);
+      }
       
       const novaCabine: Cabin = {
         id: data.id,
@@ -77,15 +101,21 @@ export const useCabinCreation = (
         }
       };
       
-      onCabinCreated?.(novaCabine);
+      if (onCabinCreated) {
+        onCabinCreated(novaCabine);
+      }
+      
       toast({ title: "Cabine adicionada com sucesso!" });
-      onSuccess?.();
+      
+      if (onSuccess) {
+        onSuccess();
+      }
       
     } catch (error: any) {
-      console.error("Erro ao processar adição de cabine:", error);
+      debugError("useCabinCreation: Erro ao processar adição de cabine:", error);
       toast({ 
         title: "Erro ao adicionar cabine", 
-        description: error.message, 
+        description: error.message || "Erro desconhecido", 
         variant: "destructive" 
       });
     } finally {

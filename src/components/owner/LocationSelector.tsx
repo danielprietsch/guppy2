@@ -37,6 +37,7 @@ export const LocationSelector = ({
 
   const handleLocationCreated = (newLocation: Location) => {
     if (onLocationCreated) {
+      debugLog("LocationSelector: Nova localização criada", newLocation);
       onLocationCreated(newLocation);
     }
   };
@@ -51,16 +52,16 @@ export const LocationSelector = ({
     if (!locationToDelete) return;
 
     try {
-      debugLog("LocationSelector: Deleting location", locationToDelete.id);
+      debugLog("LocationSelector: Excluindo localização", locationToDelete.id);
       
-      // Excluir diretamente sem verificar políticas de RLS
+      // Excluir localização
       const { error } = await supabase
         .from('locations')
         .delete()
         .eq('id', locationToDelete.id);
       
       if (error) {
-        debugError("LocationSelector: Error deleting location:", error);
+        debugError("LocationSelector: Erro ao excluir localização:", error);
         toast({
           title: "Erro ao excluir",
           description: "Não foi possível excluir o local: " + error.message,
@@ -78,10 +79,10 @@ export const LocationSelector = ({
         description: "O local foi excluído com sucesso."
       });
     } catch (error: any) {
-      debugError("LocationSelector: Error in delete process:", error);
+      debugError("LocationSelector: Erro no processo de exclusão:", error);
       toast({
         title: "Erro ao excluir",
-        description: "Não foi possível excluir o local.",
+        description: "Não foi possível excluir o local: " + (error.message || "Erro desconhecido"),
         variant: "destructive"
       });
     } finally {
@@ -114,6 +115,9 @@ export const LocationSelector = ({
                     src={location.imageUrl} 
                     alt={location.name}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://via.placeholder.com/100?text=" + encodeURIComponent(location.name.substring(0, 1));
+                    }}
                   />
                 </div>
                 <span className="font-medium text-sm flex-1 text-left">{location.name}</span>

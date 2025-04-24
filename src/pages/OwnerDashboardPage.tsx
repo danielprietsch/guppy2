@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
@@ -12,11 +13,12 @@ import { debugLog, debugError } from "@/utils/debugLogger";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
-  const { currentUser, isLoading } = useOwnerProfile();
+  const { currentUser, isLoading: userLoading } = useOwnerProfile();
   const {
     userLocations,
     selectedLocation,
     locationCabins,
+    isLoading: locationsLoading,
     loadUserLocations,
     handleLocationChange,
     handleLocationCreated,
@@ -34,10 +36,10 @@ const OwnerDashboardPage = () => {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        debugLog("OwnerDashboardPage: Checking session...");
+        debugLog("OwnerDashboardPage: Verificando sessão...");
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
-          debugLog("OwnerDashboardPage: No session found, redirecting to login");
+          debugLog("OwnerDashboardPage: Sessão não encontrada, redirecionando para login");
           toast({
             title: "Acesso Negado",
             description: "Você precisa estar logado para acessar esta página.",
@@ -47,19 +49,19 @@ const OwnerDashboardPage = () => {
           return;
         }
         
-        debugLog("OwnerDashboardPage: Session found, user:", session.user);
+        debugLog("OwnerDashboardPage: Sessão encontrada, usuário:", session.user);
         
-        // Simplify user type check - accept owner or global_admin
+        // Simplificar verificação de tipo de usuário - aceitar owner ou global_admin
         const userType = session.user.user_metadata?.userType;
         
         if (userType === 'owner' || userType === 'global_admin') {
-          debugLog("OwnerDashboardPage: User is authorized according to metadata");
+          debugLog("OwnerDashboardPage: Usuário autorizado de acordo com os metadados");
           setAuthChecked(true);
           return;
         }
 
-        // Redirect unauthorized users
-        debugLog("OwnerDashboardPage: User is not authorized, redirecting");
+        // Redirecionar usuários não autorizados
+        debugLog("OwnerDashboardPage: Usuário não autorizado, redirecionando");
         toast({
           title: "Acesso Negado",
           description: "Você não tem permissão para acessar o dashboard de franqueado.",
@@ -67,7 +69,7 @@ const OwnerDashboardPage = () => {
         });
         navigate("/");
       } catch (error) {
-        debugError("OwnerDashboardPage: Error checking session:", error);
+        debugError("OwnerDashboardPage: Erro ao verificar sessão:", error);
         toast({
           title: "Erro",
           description: "Ocorreu um erro ao verificar sua sessão.",
@@ -80,15 +82,26 @@ const OwnerDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  // Load locations when user is available
+  // Carregar locais quando o usuário estiver disponível
   useEffect(() => {
     if (currentUser?.id && authChecked) {
-      debugLog("OwnerDashboardPage: Loading locations for user:", currentUser.id);
+      debugLog("OwnerDashboardPage: Carregando locais para o usuário:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
-  }, [currentUser, loadUserLocations, authChecked]);
+  }, [currentUser, authChecked, loadUserLocations]);
 
-  if (isLoading || !authChecked) {
+  // Monitorar mudanças nos locais e cabines para debugging
+  useEffect(() => {
+    debugLog("OwnerDashboardPage: Estado atualizado:", {
+      locaisCount: userLocations.length,
+      selectedLocation: selectedLocation?.name,
+      cabinesCount: locationCabins.length
+    });
+  }, [userLocations, selectedLocation, locationCabins]);
+
+  const isLoading = userLoading || locationsLoading || !authChecked;
+
+  if (isLoading) {
     return (
       <div className="container py-12 flex items-center justify-center">
         <div className="text-center">

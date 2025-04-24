@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -8,18 +9,18 @@ export const useLocationManagement = () => {
   const [userLocations, setUserLocations] = useState<Location[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const loadUserLocations = async (userId: string) => {
     try {
-      console.log("🔄 Loading locations for user:", userId);
+      setIsLoading(true);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Usar a nova função fetch_user_locations que criamos
+      // Usar a função fetch_user_locations que criamos no SQL
       const { data: locationsData, error: locationsError } = await supabase
         .rpc('fetch_user_locations', { p_owner_id: userId });
           
       if (locationsError) {
-        console.error("❌ ERROR LOADING LOCATIONS:", locationsError);
         debugError("useLocationManagement: Error fetching locations:", locationsError);
         
         toast({
@@ -34,7 +35,6 @@ export const useLocationManagement = () => {
       
       // Handle null/undefined data
       if (!locationsData) {
-        console.log("📌 No locations found for user");
         debugLog("useLocationManagement: No locations data returned");
         setUserLocations([]);
         return;
@@ -45,13 +45,14 @@ export const useLocationManagement = () => {
       processLocationData(locationsArray);
       
     } catch (error) {
-      console.error("❌ CRITICAL ERROR LOADING LOCATIONS:", error);
       debugError("useLocationManagement: Error processing locations:", error);
       toast({
         title: "Erro",
         description: "Erro ao processar locais",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -93,36 +94,54 @@ export const useLocationManagement = () => {
         };
       });
       
-      console.log(`✅ Successfully loaded ${transformedLocations.length} locations`);
       debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
       setUserLocations(transformedLocations);
-      if (!selectedLocation) {
-        console.log("🔍 Setting first location as selected:", transformedLocations[0].name);
+      
+      // Se não houver localização selecionada e temos localizações, selecione a primeira
+      if (!selectedLocation && transformedLocations.length > 0) {
+        debugLog("Setting first location as selected:", transformedLocations[0].name);
         setSelectedLocation(transformedLocations[0]);
         loadCabinsForLocation(transformedLocations[0].id);
       }
     } else {
-      console.log("📌 No locations found for user");
       debugLog("useLocationManagement: No locations found for user");
+      setUserLocations([]);
     }
   };
 
   const loadCabinsForLocation = async (locationId: string) => {
+    if (!locationId) {
+      debugLog("useLocationManagement: No location ID provided for loading cabins");
+      return;
+    }
+    
     try {
+      setIsLoading(true);
+      debugLog("useLocationManagement: Loading cabins for location", locationId);
+      
       const { data, error } = await supabase
         .from('cabins')
         .select('*')
         .eq('location_id', locationId);
       
       if (error) {
-        console.error("Error loading cabins:", error);
+        debugError("useLocationManagement: Error loading cabins:", error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar as cabines deste local.",
           variant: "destructive"
         });
+        setLocationCabins([]);
         return;
       }
+      
+      if (!data || data.length === 0) {
+        debugLog("useLocationManagement: No cabins found for location", locationId);
+        setLocationCabins([]);
+        return;
+      }
+      
+      debugLog(`useLocationManagement: Loaded ${data.length} cabins`);
       
       const transformedCabins: Cabin[] = data.map(cabin => {
         const defaultPricing = {
@@ -152,7 +171,7 @@ export const useLocationManagement = () => {
             }
           }
         } catch (e) {
-          console.error("Error parsing pricing data for cabin:", cabin.id, e);
+          debugError("Error parsing pricing data for cabin:", cabin.id, e);
         }
         
         let cabinAvailability = defaultAvailability;
@@ -170,7 +189,7 @@ export const useLocationManagement = () => {
             }
           }
         } catch (e) {
-          console.error("Error parsing availability data for cabin:", cabin.id, e);
+          debugError("Error parsing availability data for cabin:", cabin.id, e);
         }
         
         return {
@@ -188,11 +207,15 @@ export const useLocationManagement = () => {
       
       setLocationCabins(transformedCabins);
     } catch (error) {
-      console.error("Error processing cabins:", error);
+      debugError("Error processing cabins:", error);
+      setLocationCabins([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleLocationChange = async (locationId: string) => {
+    debugLog("useLocationManagement: Changing selected location to", locationId);
     const location = userLocations.find(loc => loc.id === locationId);
     if (location) {
       setSelectedLocation(location);
@@ -201,12 +224,14 @@ export const useLocationManagement = () => {
   };
 
   const handleLocationCreated = (location: Location) => {
+    debugLog("useLocationManagement: New location created", location.id);
     setUserLocations(prev => [...prev, location]);
     setSelectedLocation(location);
     setLocationCabins([]);
   };
 
-  const handleCabinAdded = (cabin: Cabin) => {
+  const handleCabinAdded = async (cabin: Cabin) => {
+    debugLog("useLocationManagement: New cabin added", cabin.id);
     setLocationCabins(prev => [...prev, cabin]);
     
     if (selectedLocation) {
@@ -219,10 +244,17 @@ export const useLocationManagement = () => {
       setUserLocations(prev => prev.map(loc => 
         loc.id === updatedLocation.id ? updatedLocation : loc
       ));
+      
+      // Atualizar o contador de cabines diretamente no banco de dados
+      await supabase
+        .from('locations')
+        .update({ cabins_count: updatedLocation.cabinsCount })
+        .eq('id', updatedLocation.id);
     }
   };
 
   const handleCabinUpdated = (cabin: Cabin) => {
+    debugLog("useLocationManagement: Cabin updated", cabin.id);
     setLocationCabins(prev => prev.map(c => 
       c.id === cabin.id ? cabin : c
     ));
@@ -230,12 +262,17 @@ export const useLocationManagement = () => {
 
   const handleLocationDeleted = async (locationId: string) => {
     try {
+      debugLog("useLocationManagement: Deleting location", locationId);
+      
       const { error } = await supabase
         .from('locations')
         .delete()
         .eq('id', locationId);
       
-      if (error) throw error;
+      if (error) {
+        debugError("useLocationManagement: Error deleting location:", error);
+        throw error;
+      }
 
       setUserLocations(prev => prev.filter(loc => loc.id !== locationId));
       
@@ -249,11 +286,11 @@ export const useLocationManagement = () => {
           setLocationCabins([]);
         }
       }
-    } catch (error) {
-      console.error("Error deleting location:", error);
+    } catch (error: any) {
+      debugError("Error deleting location:", error);
       toast({
         title: "Erro",
-        description: "Não foi possível excluir o local.",
+        description: "Não foi possível excluir o local: " + (error.message || "Erro desconhecido"),
         variant: "destructive"
       });
     }
@@ -261,16 +298,18 @@ export const useLocationManagement = () => {
 
   const handleCabinDeleted = async (cabinId: string) => {
     try {
+      debugLog("useLocationManagement: Deleting cabin", cabinId);
+      
       const { error } = await supabase
         .from('cabins')
         .delete()
         .eq('id', cabinId);
       
       if (error) {
-        console.error("Error deleting cabin:", error);
+        debugError("useLocationManagement: Error deleting cabin:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível excluir a cabine.",
+          description: "Não foi possível excluir a cabine: " + error.message,
           variant: "destructive"
         });
         return;
@@ -288,9 +327,20 @@ export const useLocationManagement = () => {
         setUserLocations(prev => prev.map(loc => 
           loc.id === updatedLocation.id ? updatedLocation : loc
         ));
+        
+        // Atualizar o contador de cabines diretamente no banco de dados
+        await supabase
+          .from('locations')
+          .update({ cabins_count: updatedLocation.cabinsCount })
+          .eq('id', updatedLocation.id);
       }
-    } catch (error) {
-      console.error("Error processing cabin deletion:", error);
+    } catch (error: any) {
+      debugError("Error processing cabin deletion:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir cabine: " + (error.message || "Erro desconhecido"),
+        variant: "destructive"
+      });
     }
   };
 
@@ -298,6 +348,7 @@ export const useLocationManagement = () => {
     userLocations,
     selectedLocation,
     locationCabins,
+    isLoading,
     loadUserLocations,
     handleLocationChange,
     handleLocationCreated,
