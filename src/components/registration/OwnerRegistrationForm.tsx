@@ -60,12 +60,13 @@ const ownerFormSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  companyName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres"),
+  companyName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").optional(),
   phone: z.string().optional(),
   taxId: z.string().refine((value) => {
+    if (!value) return true; // Allow empty value
     const cleanValue = value.replace(/[^\d]/g, '');
     return cleanValue.length === 11 ? validateCPF(cleanValue) : validateCNPJ(cleanValue);
-  }, { message: "CPF ou CNPJ inválido" })
+  }, { message: "CPF ou CNPJ inválido" }).optional()
 });
 
 type OwnerFormValues = z.infer<typeof ownerFormSchema>;
@@ -120,24 +121,26 @@ export const OwnerRegistrationForm: React.FC = () => {
       debugLog("OwnerRegistrationForm: User created successfully", authData.user.id);
 
       // 2. Update profile with additional owner details
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          company_name: data.companyName,
-          phone_number: data.phone || null,
-          [taxIdType === 'cpf' ? 'cpf' : 'cnpj']: data.taxId.replace(/[^\d]/g, '')
-        })
-        .eq('id', authData.user.id);
+      if (data.companyName || data.phone || data.taxId) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            company_name: data.companyName || null,
+            phone_number: data.phone || null,
+            [taxIdType === 'cpf' ? 'cpf' : 'cnpj']: data.taxId ? data.taxId.replace(/[^\d]/g, '') : null
+          })
+          .eq('id', authData.user.id);
 
-      if (profileError) {
-        debugError("OwnerRegistrationForm: Error updating profile", profileError);
-        toast({
-          title: "Alerta",
-          description: "Usuário criado, mas houve um erro ao salvar detalhes adicionais do perfil.",
-          variant: "destructive"
-        });
-      } else {
-        debugLog("OwnerRegistrationForm: Profile updated successfully");
+        if (profileError) {
+          debugError("OwnerRegistrationForm: Error updating profile", profileError);
+          toast({
+            title: "Alerta",
+            description: "Usuário criado, mas houve um erro ao salvar detalhes adicionais do perfil.",
+            variant: "destructive"
+          });
+        } else {
+          debugLog("OwnerRegistrationForm: Profile updated successfully");
+        }
       }
 
       toast({
