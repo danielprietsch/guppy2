@@ -81,15 +81,15 @@ const LoginPage = () => {
   const getDashboardRoute = (userType: string): string => {
     debugLog("LoginPage: Getting dashboard route for user type:", userType);
     // Garantir que a comparação seja case-insensitive
-    switch (userType.toLowerCase()) {
-      case "global_admin":
-        return "/admin/global";
-      case "provider":
-        return "/provider/dashboard";
-      case "owner":
-        return "/owner/dashboard";
-      default:
-        return "/client/dashboard";
+    const userTypeLower = userType.toLowerCase();
+    if (userTypeLower === "provider" || userTypeLower === "professional") {
+      return "/professional/dashboard";
+    } else if (userTypeLower === "global_admin") {
+      return "/admin/global";
+    } else if (userTypeLower === "owner") {
+      return "/owner/dashboard";
+    } else {
+      return "/client/dashboard";
     }
   };
 

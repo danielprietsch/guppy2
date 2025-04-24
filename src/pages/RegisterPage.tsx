@@ -85,7 +85,8 @@ const RegisterPage = () => {
     debugLog("RegisterPage: Getting dashboard route for user type:", userType);
     switch (userType.toLowerCase()) {
       case "provider":
-        return "/provider/dashboard";
+      case "professional":
+        return "/professional/dashboard";
       case "owner":
         return "/owner/dashboard";
       case "global_admin":
@@ -141,6 +142,9 @@ const RegisterPage = () => {
         }
       }
       
+      // Mapear "provider" para "professional" para consistência no banco de dados
+      const mappedUserType = userTypeValue === "provider" ? "professional" : userTypeValue;
+      
       // Tratamento para outros tipos de usuário
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
@@ -148,7 +152,7 @@ const RegisterPage = () => {
         options: {
           data: {
             name: data.name,
-            userType: userTypeValue,
+            userType: mappedUserType, // Usar o tipo já mapeado aqui
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
           }
         }
@@ -175,9 +179,8 @@ const RegisterPage = () => {
       });
       
       if (authData.user) {
-        // Usar tipo de usuário diretamente dos metadados - mais confiável
-        const userType = authData.user.user_metadata?.userType || userTypeValue;
-        const dashboardRoute = getDashboardRoute(userType);
+        // Usar o tipo mapeado para determinar o dashboard
+        const dashboardRoute = getDashboardRoute(mappedUserType);
         
         debugLog(`Redirecting to ${dashboardRoute}`);
         
