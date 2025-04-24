@@ -84,22 +84,36 @@ const OwnerDashboardPage = () => {
           });
         } else if (locationsData && locationsData.length > 0) {
           // Transform data from snake_case to camelCase
-          const transformedLocations: Location[] = locationsData.map(location => ({
-            id: location.id,
-            name: location.name,
-            address: location.address,
-            city: location.city,
-            state: location.state,
-            zipCode: location.zip_code,
-            cabinsCount: location.cabins_count || 0,
-            openingHours: {
-              open: location.opening_hours?.open || "09:00",
-              close: location.opening_hours?.close || "18:00"
-            },
-            amenities: location.amenities || [],
-            imageUrl: location.image_url || "",
-            description: location.description
-          }));
+          const transformedLocations: Location[] = locationsData.map(location => {
+            // Parse opening_hours safely - handle both string and object types
+            let openingHours = { open: "09:00", close: "18:00" };
+            
+            if (location.opening_hours) {
+              // Check if opening_hours is a string (needs parsing) or already an object
+              const hoursData = typeof location.opening_hours === 'string' 
+                ? JSON.parse(location.opening_hours)
+                : location.opening_hours;
+                
+              openingHours = {
+                open: hoursData.open || "09:00",
+                close: hoursData.close || "18:00"
+              };
+            }
+            
+            return {
+              id: location.id,
+              name: location.name,
+              address: location.address,
+              city: location.city,
+              state: location.state,
+              zipCode: location.zip_code,
+              cabinsCount: location.cabins_count || 0,
+              openingHours: openingHours,
+              amenities: location.amenities || [],
+              imageUrl: location.image_url || "",
+              description: location.description
+            };
+          });
           
           setUserLocations(transformedLocations);
           setSelectedLocation(transformedLocations[0]);
