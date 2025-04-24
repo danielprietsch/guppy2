@@ -19,107 +19,245 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       return { success: false, message: "no-cabins" };
     }
     
-    // Check if there's already an approval request
-    debugLog("triggerApprovalRequest: Checking for existing approval requests");
-    const { data: existingApproval, error: checkError } = await supabase
-      .from('admin_approvals')
-      .select('id, status')
-      .eq('location_id', locationId)
-      .maybeSingle();
-      
-    if (checkError) {
-      debugError("triggerApprovalRequest: Error checking existing approval:", checkError);
-      toast({
-        title: "Erro",
-        description: "Não foi possível verificar solicitações existentes.",
-        variant: "destructive",
-      });
-      return { success: false, message: "check-error", error: checkError };
-    }
-    
-    // If there's an existing approved request, don't create a new one
-    if (existingApproval?.status === "APROVADO") {
-      debugLog("triggerApprovalRequest: Location already approved");
-      toast({
-        title: "Aviso",
-        description: "Este local já foi aprovado.",
-      });
-      return { success: false, message: "already-approved" };
-    }
-    
-    // If there's a pending request, don't create a new one
-    if (existingApproval?.status === "PENDENTE") {
-      debugLog("triggerApprovalRequest: Approval already pending");
-      toast({
-        title: "Aviso",
-        description: "Já existe uma solicitação de aprovação pendente para este local.",
-      });
-      return { success: false, message: "already-pending" };
-    }
-    
-    // If there's an existing rejected request that we're retrying
-    if (existingApproval?.id) {
-      debugLog("triggerApprovalRequest: Updating existing rejected request:", existingApproval.id);
-      
-      // Update the existing request to pending
-      const { error: updateError } = await supabase
-        .from('admin_approvals')
-        .update({
-          status: "PENDENTE",
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingApproval.id);
-        
-      if (updateError) {
-        debugError("triggerApprovalRequest: Error updating approval request:", updateError);
+    try {
+      // Get current user's session to confirm auth state
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        debugLog("triggerApprovalRequest: No active session");
         toast({
           title: "Erro",
-          description: "Não foi possível solicitar a aprovação do local.",
+          description: "Você precisa estar logado para solicitar aprovação.",
           variant: "destructive",
         });
-        return { success: false, message: "update-error", error: updateError };
+        return { success: false, message: "not-authenticated" };
       }
-      
-      toast({
-        title: "Sucesso",
-        description: "Solicitação de aprovação enviada com sucesso.",
-      });
-      
-      return { success: true, message: "updated-pending" };
-    }
-    
-    // Create a new approval request
-    debugLog("triggerApprovalRequest: Creating new approval request");
-    const { error } = await supabase
-      .from('admin_approvals')
-      .insert({
-        location_id: locationId,
-        status: "PENDENTE"
-      });
-      
-    if (error) {
-      debugError("triggerApprovalRequest: Error creating approval request:", error);
+
+      // Manual query that doesn't rely on RLS for checking approvals
+      // Since we have the user authenticated, this is secure
+      const { data: existingApproval, error: checkError } = await supabase
+        .rpc('get_location_approval_status', { loc_id: locationId })
+        .maybeSingle();
+
+      if (checkError) {
+        // If the RPC is not defined yet, fall back to direct query with owner_id check
+        debugLog("triggerApprovalRequest: RPC failed, falling back to direct query");
+        const userId = sessionData.session.user.id;
+        
+        const { data: locationCheck } = await supabase
+          .from('locations')
+          .select('id, owner_id')
+          .eq('id', locationId)
+          .eq('owner_id', userId)
+          .maybeSingle();
+          
+        if (!locationCheck) {
+          debugError("triggerApprovalRequest: User does not own this location");
+          toast({
+            title: "Erro",
+            description: "Você não tem permissão para solicitar aprovação para este local.",
+            variant: "destructive",
+          });
+          return { success: false, message: "unauthorized" };
+        }
+        
+        // Direct query for approvals without relying on complex policies
+        const { data: approvalCheck, error: directError } = await supabase
+          .from('admin_approvals')
+          .select('id, status')
+          .eq('location_id', locationId)
+          .maybeSingle();
+          
+        if (directError) {
+          debugError("triggerApprovalRequest: Error checking approvals:", directError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível verificar solicitações existentes.",
+            variant: "destructive",
+          });
+          return { success: false, message: "check-error", error: directError };
+        }
+        
+        // Use the direct query result
+        if (approvalCheck?.status === "APROVADO") {
+          debugLog("triggerApprovalRequest: Location already approved");
+          toast({
+            title: "Aviso",
+            description: "Este local já foi aprovado.",
+          });
+          return { success: false, message: "already-approved" };
+        }
+        
+        if (approvalCheck?.status === "PENDENTE") {
+          debugLog("triggerApprovalRequest: Approval already pending");
+          toast({
+            title: "Aviso",
+            description: "Já existe uma solicitação de aprovação pendente para este local.",
+          });
+          return { success: false, message: "already-pending" };
+        }
+        
+        // If there's an existing rejected request that we're retrying
+        if (approvalCheck?.id) {
+          debugLog("triggerApprovalRequest: Updating existing rejected request:", approvalCheck.id);
+          
+          // Update the existing request to pending
+          const { error: updateError } = await supabase
+            .from('admin_approvals')
+            .update({
+              status: "PENDENTE",
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', approvalCheck.id);
+            
+          if (updateError) {
+            debugError("triggerApprovalRequest: Error updating approval request:", updateError);
+            toast({
+              title: "Erro",
+              description: "Não foi possível solicitar a aprovação do local.",
+              variant: "destructive",
+            });
+            return { success: false, message: "update-error", error: updateError };
+          }
+          
+          // Also update location status
+          await supabase
+            .from('locations')
+            .update({ active: false })
+            .eq('id', locationId);
+          
+          toast({
+            title: "Sucesso",
+            description: "Solicitação de aprovação enviada com sucesso.",
+          });
+          
+          return { success: true, message: "updated-pending" };
+        }
+        
+        // Create a new approval request
+        debugLog("triggerApprovalRequest: Creating new approval request");
+        const { error: insertError } = await supabase
+          .from('admin_approvals')
+          .insert({
+            location_id: locationId,
+            status: "PENDENTE"
+          });
+          
+        if (insertError) {
+          debugError("triggerApprovalRequest: Error creating approval request:", insertError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível solicitar a aprovação do local.",
+            variant: "destructive",
+          });
+          return { success: false, message: "insert-error", error: insertError };
+        }
+        
+        // Also update the location status
+        await supabase
+          .from('locations')
+          .update({ active: false })
+          .eq('id', locationId);
+        
+        toast({
+          title: "Sucesso",
+          description: "Solicitação de aprovação enviada com sucesso.",
+        });
+        
+        return { success: true, message: "created-pending" };
+      } else {
+        // If RPC worked, use its result
+        if (existingApproval) {
+          if (existingApproval.status === "APROVADO") {
+            debugLog("triggerApprovalRequest: Location already approved");
+            toast({
+              title: "Aviso",
+              description: "Este local já foi aprovado.",
+            });
+            return { success: false, message: "already-approved" };
+          }
+          
+          if (existingApproval.status === "PENDENTE") {
+            debugLog("triggerApprovalRequest: Approval already pending");
+            toast({
+              title: "Aviso",
+              description: "Já existe uma solicitação de aprovação pendente para este local.",
+            });
+            return { success: false, message: "already-pending" };
+          }
+          
+          // For rejected status or any other status - update to pending
+          const { error: updateError } = await supabase
+            .from('admin_approvals')
+            .update({
+              status: "PENDENTE",
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingApproval.id);
+            
+          if (updateError) {
+            debugError("triggerApprovalRequest: Error updating approval request:", updateError);
+            toast({
+              title: "Erro",
+              description: "Não foi possível solicitar a aprovação do local.",
+              variant: "destructive",
+            });
+            return { success: false, message: "update-error", error: updateError };
+          }
+          
+          // Also update location status
+          await supabase
+            .from('locations')
+            .update({ active: false })
+            .eq('id', locationId);
+          
+          toast({
+            title: "Sucesso",
+            description: "Solicitação de aprovação enviada com sucesso.",
+          });
+          
+          return { success: true, message: "updated-pending" };
+        } else {
+          // No existing approval, create a new one
+          const { error: insertError } = await supabase
+            .from('admin_approvals')
+            .insert({
+              location_id: locationId,
+              status: "PENDENTE"
+            });
+            
+          if (insertError) {
+            debugError("triggerApprovalRequest: Error creating approval request:", insertError);
+            toast({
+              title: "Erro",
+              description: "Não foi possível solicitar a aprovação do local.",
+              variant: "destructive",
+            });
+            return { success: false, message: "insert-error", error: insertError };
+          }
+          
+          // Also update the location status
+          await supabase
+            .from('locations')
+            .update({ active: false })
+            .eq('id', locationId);
+          
+          toast({
+            title: "Sucesso",
+            description: "Solicitação de aprovação enviada com sucesso.",
+          });
+          
+          return { success: true, message: "created-pending" };
+        }
+      }
+    } catch (dbError) {
+      debugError("triggerApprovalRequest: Database operation error:", dbError);
       toast({
         title: "Erro",
-        description: "Não foi possível solicitar a aprovação do local.",
+        description: "Ocorreu um erro ao processar sua solicitação.",
         variant: "destructive",
       });
-      return { success: false, message: "insert-error", error };
+      return { success: false, message: "db-error", error: dbError };
     }
-    
-    // Also update the location status to ensure consistency
-    await supabase
-      .from('locations')
-      .update({ active: false })
-      .eq('id', locationId);
-    
-    toast({
-      title: "Sucesso",
-      description: "Solicitação de aprovação enviada com sucesso.",
-    });
-    
-    return { success: true, message: "created-pending" };
-    
   } catch (error) {
     debugError("triggerApprovalRequest: Unexpected error:", error);
     toast({
