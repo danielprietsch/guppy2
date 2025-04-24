@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Card,
@@ -28,8 +27,8 @@ export const AvailabilitySettings = ({
   const [selectedTurn, setSelectedTurn] = useState<"morning" | "afternoon" | "evening">("morning");
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [pricePerDay, setPricePerDay] = useState<number>(selectedCabin?.price || 100);
-  
   const [daysBooked, setDaysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
+  const [manuallyClosedDates, setManuallyClosedDates] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
 
   const handleCabinChange = (cabinId: string) => {
     const cabin = locationCabins.find(c => c.id === cabinId);
@@ -42,6 +41,49 @@ export const AvailabilitySettings = ({
   const handleTurnChange = (turn: "morning" | "afternoon" | "evening") => {
     setSelectedTurn(turn);
     setSelectedDates([]);
+  };
+
+  const handleStatusChange = (date: string, turn: string, isManualClose: boolean) => {
+    setManuallyClosedDates(prev => {
+      const updated = { ...prev };
+      if (!updated[date]) {
+        updated[date] = {
+          morning: false,
+          afternoon: false,
+          evening: false
+        };
+      }
+      updated[date][turn] = isManualClose;
+      return updated;
+    });
+
+    toast({
+      title: isManualClose ? "Turno fechado manualmente" : "Turno reaberto",
+      description: `${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} - ${
+        turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
+      }`,
+    });
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value > 0) {
+      setPricePerDay(value);
+    }
+  };
+
+  const handlePriceUpdate = (date: string, turn: string, price: number) => {
+    setPricePerDay(price);
+    toast({
+      title: "Preço atualizado",
+      description: `O preço para ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} (${
+        turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
+      }) foi atualizado para R$ ${price}.`,
+    });
+  };
+
+  const calculateTotalPrice = () => {
+    return selectedDates.length * pricePerDay;
   };
 
   const handleSaveAvailability = () => {
@@ -69,27 +111,6 @@ export const AvailabilitySettings = ({
         selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"
       }.`,
     });
-  };
-
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value > 0) {
-      setPricePerDay(value);
-    }
-  };
-
-  const handlePriceUpdate = (date: string, turn: string, price: number) => {
-    setPricePerDay(price);
-    toast({
-      title: "Preço atualizado",
-      description: `O preço para ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} (${
-        turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
-      }) foi atualizado para R$ ${price}.`,
-    });
-  };
-
-  const calculateTotalPrice = () => {
-    return selectedDates.length * pricePerDay;
   };
 
   return (
@@ -140,6 +161,8 @@ export const AvailabilitySettings = ({
                   selectedDates={selectedDates}
                   pricePerDay={pricePerDay}
                   onPriceChange={handlePriceUpdate}
+                  onStatusChange={handleStatusChange}
+                  manuallyClosedDates={manuallyClosedDates}
                 />
               </div>
             )}

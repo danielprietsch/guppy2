@@ -18,6 +18,8 @@ interface CabinAvailabilityCalendarProps {
   selectedDates: string[];
   pricePerDay: number;
   onPriceChange?: (date: string, turn: string, price: number) => void;
+  onStatusChange?: (date: string, turn: string, isManualClose: boolean) => void;
+  manuallyClosedDates?: { [date: string]: { [turn: string]: boolean } };
 }
 
 const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
@@ -26,7 +28,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   onSelectDates,
   selectedDates,
   pricePerDay,
-  onPriceChange
+  onPriceChange,
+  onStatusChange,
+  manuallyClosedDates = {}
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const [editingPrice, setEditingPrice] = React.useState<{date: string; turn: string; price: number} | null>(null);
@@ -39,18 +43,24 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     selected: (date: Date) => selectedDates.includes(fmtDate(date)),
     available: (date: Date) => 
       !selectedDates.includes(fmtDate(date)) && 
-      !(daysBooked[fmtDate(date)] && daysBooked[fmtDate(date)][selectedTurn])
+      !(daysBooked[fmtDate(date)] && daysBooked[fmtDate(date)][selectedTurn]) &&
+      !(manuallyClosedDates[fmtDate(date)] && manuallyClosedDates[fmtDate(date)][selectedTurn]),
+    manuallyClosed: (date: Date) =>
+      manuallyClosedDates[fmtDate(date)] && manuallyClosedDates[fmtDate(date)][selectedTurn]
   };
 
-  const handleDayClick = (date: Date) => {
+  const handleDayClick = (date: Date, turn: string) => {
     const d = fmtDate(date);
-    if (daysBooked[d] && daysBooked[d][selectedTurn]) {
+    if (daysBooked[d] && daysBooked[d][turn]) {
       return;
     }
-    if (selectedDates.includes(d)) {
-      onSelectDates(selectedDates.filter((dt) => dt !== d));
+
+    // Se estiver disponível, marca como fechado manualmente
+    if (!(manuallyClosedDates[d] && manuallyClosedDates[d][turn])) {
+      onStatusChange?.(d, turn, true);
     } else {
-      onSelectDates([...selectedDates, d]);
+      // Se estiver fechado manualmente, volta para disponível
+      onStatusChange?.(d, turn, false);
     }
   };
 
@@ -76,10 +86,10 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       evening: daysBooked[dateStr]?.evening || false,
     };
     
-    const isSelected = {
-      morning: selectedTurn === "morning" && selectedDates.includes(dateStr),
-      afternoon: selectedTurn === "afternoon" && selectedDates.includes(dateStr),
-      evening: selectedTurn === "evening" && selectedDates.includes(dateStr),
+    const isManuallyClosed = {
+      morning: manuallyClosedDates[dateStr]?.morning || false,
+      afternoon: manuallyClosedDates[dateStr]?.afternoon || false,
+      evening: manuallyClosedDates[dateStr]?.evening || false,
     };
 
     const turnos = [
@@ -102,20 +112,20 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                       "h-8 w-full rounded-sm cursor-pointer transition-colors flex items-center justify-center text-xs font-medium",
                       isBooked[key as keyof typeof isBooked]
                         ? "bg-red-500 text-white"
-                        : isSelected[key as keyof typeof isSelected]
-                        ? "bg-primary text-primary-foreground"
+                        : isManuallyClosed[key as keyof typeof isManuallyClosed]
+                        ? "bg-yellow-300 text-gray-800"
                         : "bg-green-500 hover:bg-green-600 text-white",
                       "relative group"
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (isCurrentTurnSelected) {
-                        handleDayClick(day);
+                        handleDayClick(day, key);
                       }
                     }}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
-                      if (!isBooked[key as keyof typeof isBooked]) {
+                      if (!isBooked[key as keyof typeof isBooked] && !isManuallyClosed[key as keyof typeof isManuallyClosed]) {
                         handlePriceEdit(dateStr, key, pricePerDay);
                       }
                     }}
@@ -145,6 +155,13 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                     <p className="font-medium">{format(day, "dd/MM/yyyy", { locale: ptBR })}</p>
                     <p>{label}</p>
                     <p>R$ {pricePerDay}</p>
+                    <p>
+                      {isBooked[key as keyof typeof isBooked]
+                        ? "Reservado"
+                        : isManuallyClosed[key as keyof typeof isManuallyClosed]
+                        ? "Fechado manualmente"
+                        : "Disponível"}
+                    </p>
                   </div>
                 </PopoverContent>
               </Popover>
@@ -166,7 +183,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       <Calendar
         mode="multiple"
         selected={selectedDates.map((d) => new Date(d))}
-        onDayClick={handleDayClick}
+        onDayClick={() => {}} // Desabilitamos o clique no dia inteiro
         month={viewMonth}
         onMonthChange={setViewMonth}
         locale={ptBR}
@@ -202,36 +219,17 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           <span>Disponível</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="h-4 w-4 bg-red-500 rounded-full inline-block"></span>
-          <span>Ocupado</span>
+          <span className="h-4 w-4 bg-yellow-300 rounded-full inline-block"></span>
+          <span>Fechado manualmente</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="h-4 w-4 bg-primary rounded-full inline-block"></span>
-          <span>Selecionado</span>
+          <span className="h-4 w-4 bg-red-500 rounded-full inline-block"></span>
+          <span>Reservado</span>
         </div>
-      </div>
-      <div className="border-t mt-3 pt-3">
-        <h3 className="font-medium mb-2">Dias selecionados:</h3>
-        {selectedDates.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {selectedDates.map((date) => (
-              <div key={date} className="text-sm bg-primary/10 rounded-md p-2 flex justify-between items-center">
-                <span>{format(new Date(date), "dd/MM/yyyy", { locale: ptBR })}</span>
-                <button 
-                  className="h-6 w-6 p-0 hover:bg-gray-200 rounded-full"
-                  onClick={() => onSelectDates(selectedDates.filter(d => d !== date))}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">Nenhum dia selecionado</p>
-        )}
       </div>
     </div>
   );
 };
 
 export default CabinAvailabilityCalendar;
+
