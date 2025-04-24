@@ -1,10 +1,17 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Scissors, User, Briefcase } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,7 +23,6 @@ interface AuthFormProps {
   isLoading: boolean;
 }
 
-// Definição de ícones em formato svg, mantendo padronização visual nos três
 const userTypes = [
   {
     key: "client",
@@ -43,7 +49,11 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [userType, setUserType] = useState<"client" | "provider" | "owner">("client");
-  
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryPhone, setRecoveryPhone] = useState("");
+  const [isRecovering, setIsRecovering] = useState(false);
+  const [recoveryMethod, setRecoveryMethod] = useState<"email" | "phone">("email");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -85,6 +95,39 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
     }
   };
 
+  const handlePasswordRecovery = async () => {
+    setIsRecovering(true);
+    try {
+      if (recoveryMethod === "email") {
+        const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+          redirectTo: window.location.origin + '/reset-password',
+        });
+        
+        if (error) throw error;
+        
+        toast({
+          title: "Email enviado",
+          description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        });
+      } else if (recoveryMethod === "phone") {
+        toast({
+          title: "Recuperação por telefone",
+          description: "Esta funcionalidade estará disponível em breve.",
+          variant: "destructive"
+        });
+      }
+    } catch (error: any) {
+      console.error("Erro na recuperação de senha:", error);
+      toast({
+        title: "Erro na recuperação",
+        description: error.message,
+        variant: "destructive"
+      });
+    } finally {
+      setIsRecovering(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-sm space-y-6">
       <div className="space-y-2 text-center">
@@ -97,6 +140,7 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
             : "Preencha os dados abaixo para se cadastrar"}
         </p>
       </div>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         {mode === "register" && (
           <div className="space-y-2">
@@ -182,6 +226,74 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
           </>
         )}
       </div>
+
+      {mode === "login" && (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="link" className="w-full">
+              Esqueceu sua senha?
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Recuperar Senha</DialogTitle>
+              <DialogDescription>
+                Escolha como deseja recuperar sua senha
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <Button
+                  variant={recoveryMethod === "email" ? "default" : "outline"}
+                  onClick={() => setRecoveryMethod("email")}
+                  className="flex-1"
+                >
+                  Email
+                </Button>
+                <Button
+                  variant={recoveryMethod === "phone" ? "default" : "outline"}
+                  onClick={() => setRecoveryMethod("phone")}
+                  className="flex-1"
+                >
+                  Telefone
+                </Button>
+              </div>
+
+              {recoveryMethod === "email" ? (
+                <div className="space-y-2">
+                  <Label htmlFor="recovery-email">Email</Label>
+                  <Input
+                    id="recovery-email"
+                    type="email"
+                    placeholder="Digite seu email"
+                    value={recoveryEmail}
+                    onChange={(e) => setRecoveryEmail(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="recovery-phone">Telefone</Label>
+                  <Input
+                    id="recovery-phone"
+                    type="tel"
+                    placeholder="Digite seu telefone"
+                    value={recoveryPhone}
+                    onChange={(e) => setRecoveryPhone(e.target.value)}
+                  />
+                </div>
+              )}
+
+              <Button 
+                className="w-full" 
+                onClick={handlePasswordRecovery}
+                disabled={isRecovering}
+              >
+                {isRecovering ? "Enviando..." : "Recuperar Senha"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
