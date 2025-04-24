@@ -1,5 +1,5 @@
 
-import { Building, DollarSign, Calendar, Plus, Settings } from "lucide-react";
+import { Building, DollarSign, Calendar, Plus, Settings, Bed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationSelector } from "./LocationSelector";
@@ -43,6 +43,14 @@ export const OwnerSidebar = ({
           >
             <Building className="mr-2 h-4 w-4" />
             Visão geral
+          </Button>
+          <Button
+            variant={activeTab === "cabins" ? "default" : "ghost"}
+            className="w-full justify-start"
+            onClick={() => setActiveTab("cabins")}
+          >
+            <Bed className="mr-2 h-4 w-4" />
+            Cabines
           </Button>
           <Button
             variant={activeTab === "pricing" ? "default" : "ghost"}

@@ -3,8 +3,11 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Location } from "@/lib/types";
+import { User, Location, Cabin } from "@/lib/types";
 import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
+import { CabinManagement } from "@/components/owner/CabinManagement";
+import { LocationsOverview } from "@/components/owner/LocationsOverview";
+import { LocationSettings } from "@/components/owner/LocationSettings";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -13,6 +16,7 @@ const OwnerDashboardPage = () => {
   const [userLocations, setUserLocations] = useState<Location[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [activeTab, setActiveTab] = useState("locations");
+  const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -117,6 +121,11 @@ const OwnerDashboardPage = () => {
           
           setUserLocations(transformedLocations);
           setSelectedLocation(transformedLocations[0]);
+          
+          // If we have a selected location, load its cabins
+          if (transformedLocations[0]) {
+            loadCabinsForLocation(transformedLocations[0].id);
+          }
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
@@ -133,16 +142,123 @@ const OwnerDashboardPage = () => {
     checkAuth();
   }, [navigate]);
 
+  // Load cabins for a specific location
+  const loadCabinsForLocation = async (locationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('cabins')
+        .select('*')
+        .eq('location_id', locationId);
+      
+      if (error) {
+        console.error("Erro ao carregar cabines:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar as cabines deste local.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const transformedCabins: Cabin[] = data.map(cabin => {
+        return {
+          id: cabin.id,
+          locationId: cabin.location_id,
+          name: cabin.name,
+          description: cabin.description || "",
+          equipment: cabin.equipment || [],
+          imageUrl: cabin.image_url || "",
+          price: 0, // Default price
+          availability: {
+            morning: true,
+            afternoon: true,
+            evening: true
+          },
+          pricing: cabin.pricing || { defaultPricing: {}, specificDates: {} }
+        };
+      });
+      
+      setLocationCabins(transformedCabins);
+    } catch (error) {
+      console.error("Erro ao processar cabines:", error);
+    }
+  };
+
   const handleLocationChange = (locationId: string) => {
     const location = userLocations.find(loc => loc.id === locationId);
     if (location) {
       setSelectedLocation(location);
+      loadCabinsForLocation(locationId);
     }
   };
 
   const handleLocationCreated = (location: Location) => {
     setUserLocations(prev => [...prev, location]);
     setSelectedLocation(location);
+    // Nova localização não tem cabines ainda
+    setLocationCabins([]);
+  };
+  
+  const handleCabinAdded = (cabin: Cabin) => {
+    setLocationCabins(prev => [...prev, cabin]);
+    
+    // Atualizar também a contagem de cabines no local selecionado
+    if (selectedLocation) {
+      const updatedLocation = {
+        ...selectedLocation,
+        cabinsCount: (selectedLocation.cabinsCount || 0) + 1
+      };
+      setSelectedLocation(updatedLocation);
+      
+      // Atualizar também na lista completa de locais
+      setUserLocations(prev => prev.map(loc => 
+        loc.id === updatedLocation.id ? updatedLocation : loc
+      ));
+    }
+  };
+  
+  const handleCabinUpdated = (cabin: Cabin) => {
+    setLocationCabins(prev => prev.map(c => 
+      c.id === cabin.id ? cabin : c
+    ));
+  };
+  
+  const handleCabinDeleted = async (cabinId: string) => {
+    try {
+      const { error } = await supabase
+        .from('cabins')
+        .delete()
+        .eq('id', cabinId);
+      
+      if (error) {
+        console.error("Erro ao excluir cabine:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível excluir a cabine.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setLocationCabins(prev => prev.filter(c => c.id !== cabinId));
+      
+      // Atualizar também a contagem de cabines no local selecionado
+      if (selectedLocation) {
+        const updatedLocation = {
+          ...selectedLocation,
+          cabinsCount: Math.max(0, (selectedLocation.cabinsCount || 0) - 1)
+        };
+        setSelectedLocation(updatedLocation);
+        
+        // Atualizar também na lista completa de locais
+        setUserLocations(prev => prev.map(loc => 
+          loc.id === updatedLocation.id ? updatedLocation : loc
+        ));
+      }
+      
+    } catch (error) {
+      console.error("Erro ao processar exclusão de cabine:", error);
+    }
   };
 
   if (isLoading) {
@@ -190,20 +306,20 @@ const OwnerDashboardPage = () => {
           ) : (
             <>
               {activeTab === "locations" && selectedLocation && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">
-                    Detalhes do Local: {selectedLocation.name}
-                  </h2>
-                  <div className="bg-white p-6 rounded-lg shadow">
-                    <p><strong>Endereço:</strong> {selectedLocation.address}</p>
-                    <p><strong>Cidade:</strong> {selectedLocation.city}</p>
-                    <p><strong>Estado:</strong> {selectedLocation.state}</p>
-                    <p><strong>CEP:</strong> {selectedLocation.zipCode}</p>
-                    {selectedLocation.description && (
-                      <p className="mt-2"><strong>Descrição:</strong> {selectedLocation.description}</p>
-                    )}
-                  </div>
-                </div>
+                <LocationsOverview 
+                  selectedLocation={selectedLocation}
+                  locationCabins={locationCabins} 
+                />
+              )}
+              
+              {activeTab === "cabins" && selectedLocation && (
+                <CabinManagement 
+                  selectedLocation={selectedLocation}
+                  locationCabins={locationCabins}
+                  onCabinAdded={handleCabinAdded}
+                  onCabinUpdated={handleCabinUpdated}
+                  onCabinDeleted={handleCabinDeleted}
+                />
               )}
               
               {activeTab === "pricing" && (
@@ -227,11 +343,8 @@ const OwnerDashboardPage = () => {
                 </div>
               )}
               
-              {activeTab === "settings" && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Configurações</h2>
-                  <p className="text-muted-foreground">Gerencie as configurações do local.</p>
-                </div>
+              {activeTab === "settings" && selectedLocation && (
+                <LocationSettings selectedLocation={selectedLocation} />
               )}
             </>
           )}
