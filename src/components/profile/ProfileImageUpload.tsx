@@ -26,7 +26,17 @@ export function ProfileImageUpload({
     try {
       setIsUploading(true);
 
-      // Criar nome do arquivo usando userId para garantir unicidade
+      // Verificar tamanho do arquivo (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("Arquivo muito grande. Máximo permitido: 5MB");
+      }
+
+      // Verificar tipo do arquivo
+      if (!file.type.startsWith('image/')) {
+        throw new Error("Por favor, selecione apenas arquivos de imagem");
+      }
+
+      // Criar nome único para o arquivo usando userId
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
@@ -42,18 +52,25 @@ export function ProfileImageUpload({
         .from('avatars')
         .getPublicUrl(filePath);
 
+      // Atualizar avatar no perfil do usuário
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (updateError) throw updateError;
+
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);
       
       toast({
-        title: "Imagem atualizada",
-        description: "Sua foto de perfil foi atualizada com sucesso."
+        title: "Foto atualizada",
+        description: "Sua foto de perfil foi atualizada com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao fazer upload:', error);
       toast({
-        title: "Erro ao atualizar imagem",
-        description: "Não foi possível fazer o upload da imagem. Tente novamente.",
+        title: "Erro ao atualizar foto",
+        description: error.message || "Não foi possível fazer o upload da imagem. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -64,27 +81,6 @@ export function ProfileImageUpload({
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    // Verificar tamanho do arquivo (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "Arquivo muito grande",
-        description: "Por favor, selecione uma imagem menor que 5MB.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Verificar tipo do arquivo
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: "Tipo de arquivo inválido",
-        description: "Por favor, selecione apenas arquivos de imagem.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     uploadAvatar(file);
   };
 
@@ -92,16 +88,20 @@ export function ProfileImageUpload({
 
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <div className="relative">
+      <div className="relative cursor-pointer group">
         <Avatar className="h-32 w-32 border-2 border-primary/20">
-          <AvatarImage src={previewUrl || undefined} alt="Foto de perfil" />
+          <AvatarImage 
+            src={previewUrl || undefined}
+            alt="Foto de perfil" 
+            className="object-cover"
+          />
           <AvatarFallback className="bg-primary/10 text-primary text-3xl">
             {firstLetter}
           </AvatarFallback>
         </Avatar>
         
         <label 
-          className="absolute bottom-0 right-0 p-1 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
+          className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
           title="Alterar foto de perfil"
         >
           <Camera className="h-5 w-5" />
@@ -113,6 +113,10 @@ export function ProfileImageUpload({
             disabled={isUploading}
           />
         </label>
+
+        <div className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+          <span className="text-sm">Alterar foto</span>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

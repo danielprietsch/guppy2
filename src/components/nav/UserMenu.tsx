@@ -19,60 +19,42 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
-  console.log("UserMenu received user:", currentUser);
-  
   if (!currentUser) {
     console.error("UserMenu rendered with no user data!");
     return null;
   }
 
   // Determine dashboard and profile routes based on user type
-  const dashboardRoute = 
-    currentUser.user_type === "global_admin"
-      ? "/admin/global"
-      : currentUser.user_type === "professional"
-      ? "/professional/dashboard"
-      : currentUser.user_type === "owner"
-      ? "/owner/dashboard"
-      : "/client/dashboard";
+  const dashboardRoute = currentUser.user_type === "global_admin"
+    ? "/admin/global"
+    : currentUser.user_type === "professional"
+    ? "/professional/dashboard"
+    : currentUser.user_type === "owner"
+    ? "/owner/dashboard"
+    : "/client/dashboard";
       
-  const profileRoute = 
-    currentUser.user_type === "global_admin"
-      ? "/admin/profile"
-      : currentUser.user_type === "professional"
-      ? "/professional/profile"
-      : currentUser.user_type === "owner"
-      ? "/owner/profile"
-      : "/client/profile";
+  const profileRoute = currentUser.user_type === "global_admin"
+    ? "/admin/profile"
+    : currentUser.user_type === "professional"
+    ? "/professional/profile"
+    : currentUser.user_type === "owner"
+    ? "/owner/profile"
+    : "/client/profile";
 
   // Extract first letter of name for avatar fallback
   const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
-  
-  // Get avatar URL, ensuring we use the actual URL from metadata if available
-  const avatarUrl = currentUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.name || '?')}&background=random`;
-
-  // Translate user type
-  const userTypeLabel = {
-    client: "Cliente",
-    professional: "Profissional",
-    owner: "Franqueado",
-    global_admin: "Administrador Global"
-  }[currentUser.user_type] || "Usuário";
 
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-10 w-10 border-2 border-primary/20">
             <AvatarImage 
-              src={avatarUrl}
+              src={currentUser.avatarUrl || undefined}
               alt={currentUser.name || "User"} 
-              onError={(e) => {
-                console.error("Avatar image failed to load");
-                e.currentTarget.style.display = 'none';
-              }}
+              className="object-cover"
             />
-            <AvatarFallback className="bg-primary/10 text-primary font-bold uppercase">
+            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
               {firstLetter}
             </AvatarFallback>
           </Avatar>
@@ -80,29 +62,31 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
             {currentUser.name || "Usuário"}
           </span>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>{userTypeLabel}</DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <p className="text-sm font-medium leading-none">{currentUser.name}</p>
+              <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
+            </div>
+          </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link to={dashboardRoute}>
+            <Link to={dashboardRoute} className="cursor-pointer">
               Meu Dashboard
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to={profileRoute}>
+            <Link to={profileRoute} className="cursor-pointer">
               Meu Perfil
             </Link>
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onLogout} className="text-red-600 cursor-pointer">
+            <LogOut className="mr-2 h-4 w-4" />
+            Sair
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button
-        variant="ghost"
-        onClick={onLogout}
-        className="text-gray-500 hover:text-gray-700 flex items-center gap-2"
-      >
-        <LogOut className="h-5 w-5" />
-        <span className="hidden md:inline">Sair</span>
-      </Button>
     </div>
   );
 };
