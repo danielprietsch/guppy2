@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -61,10 +60,10 @@ const ownerFormSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  companyName: z.string().min(2, "Nome da empresa deve ter pelo menos 2 caracteres").optional(),
+  companyName: z.string().optional(),
   phone: z.string().optional(),
   taxId: z.string().refine((value) => {
-    if (!value) return true; // Allow empty value
+    if (!value) return true;
     const cleanValue = value.replace(/[^\d]/g, '');
     return cleanValue.length === 11 ? validateCPF(cleanValue) : validateCNPJ(cleanValue);
   }, { message: "CPF ou CNPJ inválido" }).optional()
@@ -98,7 +97,6 @@ export const OwnerRegistrationForm: React.FC = () => {
         companyName: data.companyName
       });
 
-      // 1. Create user in Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -121,7 +119,6 @@ export const OwnerRegistrationForm: React.FC = () => {
 
       debugLog("OwnerRegistrationForm: User created successfully", authData.user.id);
 
-      // 2. Update profile with additional owner details
       if (data.companyName || data.phone || data.taxId) {
         const { error: profileError } = await supabase
           .from('profiles')
@@ -149,7 +146,6 @@ export const OwnerRegistrationForm: React.FC = () => {
         description: "Sua conta de franqueado foi criada.",
       });
 
-      // Redirect to owner dashboard or login
       navigate("/login");
     } catch (error: any) {
       debugError("OwnerRegistrationForm: Error during registration", error);
