@@ -413,6 +413,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      check_user_owns_location: {
+        Args: { location_id: string; user_id: string }
+        Returns: boolean
+      }
       create_booking: {
         Args: {
           cabin_id: string
@@ -440,6 +444,27 @@ export type Database = {
       get_profile_user_type: {
         Args: { user_id: string }
         Returns: string
+      }
+      get_user_locations: {
+        Args: { user_id: string }
+        Returns: {
+          active: boolean | null
+          address: string
+          amenities: string[] | null
+          approval_status: string
+          cabins_count: number | null
+          city: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          opening_hours: Json | null
+          owner_id: string
+          state: string
+          updated_at: string | null
+          zip_code: string
+        }[]
       }
       is_global_admin: {
         Args: { user_id: string }

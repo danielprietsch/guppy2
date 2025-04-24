@@ -52,7 +52,7 @@ const OwnerDashboardPage = () => {
         // Verificar se o usuário é um franqueado diretamente nos metadados
         const userType = session.user.user_metadata?.userType;
         
-        // Permitir tanto 'owner' quanto 'global_admin'
+        // Simplificar verificação - permitir owner e global_admin
         if (userType === 'owner' || userType === 'global_admin') {
           debugLog("OwnerDashboardPage: User is authorized according to metadata");
           setAuthChecked(true);

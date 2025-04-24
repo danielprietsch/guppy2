@@ -14,55 +14,35 @@ export const useLocationManagement = () => {
       console.log("🔄 Loading locations for user:", userId);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Usar a função de serviço para evitar recursão em RLS
+      // Use the security definer function to bypass RLS
       const { data: locationsData, error: locationsError } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('owner_id', userId)
-        // Adicione um prefixo único para evitar cache de consultas anteriores com erro
-        .order('created_at', { ascending: false });
+        .rpc('get_user_locations', { user_id: userId });
           
       if (locationsError) {
         console.error("❌ ERROR LOADING LOCATIONS:", locationsError);
         debugError("useLocationManagement: Error fetching locations:", locationsError);
         
-        // Se falhar devido à recursão RLS, tente uma abordagem alternativa
-        if (locationsError.message?.includes("infinite recursion")) {
-          debugLog("useLocationManagement: Detected recursion error, using alternative approach");
-          
-          // Esta é uma solução temporária enquanto as políticas RLS são ajustadas
-          // Usamos a função anônima que não está sujeita às políticas RLS
-          const { data: directData, error: directError } = await supabase.rpc(
-            'get_user_locations',
-            { user_id: userId }
-          );
-          
-          if (directError) {
-            debugError("useLocationManagement: Alternative approach failed:", directError);
-            toast({
-              title: "Erro",
-              description: "Não foi possível carregar seus locais. Por favor, tente novamente.",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          if (directData) {
-            processLocationData(directData);
-            return;
-          }
-        }
-        
         toast({
           title: "Erro",
-          description: "Não foi possível carregar seus locais.",
+          description: "Não foi possível carregar seus locais. Por favor, tente novamente.",
           variant: "destructive",
         });
         return;
       }
 
       console.log("📋 Locations data received:", locationsData);
-      processLocationData(locationsData || []);
+      
+      // Handle null/undefined data
+      if (!locationsData) {
+        console.log("📌 No locations found for user");
+        debugLog("useLocationManagement: No locations data returned");
+        setUserLocations([]);
+        return;
+      }
+      
+      // Ensure locationsData is treated as an array
+      const locationsArray = Array.isArray(locationsData) ? locationsData : [];
+      processLocationData(locationsArray);
       
     } catch (error) {
       console.error("❌ CRITICAL ERROR LOADING LOCATIONS:", error);
