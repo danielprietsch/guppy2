@@ -32,12 +32,12 @@ export const useOwnerProfile = () => {
         
         debugLog("useOwnerProfile: Session found, checking user type");
         
-        // Primeiro verificar metadados do usuário (mais confiável)
+        // First priority: use user metadata (most reliable)
         const userMetadata = session.user.user_metadata;
         const userTypeFromMetadata = userMetadata?.userType;
         
+        // If metadata confirms owner type, create user from metadata
         if (userTypeFromMetadata === 'owner') {
-          // Se os metadados confirmam que é franqueado, criar usuário a partir dos metadados
           debugLog("useOwnerProfile: User is owner according to metadata");
           
           const userData: User = {
@@ -55,76 +55,61 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Se os metadados não confirmam que é franqueado, tentar buscar perfil
-        debugLog("useOwnerProfile: Fetching profile");
+        // If metadata doesn't confirm owner status, try a direct auth verification approach
+        // This avoids using the profiles table which might be causing the recursion
+        debugLog("useOwnerProfile: Not confirmed as owner by metadata, checking other sources");
         
+        // Using RPC call instead of direct table query to avoid RLS recursion
         try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
+          // Try to use a direct auth approach to confirm ownership
+          // Option 1: Check if user has any locations (only owners have locations)
+          const { data: ownerLocations, error: locationsError } = await supabase
+            .from('locations')
+            .select('id')
+            .eq('owner_id', session.user.id)
+            .limit(1);
             
+          if (!locationsError && ownerLocations && ownerLocations.length > 0) {
+            debugLog("useOwnerProfile: User verified as owner via locations table");
+            
+            const userData: User = {
+              id: session.user.id,
+              name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+              email: session.user.email || "",
+              userType: "owner",
+              avatarUrl: userMetadata?.avatar_url,
+              phoneNumber: null
+            };
+            
+            setCurrentUser(userData);
+            setIsLoading(false);
+            return;
+          }
+          
+          debugLog("useOwnerProfile: Could not verify as owner via locations, trying direct auth check");
+          
+          // Option 2: As a last resort, try a simplified profile query with minimal fields
+          const { data: profile, error } = await supabase.rpc(
+            'check_owner_status', 
+            { user_id: session.user.id }
+          ).maybeSingle();
+            
+          // If the RPC call fails, we might need to fall back to a very basic query
           if (error) {
-            debugError("useOwnerProfile: Error fetching profile:", error);
+            debugError("useOwnerProfile: Error with RPC:", error);
             
-            // Se os metadados indicam outro tipo de usuário, redirecionar
-            if (userTypeFromMetadata && userTypeFromMetadata !== 'owner') {
-              toast({
-                title: "Acesso restrito",
-                description: "Você não tem permissão para acessar esta página.",
-                variant: "destructive",
-              });
-              navigate("/");
-              return;
-            }
-            
-            // Se não conseguimos determinar, tentar criar perfil a partir dos metadados
-            const { error: insertError } = await supabase
+            // Fallback - simple query with minimal fields to avoid recursion
+            const { data: basicProfile, error: basicError } = await supabase
               .from('profiles')
-              .insert({
-                id: session.user.id,
-                name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-                email: session.user.email,
-                user_type: userTypeFromMetadata || "owner",
-                avatar_url: userMetadata?.avatar_url
-              });
-              
-            if (insertError) {
-              debugError("useOwnerProfile: Error creating profile:", insertError);
-              
-              // Se falhar na criação do perfil mas temos metadados, usar esses dados
-              if (userMetadata) {
-                const userData: User = {
-                  id: session.user.id,
-                  name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-                  email: session.user.email || "",
-                  userType: "owner",
-                  avatarUrl: userMetadata?.avatar_url,
-                  phoneNumber: null
-                };
-                
-                debugLog("useOwnerProfile: Setting currentUser as fallback:", userData);
-                setCurrentUser(userData);
-                setIsLoading(false);
-                return;
-              }
-              
-              // Se não temos nem perfil nem metadados suficientes, redirecionar
-              navigate("/login");
-              return;
-            }
-            
-            // Se criamos o perfil com sucesso, buscar o perfil recém-criado
-            const { data: newProfile } = await supabase
-              .from('profiles')
-              .select('*')
+              .select('user_type')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle();
               
-            if (newProfile) {
-              // Verificar se o perfil criado é de franqueado
-              if (newProfile.user_type !== "owner") {
+            if (basicError) {
+              debugError("useOwnerProfile: Error with basic profile query:", basicError);
+              
+              // If user metadata exists but doesn't indicate owner, redirect
+              if (userTypeFromMetadata && userTypeFromMetadata !== 'owner') {
                 toast({
                   title: "Acesso restrito",
                   description: "Você não tem permissão para acessar esta página.",
@@ -134,26 +119,18 @@ export const useOwnerProfile = () => {
                 return;
               }
               
-              const userData: User = {
-                id: session.user.id,
-                name: newProfile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-                email: newProfile.email || session.user.email || "",
-                userType: newProfile.user_type as "client" | "provider" | "owner",
-                avatarUrl: newProfile.avatar_url || userMetadata?.avatar_url,
-                phoneNumber: newProfile.phone_number
-              };
-              
-              debugLog("useOwnerProfile: Setting currentUser from new profile:", userData);
-              setCurrentUser(userData);
-              setIsLoading(false);
+              // If we can't determine user type at all, default to assume they're not an owner
+              toast({
+                title: "Acesso restrito",
+                description: "Não foi possível verificar suas permissões.",
+                variant: "destructive",
+              });
+              navigate("/");
               return;
             }
-          }
-          
-          // Se o perfil existe, usá-lo
-          if (profile) {
-            // Verificar se o perfil é de franqueado
-            if (profile.user_type !== "owner") {
+            
+            // Check if basic profile confirms owner status
+            if (basicProfile?.user_type !== "owner") {
               toast({
                 title: "Acesso restrito",
                 description: "Você não tem permissão para acessar esta página.",
@@ -163,31 +140,44 @@ export const useOwnerProfile = () => {
               return;
             }
             
+            // Profile confirms owner status
+            const userData: User = {
+              id: session.user.id,
+              name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+              email: session.user.email || "",
+              userType: "owner",
+              avatarUrl: userMetadata?.avatar_url,
+              phoneNumber: null
+            };
+            
+            setCurrentUser(userData);
+          } else if (profile) {
+            // RPC call succeeded
             const userData: User = {
               id: session.user.id,
               name: profile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
               email: profile.email || session.user.email || "",
-              userType: profile.user_type as "client" | "provider" | "owner",
+              userType: "owner",
               avatarUrl: profile.avatar_url || userMetadata?.avatar_url,
               phoneNumber: profile.phone_number
             };
             
-            debugLog("useOwnerProfile: Setting currentUser from profile:", userData);
             setCurrentUser(userData);
           } else {
-            // Se não encontramos um perfil, redirecionar
+            // No profile found and RPC returned null
             toast({
-              title: "Perfil não encontrado",
-              description: "Não foi possível encontrar seu perfil de franqueado.",
+              title: "Acesso restrito",
+              description: "Perfil de usuário não encontrado.",
               variant: "destructive",
             });
             navigate("/");
+            return;
           }
         } catch (error) {
-          debugError("useOwnerProfile: Error in profile section:", error);
+          debugError("useOwnerProfile: Error in profile verification:", error);
           toast({
             title: "Erro",
-            description: "Ocorreu um erro ao buscar seu perfil.",
+            description: "Ocorreu um erro ao verificar seu perfil.",
             variant: "destructive",
           });
           navigate("/login");
@@ -205,7 +195,7 @@ export const useOwnerProfile = () => {
       }
     };
     
-    // Configurar listener para mudanças de autenticação
+    // Set up listener for authentication state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       debugLog("useOwnerProfile: Auth state changed:", event);
       if (event === "SIGNED_OUT" || !session) {
@@ -213,9 +203,9 @@ export const useOwnerProfile = () => {
         setCurrentUser(null);
         navigate("/login");
       } else if (event === "SIGNED_IN") {
-        // Re-verificar perfil ao fazer login
+        // Re-verify profile on login
         debugLog("useOwnerProfile: User signed in, checking auth status");
-        // Pequeno timeout para evitar race conditions
+        // Small timeout to avoid race conditions
         setTimeout(() => {
           checkAuthStatus();
         }, 0);
