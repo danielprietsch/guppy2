@@ -9,19 +9,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { User } from "@/lib/types";
+import { Loader2 } from "lucide-react";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const ProfessionalProfilePage = () => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [profile, setProfile] = useState<(User & { specialties?: string[] }) | null>(null);
   
   useEffect(() => {
     const checkSession = async () => {
       try {
         setIsLoading(true);
+        debugLog("ProfessionalProfilePage: Verificando sessão...");
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
+          debugLog("ProfessionalProfilePage: Sessão não encontrada, redirecionando para login");
           toast({
             title: "Acesso Negado",
             description: "Você precisa estar logado para acessar esta página",
@@ -31,36 +35,132 @@ const ProfessionalProfilePage = () => {
           return;
         }
         
-        // Check if user is professional
-        const { data: userData, error } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", session.user.id)
-          .single();
-          
-        if (error || userData?.user_type !== "professional") {
-          toast({
-            title: "Acesso Negado",
-            description: "Você não tem permissão para acessar esta página",
-            variant: "destructive",
+        // Verificar se o usuário é um profissional usando os metadados primeiro
+        const userType = session.user.user_metadata?.userType;
+        debugLog("ProfessionalProfilePage: Tipo de usuário nos metadados:", userType);
+        
+        if (userType === 'professional' || userType === 'provider') {
+          // O usuário é um profissional segundo os metadados
+          setProfile({
+            id: session.user.id,
+            name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
+            email: session.user.email || "",
+            userType: 'professional',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+            specialties: [],
+            phoneNumber: session.user.user_metadata?.phone_number
           });
-          navigate("/");
+          setIsLoading(false);
           return;
         }
         
-        // Create a properly typed User object from userData
-        setProfile({
-          id: userData.id,
-          name: userData.name,
-          email: userData.email,
-          userType: userData.user_type as "professional",
-          avatarUrl: userData.avatar_url,
-          phoneNumber: userData.phone_number,
-          // Initialize specialties as empty array if not available
-          specialties: [],
-        });
+        // Se não for confirmado pelos metadados, tentar buscar do perfil
+        try {
+          debugLog("ProfessionalProfilePage: Buscando perfil do usuário");
+          const { data: userData, error } = await supabase
+            .from("profiles")
+            .select("*")
+            .eq("id", session.user.id)
+            .single();
+            
+          if (error) {
+            debugError("ProfessionalProfilePage: Erro ao buscar perfil:", error);
+            
+            // Verificar novamente os metadados como fallback
+            if (userType === 'professional' || userType === 'provider') {
+              setProfile({
+                id: session.user.id,
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
+                email: session.user.email || "",
+                userType: 'professional',
+                avatarUrl: session.user.user_metadata?.avatar_url,
+                specialties: [],
+                phoneNumber: session.user.user_metadata?.phone_number
+              });
+              setIsLoading(false);
+              return;
+            }
+            
+            toast({
+              title: "Erro",
+              description: "Erro ao carregar seu perfil",
+              variant: "destructive",
+            });
+            navigate("/");
+            return;
+          }
+          
+          // Verificar se o perfil existe e é do tipo profissional
+          if (!userData || (userData.user_type !== "professional" && userData.user_type !== "provider")) {
+            debugError("ProfessionalProfilePage: Tipo de usuário inválido ou não encontrado");
+            
+            // Se os metadados confirmarem o tipo de usuário, continuar
+            if (userType === 'professional' || userType === 'provider') {
+              setProfile({
+                id: session.user.id,
+                name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
+                email: session.user.email || "",
+                userType: 'professional',
+                avatarUrl: session.user.user_metadata?.avatar_url,
+                specialties: [],
+                phoneNumber: session.user.user_metadata?.phone_number
+              });
+              setIsLoading(false);
+              return;
+            }
+            
+            toast({
+              title: "Acesso Negado",
+              description: "Você não tem permissão para acessar esta página",
+              variant: "destructive",
+            });
+            navigate("/");
+            return;
+          }
+          
+          // Configurar o perfil do usuário a partir dos dados do banco
+          setProfile({
+            id: userData.id,
+            name: userData.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
+            email: userData.email || session.user.email || "",
+            userType: userData.user_type as "professional",
+            avatarUrl: userData.avatar_url || session.user.user_metadata?.avatar_url,
+            specialties: [], // Adicionar especialidades se disponíveis
+            phoneNumber: userData.phone_number
+          });
+        } catch (error) {
+          debugError("ProfessionalProfilePage: Erro ao verificar perfil:", error);
+          
+          // Verificar novamente os metadados como fallback final
+          if (userType === 'professional' || userType === 'provider') {
+            setProfile({
+              id: session.user.id,
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
+              email: session.user.email || "",
+              userType: 'professional',
+              avatarUrl: session.user.user_metadata?.avatar_url,
+              specialties: [],
+              phoneNumber: session.user.user_metadata?.phone_number
+            });
+            setIsLoading(false);
+            return;
+          }
+          
+          toast({
+            title: "Erro",
+            description: "Erro ao verificar seu perfil",
+            variant: "destructive",
+          });
+          navigate("/");
+        }
       } catch (error) {
-        console.error("Error loading profile:", error);
+        debugError("ProfessionalProfilePage: Erro ao verificar sessão:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao verificar sua autenticação",
+          variant: "destructive",
+        });
+        navigate("/login");
       } finally {
         setIsLoading(false);
       }
@@ -71,7 +171,7 @@ const ProfessionalProfilePage = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle saving professional profile
+    // Implementar a lógica para salvar o perfil profissional
     toast({
       title: "Perfil Atualizado",
       description: "Suas informações foram atualizadas com sucesso!",
@@ -82,10 +182,35 @@ const ProfessionalProfilePage = () => {
     return (
       <div className="container py-12 flex items-center justify-center">
         <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
           <p className="text-muted-foreground">
             Buscando seus dados, por favor aguarde.
           </p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!profile) {
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Erro</h1>
+          <p className="text-red-500 mb-4">Não foi possível carregar seu perfil.</p>
+          <div className="space-x-4">
+            <Button 
+              onClick={() => navigate("/")}
+              variant="outline"
+            >
+              Voltar para a página inicial
+            </Button>
+            <Button 
+              onClick={() => navigate("/login")}
+            >
+              Ir para o login
+            </Button>
+          </div>
         </div>
       </div>
     );

@@ -16,6 +16,7 @@ import LocationDetailPage from "./LocationDetailPage";
 import BookCabinPage from "./BookCabinPage";
 import ProfessionalsPage from "./ProfessionalsPage";
 import ProfessionalDetailPage from "./ProfessionalDetailPage";
+import CabinSearchPage from "./CabinSearchPage";
 
 // Auth Pages
 import LoginPage from "./LoginPage";
@@ -71,19 +72,23 @@ export default function Index() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
+            {/* Search Routes */}
+            <Route path="/search-cabins" element={<CabinSearchPage />} />
+            <Route path="/cabin-search" element={<CabinSearchPage />} />
+
             {/* Dashboard Routes */}
             <Route path="/client/dashboard" element={<ClientDashboardPage />} />
             <Route path="/client/reservations" element={<ClientReservationsPage />} />
             <Route path="/professional/dashboard" element={<ProfessionalDashboardPage />} />
             <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-            <Route path="/global-admin/dashboard" element={<GlobalAdminDashboardPage />} />
+            <Route path="/admin/global" element={<GlobalAdminDashboardPage />} />
 
             {/* Profile Routes */}
             <Route path="/client/profile" element={<ClientProfilePage />} />
             <Route path="/professional/profile" element={<ProfessionalProfilePage />} />
             <Route path="/owner/profile" element={<OwnerProfilePage />} />
-            <Route path="/global-admin/profile" element={<GlobalAdminProfilePage />} />
+            <Route path="/admin/profile" element={<GlobalAdminProfilePage />} />
 
             {/* 404 Route */}
             <Route path="*" element={<NotFound />} />

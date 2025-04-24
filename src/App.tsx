@@ -1,4 +1,3 @@
-
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
 import LoginPage from "@/pages/LoginPage";
@@ -97,6 +96,10 @@ const router = createBrowserRouter([
       },
       {
         path: "/search-cabins",
+        element: <CabinSearchPage />,
+      },
+      {
+        path: "/cabin-search",
         element: <CabinSearchPage />,
       },
       {
