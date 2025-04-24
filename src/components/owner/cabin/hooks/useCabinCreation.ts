@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,10 +73,10 @@ export const useCabinCreation = (
       
       debugLog("useCabinCreation: Cabine adicionada com sucesso:", data);
       
-      // Atualizar o contador de cabines da localização usando uma chamada simples de update
+      // Atualizar o contador de cabines da localização usando uma chamada direta de update
       const { error: updateError } = await supabase
         .from('locations')
-        .update({ cabins_count: supabase.rpc('increment', { row_id: locationId, table_name: 'locations', column_name: 'cabins_count' }) })
+        .update({ cabins_count: (await supabase.from('locations').select('cabins_count').eq('id', locationId).single()).data?.cabins_count + 1 || 1 })
         .eq('id', locationId);
       
       if (updateError) {

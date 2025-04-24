@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -90,7 +91,8 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
           userId={currentUser.id}
           currentAvatarUrl={currentUser.avatarUrl}
           onImageUploaded={(url) => {
-            form.setValue("avatarUrl", url);
+            // Não usamos form.setValue aqui, pois avatarUrl não faz parte do schema do formulário
+            // Trataremos a atualização da imagem separadamente
           }}
           className="mb-6"
         />
