@@ -46,6 +46,12 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     }
   };
 
+  const handleStatusChange = (date: string, turno: string, isManualClose: boolean) => {
+    if (onStatusChange) {
+      onStatusChange(date, turno, isManualClose);
+    }
+  };
+
   const getSlotPrice = (dateStr: string, turno: string): number => {
     // Get specific slot price if available, otherwise use default price
     return slotPrices?.[dateStr]?.[turno] || pricePerDay;
@@ -58,7 +64,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     return (
       <div className="flex flex-col gap-2 p-2 h-full">
         <div className="text-sm font-medium text-center">{format(day, "d")}</div>
-        <div className="grid gap-2">
+        <div className="grid gap-1">
           {turnos.map((turno) => (
             <TimeSlotCard
               key={`${dateStr}-${turno}`}
@@ -67,8 +73,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
               isBooked={daysBooked[dateStr]?.[turno] || false}
               isManuallyClosed={manuallyClosedDates[dateStr]?.[turno] || false}
               onPriceEdit={(newPrice) => handlePriceEdit(dateStr, turno, newPrice)}
-              onManualClose={() => onStatusChange?.(dateStr, turno, true)}
-              onRelease={() => onStatusChange?.(dateStr, turno, false)}
+              onManualClose={() => handleStatusChange(dateStr, turno, true)}
+              onRelease={() => handleStatusChange(dateStr, turno, false)}
               onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}
             />
           ))}
@@ -90,7 +96,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           month: "w-full",
           table: "w-full border-collapse",
           head_cell: "text-muted-foreground font-normal w-full text-center px-2", 
-          cell: "h-auto min-h-[240px] p-0 border border-border relative",
+          cell: "h-auto min-h-[180px] p-0 border border-border relative",
           day: "h-full w-full p-0 font-normal text-2xl font-bold", 
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
           day_today: "bg-accent text-accent-foreground",

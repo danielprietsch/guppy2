@@ -78,6 +78,18 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     setIsEditingPrice(true);
   };
 
+  const handleManualCloseButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onManualClose();
+  };
+
+  const handleReleaseButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onRelease();
+  };
+
   return (
     <div 
       className={cn(
@@ -147,10 +159,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "secondary" : "default"}
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onManualClose();
-              }}
+              onClick={handleManualCloseButtonClick}
               className="flex-1"
             >
               {isManuallyClosed ? "Fechado" : "Fechar"}
@@ -158,10 +167,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "default" : "secondary"}
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                onRelease();
-              }}
+              onClick={handleReleaseButtonClick}
               className="flex-1"
             >
               Liberar
