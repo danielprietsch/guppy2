@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,7 @@ export const useLocationManagement = () => {
 
   const loadUserLocations = async (userId: string) => {
     try {
+      console.log("🔄 Loading locations for user:", userId);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
       // Direct query to locations table without going through profiles first
@@ -20,6 +22,7 @@ export const useLocationManagement = () => {
         .eq('owner_id', userId);
           
       if (locationsError) {
+        console.error("❌ ERROR LOADING LOCATIONS:", locationsError);
         debugError("useLocationManagement: Error fetching locations:", locationsError);
         toast({
           title: "Erro",
@@ -28,6 +31,8 @@ export const useLocationManagement = () => {
         });
         return;
       }
+
+      console.log("📋 Locations data received:", locationsData);
 
       if (locationsData && locationsData.length > 0) {
         const transformedLocations: Location[] = locationsData.map(location => {
@@ -66,16 +71,20 @@ export const useLocationManagement = () => {
           };
         });
         
+        console.log(`✅ Successfully loaded ${transformedLocations.length} locations`);
         debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
         setUserLocations(transformedLocations);
         if (!selectedLocation) {
+          console.log("🔍 Setting first location as selected:", transformedLocations[0].name);
           setSelectedLocation(transformedLocations[0]);
           await loadCabinsForLocation(transformedLocations[0].id);
         }
       } else {
+        console.log("📌 No locations found for user");
         debugLog("useLocationManagement: No locations found for user");
       }
     } catch (error) {
+      console.error("❌ CRITICAL ERROR LOADING LOCATIONS:", error);
       debugError("useLocationManagement: Error processing locations:", error);
       toast({
         title: "Erro",

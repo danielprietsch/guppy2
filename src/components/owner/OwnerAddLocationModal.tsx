@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -66,18 +67,20 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
+      console.log("🔄 Starting location creation process");
       debugLog("OwnerAddLocationModal: Starting location creation");
 
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session || !session.user) {
+        console.error("❌ No authenticated user found");
         toast.error("Usuário não autenticado");
         debugError("OwnerAddLocationModal: No authenticated user found");
         return;
       }
       
       const userId = session.user.id;
-      
+      console.log("👤 Creating location for user:", userId);
       debugLog("OwnerAddLocationModal: Creating location for user", userId);
       
       const openingHours = { open: "08:00", close: "20:00" };
@@ -101,10 +104,13 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         .single();
 
       if (error) {
+        console.error("❌ ERROR CREATING LOCATION:", error);
         debugError("OwnerAddLocationModal: Error creating location:", error);
         toast.error("Erro ao cadastrar local: " + error.message);
         return;
       }
+
+      console.log("✅ Location created successfully:", data);
 
       const novoLocation: Location = {
         id: data.id,
@@ -131,6 +137,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       form.reset();
       setPreviewImage(null);
     } catch (error: any) {
+      console.error("❌ CRITICAL ERROR CREATING LOCATION:", error);
       debugError("OwnerAddLocationModal: Error processing location creation:", error);
       toast.error("Erro ao cadastrar local: " + error.message);
     } finally {
