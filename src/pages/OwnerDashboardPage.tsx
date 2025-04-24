@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -33,7 +32,6 @@ const OwnerDashboardPage = () => {
           return;
         }
 
-        // Get user profile
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('*')
@@ -51,7 +49,6 @@ const OwnerDashboardPage = () => {
           return;
         }
           
-        // Check if user is owner type
         if (profile.user_type !== "owner") {
           toast({
             title: "Acesso negado",
@@ -73,7 +70,6 @@ const OwnerDashboardPage = () => {
         
         setCurrentUser(userData);
         
-        // Fetch user locations
         const { data: locationsData, error: locationsError } = await supabase
           .from('locations')
           .select('*')
@@ -87,13 +83,10 @@ const OwnerDashboardPage = () => {
             variant: "destructive",
           });
         } else if (locationsData && locationsData.length > 0) {
-          // Transform data from snake_case to camelCase
           const transformedLocations: Location[] = locationsData.map(location => {
-            // Parse opening_hours safely - handle both string and object types
             let openingHours = { open: "09:00", close: "18:00" };
             
             if (location.opening_hours) {
-              // Check if opening_hours is a string (needs parsing) or already an object
               const hoursData = typeof location.opening_hours === 'string' 
                 ? JSON.parse(location.opening_hours)
                 : location.opening_hours;
@@ -122,7 +115,6 @@ const OwnerDashboardPage = () => {
           setUserLocations(transformedLocations);
           setSelectedLocation(transformedLocations[0]);
           
-          // If we have a selected location, load its cabins
           if (transformedLocations[0]) {
             loadCabinsForLocation(transformedLocations[0].id);
           }
@@ -142,7 +134,6 @@ const OwnerDashboardPage = () => {
     checkAuth();
   }, [navigate]);
 
-  // Load cabins for a specific location
   const loadCabinsForLocation = async (locationId: string) => {
     try {
       const { data, error } = await supabase
@@ -161,6 +152,48 @@ const OwnerDashboardPage = () => {
       }
       
       const transformedCabins: Cabin[] = data.map(cabin => {
+        let cabinPricing = {
+          defaultPricing: {},
+          specificDates: {}
+        };
+        
+        try {
+          if (cabin.pricing) {
+            if (typeof cabin.pricing === 'string') {
+              cabinPricing = JSON.parse(cabin.pricing);
+            } else if (typeof cabin.pricing === 'object') {
+              cabinPricing = {
+                defaultPricing: cabin.pricing.defaultPricing || {},
+                specificDates: cabin.pricing.specificDates || {}
+              };
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing pricing data:", e);
+        }
+        
+        let cabinAvailability = {
+          morning: true,
+          afternoon: true, 
+          evening: true
+        };
+        
+        try {
+          if (cabin.availability) {
+            if (typeof cabin.availability === 'string') {
+              cabinAvailability = JSON.parse(cabin.availability);
+            } else if (typeof cabin.availability === 'object') {
+              cabinAvailability = {
+                morning: cabin.availability.morning !== false,
+                afternoon: cabin.availability.afternoon !== false,
+                evening: cabin.availability.evening !== false
+              };
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing availability data:", e);
+        }
+        
         return {
           id: cabin.id,
           locationId: cabin.location_id,
@@ -168,13 +201,9 @@ const OwnerDashboardPage = () => {
           description: cabin.description || "",
           equipment: cabin.equipment || [],
           imageUrl: cabin.image_url || "",
-          price: 0, // Default price
-          availability: {
-            morning: true,
-            afternoon: true,
-            evening: true
-          },
-          pricing: cabin.pricing || { defaultPricing: {}, specificDates: {} }
+          price: 0,
+          availability: cabinAvailability,
+          pricing: cabinPricing
         };
       });
       
@@ -195,14 +224,12 @@ const OwnerDashboardPage = () => {
   const handleLocationCreated = (location: Location) => {
     setUserLocations(prev => [...prev, location]);
     setSelectedLocation(location);
-    // Nova localização não tem cabines ainda
     setLocationCabins([]);
   };
   
   const handleCabinAdded = (cabin: Cabin) => {
     setLocationCabins(prev => [...prev, cabin]);
     
-    // Atualizar também a contagem de cabines no local selecionado
     if (selectedLocation) {
       const updatedLocation = {
         ...selectedLocation,
@@ -210,7 +237,6 @@ const OwnerDashboardPage = () => {
       };
       setSelectedLocation(updatedLocation);
       
-      // Atualizar também na lista completa de locais
       setUserLocations(prev => prev.map(loc => 
         loc.id === updatedLocation.id ? updatedLocation : loc
       ));
@@ -242,7 +268,6 @@ const OwnerDashboardPage = () => {
       
       setLocationCabins(prev => prev.filter(c => c.id !== cabinId));
       
-      // Atualizar também a contagem de cabines no local selecionado
       if (selectedLocation) {
         const updatedLocation = {
           ...selectedLocation,
@@ -250,12 +275,10 @@ const OwnerDashboardPage = () => {
         };
         setSelectedLocation(updatedLocation);
         
-        // Atualizar também na lista completa de locais
         setUserLocations(prev => prev.map(loc => 
           loc.id === updatedLocation.id ? updatedLocation : loc
         ));
       }
-      
     } catch (error) {
       console.error("Erro ao processar exclusão de cabine:", error);
     }
