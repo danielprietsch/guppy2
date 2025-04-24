@@ -5,14 +5,16 @@ export const DEBUG_MODE = false; // Change to true to enable all debug logs
 export const DEBUG_AREAS = {
   PRICE_EDIT: true, // Enable debugging just for price editing
   AVAILABILITY: true, // Enable debugging for availability changes
-  USER_ACTIONS: true // Enable debugging for user profile actions
+  USER_ACTIONS: true, // Enable debugging for user profile actions
+  CLIENT_PROFILE: true // Enable debugging specifically for client profile issues
 };
 
 // Control verbosity level for specific areas
 export const DEBUG_VERBOSITY = {
   PRICE_EDIT: 1, // 1 = essentials only, 2 = detailed, 3 = all
   AVAILABILITY: 1, // Setting to 1 to ensure we see critical logs
-  USER_ACTIONS: 2  // Medium verbosity for user actions
+  USER_ACTIONS: 2, // Medium verbosity for user actions
+  CLIENT_PROFILE: 3 // High verbosity for client profile to catch all issues
 };
 
 export const debugLog = (...args: any[]) => {
@@ -61,3 +63,4 @@ export const debugGroup = (label: string, fn: () => void) => {
     console.groupEnd();
   }
 };
+

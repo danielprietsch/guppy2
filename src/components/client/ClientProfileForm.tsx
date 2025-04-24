@@ -16,7 +16,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { debugAreaLog } from "@/utils/debugLogger";
+import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -48,26 +48,36 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
 
   useEffect(() => {
     if (currentUser) {
-      debugAreaLog("USER_ACTIONS", "Setting form values from currentUser in ClientProfileForm");
+      debugAreaLog("CLIENT_PROFILE", "Setting form values from currentUser in ClientProfileForm", {
+        name: currentUser.name,
+        email: currentUser.email,
+        phoneNumber: currentUser.phoneNumber || ""
+      });
+      
       form.reset({
         name: currentUser.name,
         email: currentUser.email,
         phoneNumber: currentUser.phoneNumber || "",
       });
+    } else {
+      debugAreaCritical("CLIENT_PROFILE", "currentUser is null in ClientProfileForm");
     }
   }, [currentUser, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    debugAreaLog("CLIENT_PROFILE", "Submitting form with values:", values);
+    
     try {
       await onSave(values);
       toast({
         title: "Perfil atualizado",
         description: "Seus dados foram atualizados com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
+      debugAreaCritical("CLIENT_PROFILE", "Error in onSubmit:", error);
       toast({
         title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar seus dados.",
+        description: error.message || "Ocorreu um erro ao atualizar seus dados.",
         variant: "destructive",
       });
     }
@@ -83,7 +93,11 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
             <FormItem>
               <FormLabel>Nome</FormLabel>
               <FormControl>
-                <Input placeholder="Seu nome completo" {...field} />
+                <Input 
+                  placeholder="Seu nome completo" 
+                  {...field} 
+                  disabled={isLoading}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -97,7 +111,12 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="seu@email.com" {...field} type="email" />
+                <Input 
+                  placeholder="seu@email.com" 
+                  {...field} 
+                  type="email" 
+                  disabled={isLoading}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -111,7 +130,11 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
             <FormItem>
               <FormLabel>Telefone</FormLabel>
               <FormControl>
-                <Input placeholder="(00) 00000-0000" {...field} />
+                <Input 
+                  placeholder="(00) 00000-0000" 
+                  {...field} 
+                  disabled={isLoading}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -123,6 +146,7 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
             variant="outline" 
             onClick={() => navigate(-1)}
             type="button"
+            disabled={isLoading}
           >
             Cancelar
           </Button>
