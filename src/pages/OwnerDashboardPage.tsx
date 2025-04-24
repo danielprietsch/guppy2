@@ -10,6 +10,7 @@ import { LocationSettings } from "@/components/owner/LocationSettings";
 import { EmptyLocationState } from "@/components/owner/EmptyLocationState";
 import { LocationOverview } from "@/components/owner/LocationOverview";
 import { OwnerAddLocationModal } from "@/components/owner/OwnerAddLocationModal";
+import { AddCabinModal } from "@/components/owner/AddCabinModal";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -19,7 +20,8 @@ const OwnerDashboardPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [activeTab, setActiveTab] = useState("locations");
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
-  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
+  const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -358,7 +360,7 @@ const OwnerDashboardPage = () => {
       </div>
 
       {!selectedLocation && userLocations.length === 0 ? (
-        <EmptyLocationState onAddLocation={() => setAddModalOpen(true)} />
+        <EmptyLocationState onAddLocation={() => setAddLocationModalOpen(true)} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
           <OwnerSidebar
@@ -378,7 +380,7 @@ const OwnerDashboardPage = () => {
                   <LocationsOverview 
                     selectedLocation={selectedLocation}
                     locationCabins={locationCabins}
-                    onAddCabinClick={() => setAddModalOpen(true)}
+                    onAddCabinClick={() => setAddCabinModalOpen(true)}
                   />
                 )}
                 
@@ -423,10 +425,19 @@ const OwnerDashboardPage = () => {
       )}
       
       <OwnerAddLocationModal
-        open={addModalOpen}
-        onOpenChange={setAddModalOpen}
+        open={addLocationModalOpen}
+        onOpenChange={setAddLocationModalOpen}
         onLocationCreated={handleLocationCreated}
       />
+
+      {selectedLocation && (
+        <AddCabinModal
+          open={addCabinModalOpen}
+          onOpenChange={setAddCabinModalOpen}
+          locationId={selectedLocation.id}
+          onCabinCreated={handleCabinAdded}
+        />
+      )}
     </div>
   );
 };
