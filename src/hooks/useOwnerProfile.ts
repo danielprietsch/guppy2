@@ -6,6 +6,15 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
+interface OwnerProfileResult {
+  id: string;
+  name: string | null;
+  email: string | null;
+  user_type: string | null;
+  phone_number: string | null;
+  avatar_url: string | null;
+}
+
 export const useOwnerProfile = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -89,10 +98,11 @@ export const useOwnerProfile = () => {
           debugLog("useOwnerProfile: Could not verify as owner via locations, trying direct auth check");
           
           // Option 2: As a last resort, try a simplified profile query with minimal fields
-          const { data: profile, error } = await supabase.rpc(
+          // TypeScript doesn't know about our custom function, so we have to cast the result
+          const { data: ownerProfile, error } = await supabase.rpc(
             'check_owner_status', 
             { user_id: session.user.id }
-          ).maybeSingle();
+          ) as { data: OwnerProfileResult | null, error: any };
             
           // If the RPC call fails, we might need to fall back to a very basic query
           if (error) {
@@ -151,15 +161,15 @@ export const useOwnerProfile = () => {
             };
             
             setCurrentUser(userData);
-          } else if (profile) {
+          } else if (ownerProfile) {
             // RPC call succeeded
             const userData: User = {
               id: session.user.id,
-              name: profile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-              email: profile.email || session.user.email || "",
+              name: ownerProfile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+              email: ownerProfile.email || session.user.email || "",
               userType: "owner",
-              avatarUrl: profile.avatar_url || userMetadata?.avatar_url,
-              phoneNumber: profile.phone_number
+              avatarUrl: ownerProfile.avatar_url || userMetadata?.avatar_url,
+              phoneNumber: ownerProfile.phone_number || null
             };
             
             setCurrentUser(userData);
