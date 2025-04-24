@@ -25,7 +25,30 @@ BEGIN
     updated_at = now()
   WHERE id = user_id;
   
-  RETURN FOUND;
+  -- Também atualizar os metadados do usuário na tabela auth.users para garantir consistência
+  UPDATE auth.users
+  SET
+    raw_user_meta_data = 
+      jsonb_set(
+        jsonb_set(
+          jsonb_set(
+            jsonb_set(
+              COALESCE(raw_user_meta_data, '{}'::jsonb),
+              '{name}', 
+              to_jsonb(user_name)
+            ),
+            '{email}', 
+            to_jsonb(user_email)
+          ),
+          '{avatar_url}',
+          to_jsonb(COALESCE(user_avatar, ''))
+        ),
+        '{userType}',
+        COALESCE(raw_user_meta_data->'userType', '"global_admin"'::jsonb)
+      )
+  WHERE id = user_id;
+  
+  RETURN true;
 END;
 $$;
 

@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useGlobalAdminProfile } from "@/hooks/useGlobalAdminProfile";
 import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileForm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { debugLog } from "@/utils/debugLogger";
 
 const GlobalAdminProfilePage = () => {
   const { currentUser, isLoading, error, updateProfile } = useGlobalAdminProfile();
@@ -19,8 +20,11 @@ const GlobalAdminProfilePage = () => {
   }
 
   if (error || !currentUser) {
+    debugLog("GlobalAdminProfilePage: Erro ou usuário não encontrado, redirecionando para login");
     return <Navigate to="/login" replace />;
   }
+
+  debugLog("GlobalAdminProfilePage: Renderizando página de perfil para:", currentUser);
 
   return (
     <div className="container py-8">
