@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -9,16 +8,18 @@ export const useLocationManagement = () => {
   const [userLocations, setUserLocations] = useState<Location[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
-
-  const loadUserLocations = async (userId: string) => {
+  const [isLocationsLoading, setIsLocationsLoading] = useState(false);
+  
+  const loadUserLocations = useCallback(async (userId: string) => {
+    if (isLocationsLoading) return; // Prevent concurrent calls
+    
     try {
+      setIsLocationsLoading(true);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
       // Call the function to get owner locations without triggering RLS recursion
       const { data, error } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('owner_id', userId);
+        .rpc('get_owner_locations', { owner_user_id: userId });
           
       if (error) {
         debugError("useLocationManagement: Error fetching locations:", error);
@@ -75,10 +76,11 @@ export const useLocationManagement = () => {
         if (!selectedLocation && transformedLocations.length > 0) {
           debugLog("useLocationManagement: Setting initial location", transformedLocations[0]);
           setSelectedLocation(transformedLocations[0]);
-          await loadCabinsForLocation(transformedLocations[0].id);
+          loadCabinsForLocation(transformedLocations[0].id);
         }
       } else {
         debugLog("useLocationManagement: No locations found for user");
+        setUserLocations([]);
       }
     } catch (error) {
       debugError("useLocationManagement: Error processing locations:", error);
@@ -87,8 +89,10 @@ export const useLocationManagement = () => {
         description: "Erro ao processar locais",
         variant: "destructive",
       });
+    } finally {
+      setIsLocationsLoading(false);
     }
-  };
+  }, [selectedLocation, isLocationsLoading]);
 
   const loadCabinsForLocation = async (locationId: string) => {
     try {
