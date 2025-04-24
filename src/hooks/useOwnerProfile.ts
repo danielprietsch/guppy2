@@ -58,18 +58,22 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Se metadados não confirmarem status, usar RPC function do supabase que evita recursão
+        // Se metadados não confirmarem status, usar consulta SQL direta para verificar o perfil
         try {
-          // Usar a função check_owner_status que evita recursão RLS
-          const { data: ownerData, error: checkError } = await supabase
-            .rpc('check_owner_status', { user_id: session.user.id });
+          // Consulta direta ao perfil do usuário para evitar recursão RLS
+          const { data: ownerProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('id, name, email, user_type, phone_number, avatar_url')
+            .eq('id', session.user.id)
+            .eq('user_type', 'owner')
+            .maybeSingle();
             
-          if (checkError) {
-            debugError("useOwnerProfile: Error checking user type:", checkError);
-            throw checkError;
+          if (profileError) {
+            debugError("useOwnerProfile: Error checking user type:", profileError);
+            throw profileError;
           }
           
-          if (!ownerData || ownerData.length === 0) {
+          if (!ownerProfile) {
             setError("Você não tem permissão para acessar esta página.");
             toast({
               title: "Acesso restrito",
@@ -81,14 +85,13 @@ export const useOwnerProfile = () => {
           }
           
           // Tipo de usuário confirmado como owner
-          const ownerInfo = ownerData[0];
           const userData: User = {
-            id: ownerInfo.id,
-            name: ownerInfo.name || session.user.email?.split('@')[0] || "Usuário",
-            email: ownerInfo.email || session.user.email || "",
+            id: ownerProfile.id,
+            name: ownerProfile.name || session.user.email?.split('@')[0] || "Usuário",
+            email: ownerProfile.email || session.user.email || "",
             userType: "owner",
-            avatarUrl: ownerInfo.avatar_url,
-            phoneNumber: ownerInfo.phone_number
+            avatarUrl: ownerProfile.avatar_url,
+            phoneNumber: ownerProfile.phone_number
           };
           
           debugLog("useOwnerProfile: Setting currentUser from owner check:", userData);
