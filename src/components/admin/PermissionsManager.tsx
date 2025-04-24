@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,7 +25,6 @@ type UserPermission = {
   permission_id: string;
 };
 
-// Define the shape of data returned from the get_all_users RPC function
 type GetAllUsersResponse = {
   id: string;
   email: string;
@@ -50,9 +48,8 @@ export const PermissionsManager = () => {
       try {
         setLoading(true);
         
-        // Using the security definer function to fetch users via RPC
-        // Providing both required type parameters for rpc
-        const { data: userData, error: userError } = await supabase.rpc<GetAllUsersResponse, null>('get_all_users');
+        const { data: userData, error: userError } = await supabase
+          .rpc('get_all_users') as { data: GetAllUsersResponse | null, error: any };
         
         if (userError) {
           debugError("PermissionsManager: Error fetching users:", userError);
@@ -64,10 +61,8 @@ export const PermissionsManager = () => {
           return;
         }
         
-        // Ensure we're setting an array of User objects
         setUsers(userData as User[] || []);
         
-        // Fetch user permissions from the user_roles table
         const { data: userRoles, error: rolesError } = await supabase
           .from('user_roles')
           .select('user_id, role');
@@ -82,7 +77,6 @@ export const PermissionsManager = () => {
           return;
         }
         
-        // Convert roles to permissions format
         const mappedPermissions: UserPermission[] = userRoles?.map((role) => ({
           user_id: role.user_id,
           permission_id: role.role
@@ -105,7 +99,11 @@ export const PermissionsManager = () => {
     fetchUsers();
   }, []);
 
-  const hasPermission = (userId: string, permissionId: string) => {
+  const hasPermission = (userId: string, permissionId: string, userType?: string) => {
+    if (userType === 'global_admin' && permissionId === 'approve_locations') {
+      return true;
+    }
+    
     return userPermissions.some(
       (up) => up.user_id === userId && up.permission_id === permissionId
     );
@@ -118,12 +116,10 @@ export const PermissionsManager = () => {
       );
       
       if (exists) {
-        // Remove the permission
         return prev.filter(
           (up) => !(up.user_id === userId && up.permission_id === permissionId)
         );
       } else {
-        // Add the permission
         return [...prev, { user_id: userId, permission_id: permissionId }];
       }
     });
@@ -144,7 +140,6 @@ export const PermissionsManager = () => {
         return;
       }
       
-      // First, delete all existing permissions for these users
       const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
@@ -154,7 +149,6 @@ export const PermissionsManager = () => {
         throw deleteError;
       }
       
-      // Then insert the new permissions
       if (userPermissions.length > 0) {
         const { error: insertError } = await supabase
           .from('user_roles')
@@ -226,9 +220,10 @@ export const PermissionsManager = () => {
                       {permissions.map((permission) => (
                         <TableCell key={`${user.id}-${permission.id}`} className="text-center">
                           <Checkbox
-                            checked={hasPermission(user.id, permission.id)}
+                            checked={hasPermission(user.id, permission.id, user.user_type)}
                             onCheckedChange={() => togglePermission(user.id, permission.id)}
                             id={`${user.id}-${permission.id}`}
+                            disabled={user.user_type === 'global_admin' && permission.id === 'approve_locations'}
                           />
                         </TableCell>
                       ))}
@@ -251,4 +246,3 @@ export const PermissionsManager = () => {
     </Card>
   );
 };
-
