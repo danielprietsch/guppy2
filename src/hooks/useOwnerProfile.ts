@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -34,23 +35,38 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        debugLog("useOwnerProfile: Session found, checking user type");
+        // Get user metadata from the session directly if possible
+        const userType = session.user?.user_metadata?.userType;
         
-        // Query for the profile data directly instead of using RPC
+        if (userType && userType !== 'owner' && userType !== 'global_admin') {
+          debugLog("useOwnerProfile: User type in metadata is not owner:", userType);
+          if (isMounted) {
+            setError("Você não tem permissão para acessar esta página.");
+            toast({
+              title: "Acesso restrito",
+              description: "Você não tem permissão para acessar esta página.",
+              variant: "destructive",
+            });
+            navigate("/");
+          }
+          return;
+        }
+        
+        // Query for the profile data as a direct database query instead of using functions
+        // This avoids the infinite recursion in RLS policies
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('id, name, email, user_type, avatar_url, phone_number')
           .eq('id', session.user.id)
-          .eq('user_type', 'owner')
-          .single();
+          .maybeSingle();
           
         if (profileError) {
-          debugError("useOwnerProfile: Error checking owner status:", profileError);
+          debugError("useOwnerProfile: Error retrieving profile:", profileError);
           throw profileError;
         }
         
-        if (!profileData) {
-          debugLog("useOwnerProfile: User is not an owner");
+        if (!profileData || (profileData.user_type !== 'owner' && profileData.user_type !== 'global_admin')) {
+          debugLog("useOwnerProfile: User is not an owner or admin");
           if (isMounted) {
             setError("Você não tem permissão para acessar esta página.");
             toast({
@@ -64,14 +80,14 @@ export const useOwnerProfile = () => {
         }
         
         // Fix type issue: ensure userType is one of the allowed values
-        let userType: "owner" | "professional" | "client" | "global_admin" = "owner"; // Default to owner
+        let validUserType: "owner" | "professional" | "client" | "global_admin" = "owner"; // Default to owner
         
         // Check if the profile data contains a valid user_type
         if (profileData.user_type === "owner" || 
             profileData.user_type === "professional" || 
             profileData.user_type === "client" || 
             profileData.user_type === "global_admin") {
-          userType = profileData.user_type as "owner" | "professional" | "client" | "global_admin";
+          validUserType = profileData.user_type as "owner" | "professional" | "client" | "global_admin";
         }
         
         // User is confirmed as owner
@@ -79,7 +95,7 @@ export const useOwnerProfile = () => {
           id: profileData.id,
           name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
           email: profileData.email || session.user.email || "",
-          userType: userType,
+          userType: validUserType,
           avatarUrl: profileData.avatar_url,
           phoneNumber: profileData.phone_number
         };
@@ -122,13 +138,14 @@ export const useOwnerProfile = () => {
       }
     });
     
+    // Only check auth status once during component mount
     checkAuthStatus();
     
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate]); // Only depend on navigate
 
   return { currentUser, isLoading, error, isAuthChecked, setCurrentUser };
 };

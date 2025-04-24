@@ -7,9 +7,7 @@ import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
 import { DashboardContent } from "@/components/owner/DashboardContent";
 import { OwnerAddLocationModal } from "@/components/owner/OwnerAddLocationModal";
 import { AddCabinModal } from "@/components/owner/AddCabinModal";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { debugLog, debugError } from "@/utils/debugLogger";
+import { debugLog } from "@/utils/debugLogger";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -30,60 +28,16 @@ const OwnerDashboardPage = () => {
   const [activeTab, setActiveTab] = useState("locations");
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
-
-  // Verificar a sessão uma única vez
-  useEffect(() => {
-    let isMounted = true;
-    
-    const checkSession = async () => {
-      try {
-        debugLog("OwnerDashboardPage: Checking session...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session && isMounted) {
-          debugLog("OwnerDashboardPage: No session found, redirecting to login");
-          toast({
-            title: "Acesso Negado",
-            description: "Você precisa estar logado para acessar esta página.",
-            variant: "destructive"
-          });
-          navigate("/login");
-          return;
-        }
-        
-        if (isMounted) {
-          setSessionChecked(true);
-        }
-      } catch (error) {
-        debugError("OwnerDashboardPage: Error checking session:", error);
-        if (isMounted) {
-          toast({
-            title: "Erro",
-            description: "Ocorreu um erro ao verificar sua sessão.",
-            variant: "destructive"
-          });
-          navigate("/login");
-        }
-      }
-    };
-
-    checkSession();
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [navigate]);
 
   // Carregar locais quando o usuário estiver disponível e autenticado
   useEffect(() => {
-    if (currentUser?.id && sessionChecked && isAuthChecked) {
+    if (currentUser?.id && isAuthChecked) {
       debugLog("OwnerDashboardPage: Loading locations for user:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
-  }, [currentUser, loadUserLocations, sessionChecked, isAuthChecked]);
+  }, [currentUser, loadUserLocations, isAuthChecked]);
 
-  if (isLoading || !sessionChecked) {
+  if (isLoading) {
     return (
       <div className="container py-12 flex items-center justify-center">
         <div className="text-center">
