@@ -5,11 +5,14 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [userLocations, setUserLocations] = useState<any[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -59,6 +62,9 @@ const ClientDashboardPage = () => {
         debugLog(`ClientDashboardPage: Setting username to ${name}`);
         setUserName(name);
 
+        // Fetch user's locations
+        await fetchUserLocations(session.user.id);
+
       } catch (error) {
         debugError("ClientDashboardPage: Authentication verification error:", error);
         toast({
@@ -74,6 +80,119 @@ const ClientDashboardPage = () => {
     
     checkAuth();
   }, [navigate]);
+
+  const fetchUserLocations = async (userId: string) => {
+    try {
+      setLoadingLocations(true);
+      
+      const { data, error } = await supabase
+        .from('locations')
+        .select(`
+          id,
+          name,
+          active,
+          admin_approvals (
+            id,
+            status
+          )
+        `)
+        .eq('owner_id', userId)
+        .order('created_at', { ascending: false });
+        
+      if (error) {
+        debugError("ClientDashboardPage: Error fetching locations:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar seus locais.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setUserLocations(data || []);
+      
+    } catch (error) {
+      debugError("ClientDashboardPage: Error in fetchUserLocations:", error);
+    } finally {
+      setLoadingLocations(false);
+    }
+  };
+
+  const handleRequestApproval = async (locationId: string) => {
+    try {
+      // Check if there's already an approval request
+      const { data: existingApproval, error: checkError } = await supabase
+        .from('admin_approvals')
+        .select('id, status')
+        .eq('location_id', locationId)
+        .maybeSingle();
+        
+      if (checkError) {
+        debugError("ClientDashboardPage: Error checking existing approval:", checkError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível verificar solicitações existentes.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // If there's an existing approved request, don't create a new one
+      if (existingApproval?.status === "APROVADO") {
+        toast({
+          title: "Aviso",
+          description: "Este local já foi aprovado.",
+        });
+        return;
+      }
+      
+      // If there's a pending request, don't create a new one
+      if (existingApproval?.status === "PENDENTE") {
+        toast({
+          title: "Aviso",
+          description: "Já existe uma solicitação de aprovação pendente para este local.",
+        });
+        return;
+      }
+      
+      // Create a new approval request
+      const { error } = await supabase
+        .from('admin_approvals')
+        .insert({
+          location_id: locationId,
+          status: "PENDENTE"
+        });
+        
+      if (error) {
+        debugError("ClientDashboardPage: Error creating approval request:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível solicitar a aprovação do local.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Solicitação de aprovação enviada com sucesso.",
+      });
+      
+      // Refresh locations
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetchUserLocations(session.user.id);
+      }
+      
+    } catch (error) {
+      debugError("ClientDashboardPage: Error in handleRequestApproval:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao solicitar a aprovação.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -104,18 +223,19 @@ const ClientDashboardPage = () => {
             Bem-vindo ao seu painel de cliente
           </p>
         </div>
-        <button
-          className="mt-4 md:mt-0 px-4 py-2 border rounded"
+        <Button
+          variant="outline"
+          className="mt-4 md:mt-0"
           onClick={handleLogout}
         >
           Sair
-        </button>
+        </Button>
       </div>
       
       <div className="mt-8">
         <h2 className="text-2xl font-semibold mb-4">Dashboard do Cliente</h2>
         <p className="text-muted-foreground mb-6">
-          Esta é uma página de exemplo para o painel do cliente.
+          Esta é a página do painel do cliente.
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -134,6 +254,50 @@ const ClientDashboardPage = () => {
             <p className="text-gray-500">Atualize suas informações pessoais.</p>
           </div>
         </div>
+        
+        {userLocations.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-2xl font-semibold mb-4">Meus Locais</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {userLocations.map((location) => {
+                const approvalStatus = location.admin_approvals?.[0]?.status;
+                const isApproved = location.active || approvalStatus === "APROVADO";
+                const hasPendingRequest = approvalStatus === "PENDENTE";
+                
+                return (
+                  <Card key={location.id} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      <h3 className="font-medium text-lg mb-2">{location.name}</h3>
+                      <div className="flex items-center mb-4">
+                        <span className={`inline-block w-2 h-2 rounded-full mr-2 ${isApproved ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                        <span className="text-sm">{isApproved ? 'Aprovado' : 'Aguardando Aprovação'}</span>
+                      </div>
+                      
+                      {!isApproved && !hasPendingRequest && (
+                        <Button 
+                          onClick={() => handleRequestApproval(location.id)}
+                          className="w-full mt-2"
+                        >
+                          Solicitar Aprovação
+                        </Button>
+                      )}
+                      
+                      {hasPendingRequest && (
+                        <Button 
+                          disabled
+                          variant="outline"
+                          className="w-full mt-2"
+                        >
+                          Solicitação Pendente
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

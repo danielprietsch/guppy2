@@ -5,11 +5,17 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { PermissionsManager } from "@/components/admin/PermissionsManager";
+import { LocationApprovals } from "@/components/admin/LocationApprovals";
+import { AdminLocalRegistration } from "@/components/admin/AdminLocalRegistration";
 
 const GlobalAdminDashboardPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
+  const [activeTab, setActiveTab] = useState("overview");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -113,7 +119,7 @@ const GlobalAdminDashboardPage = () => {
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Olá, {userName}</h1>
           <p className="mt-1 text-gray-500">
@@ -129,29 +135,53 @@ const GlobalAdminDashboardPage = () => {
         </Button>
       </div>
       
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-4">Dashboard do Administrador</h2>
-        <p className="text-muted-foreground mb-6">
-          Aqui você pode gerenciar todos os aspectos do sistema.
-        </p>
+      <Tabs defaultValue="overview" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:w-[600px]">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
+          <TabsTrigger value="permissions">Permissões</TabsTrigger>
+          <TabsTrigger value="approvals">Aprovações</TabsTrigger>
+          <TabsTrigger value="admin-register">Admin Local</TabsTrigger>
+        </TabsList>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-card shadow rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-2">Usuários</h3>
-            <p className="text-muted-foreground">Gerenciar usuários e permissões.</p>
-          </div>
-          
-          <div className="bg-card shadow rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-2">Configurações</h3>
-            <p className="text-muted-foreground">Configurações do sistema.</p>
-          </div>
-          
-          <div className="bg-card shadow rounded-lg p-6">
-            <h3 className="font-medium text-lg mb-2">Relatórios</h3>
-            <p className="text-muted-foreground">Visualizar relatórios do sistema.</p>
-          </div>
-        </div>
-      </div>
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Dashboard do Administrador Global</CardTitle>
+              <CardDescription>
+                Gerencie todos os aspectos do sistema a partir deste painel.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="p-6">
+                <h3 className="font-medium text-lg mb-2">Usuários</h3>
+                <p className="text-muted-foreground">Gerencie usuários e permissões.</p>
+              </Card>
+              
+              <Card className="p-6">
+                <h3 className="font-medium text-lg mb-2">Configurações</h3>
+                <p className="text-muted-foreground">Configurações do sistema.</p>
+              </Card>
+              
+              <Card className="p-6">
+                <h3 className="font-medium text-lg mb-2">Relatórios</h3>
+                <p className="text-muted-foreground">Visualize relatórios do sistema.</p>
+              </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="permissions">
+          <PermissionsManager />
+        </TabsContent>
+        
+        <TabsContent value="approvals">
+          <LocationApprovals />
+        </TabsContent>
+        
+        <TabsContent value="admin-register">
+          <AdminLocalRegistration />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
