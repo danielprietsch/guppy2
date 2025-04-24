@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 interface FooterProps {
@@ -52,8 +51,8 @@ const Footer: React.FC<FooterProps> = ({ userRoles = [] }) => {
                 </Link>
               </li>
               <li>
-                <Link to="/providers" className="text-sm text-gray-600 hover:text-gray-900">
-                  Prestadores
+                <Link to="/professionals" className="text-sm text-gray-600 hover:text-gray-900">
+                  Profissionais
                 </Link>
               </li>
               <li>
