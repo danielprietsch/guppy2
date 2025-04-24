@@ -45,7 +45,12 @@ const ProfessionalProfilePage = () => {
             userType: 'professional',
             avatarUrl: session.user.user_metadata?.avatar_url,
             specialties: [],
-            phoneNumber: session.user.user_metadata?.phone_number
+            phoneNumber: session.user.user_metadata?.phone_number,
+            cpf: '',
+            address: '',
+            city: '',
+            state: '',
+            zip_code: ''
           });
           setIsLoading(false);
           return;
@@ -70,7 +75,12 @@ const ProfessionalProfilePage = () => {
                 userType: 'professional',
                 avatarUrl: session.user.user_metadata?.avatar_url,
                 specialties: [],
-                phoneNumber: session.user.user_metadata?.phone_number
+                phoneNumber: session.user.user_metadata?.phone_number,
+                cpf: '',
+                address: '',
+                city: '',
+                state: '',
+                zip_code: ''
               });
               setIsLoading(false);
               return;
@@ -96,7 +106,12 @@ const ProfessionalProfilePage = () => {
                 userType: 'professional',
                 avatarUrl: session.user.user_metadata?.avatar_url,
                 specialties: [],
-                phoneNumber: session.user.user_metadata?.phone_number
+                phoneNumber: session.user.user_metadata?.phone_number,
+                cpf: '',
+                address: '',
+                city: '',
+                state: '',
+                zip_code: ''
               });
               setIsLoading(false);
               return;
@@ -118,7 +133,12 @@ const ProfessionalProfilePage = () => {
             userType: userData.user_type as "professional",
             avatarUrl: userData.avatar_url || session.user.user_metadata?.avatar_url,
             specialties: [],
-            phoneNumber: userData.phone_number
+            phoneNumber: userData.phone_number,
+            cpf: userData.cpf || '',
+            address: userData.address || '',
+            city: userData.city || '',
+            state: userData.state || '',
+            zip_code: userData.zip_code || ''
           });
         } catch (error) {
           debugError("ProfessionalProfilePage: Erro ao verificar perfil:", error);
@@ -131,7 +151,12 @@ const ProfessionalProfilePage = () => {
               userType: 'professional',
               avatarUrl: session.user.user_metadata?.avatar_url,
               specialties: [],
-              phoneNumber: session.user.user_metadata?.phone_number
+              phoneNumber: session.user.user_metadata?.phone_number,
+              cpf: '',
+              address: '',
+              city: '',
+              state: '',
+              zip_code: ''
             });
             setIsLoading(false);
             return;

@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -10,7 +9,12 @@ export interface User {
   bio?: string;
   companyName?: string;
   cnpj?: string;
-  ownedLocationIds?: string[]; // Added this property
+  ownedLocationIds?: string[]; 
+  cpf?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip_code?: string;
 }
 
 export interface Location {
