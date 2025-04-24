@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -12,6 +12,7 @@ import { Location, Cabin } from "@/lib/types";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AvailabilitySettingsProps {
   selectedLocation: Location | null;
@@ -33,45 +34,262 @@ export const AvailabilitySettings = ({
     });
     return prices;
   });
+  const [slotPrices, setSlotPrices] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: number } } }>({});
 
-  const handleStatusChange = (cabinId: string, date: string, turn: string, isManualClose: boolean) => {
-    setManuallyClosedDates(prev => {
-      const updated = { ...prev };
-      if (!updated[cabinId]) {
-        updated[cabinId] = {};
-      }
-      if (!updated[cabinId][date]) {
-        updated[cabinId][date] = {
-          morning: false,
-          afternoon: false,
-          evening: false
-        };
-      }
-      updated[cabinId][date][turn] = isManualClose;
-      return updated;
-    });
+  // Load booking data from database
+  useEffect(() => {
+    if (selectedLocation) {
+      loadBookingData();
+      loadCabinPrices();
+    }
+  }, [selectedLocation]);
 
-    toast({
-      title: isManualClose ? "Turno fechado manualmente" : "Turno reaberto",
-      description: `${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} - ${
-        turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
-      }`,
-    });
+  const loadBookingData = async () => {
+    try {
+      // Here you would fetch booking data from Supabase
+      // This is a placeholder - implement with actual data fetching
+      console.log("Loading booking data for location:", selectedLocation?.id);
+      
+      // Example: Fetch bookings for this location's cabins
+      if (selectedLocation) {
+        const { data: cabins } = await supabase
+          .from('cabins')
+          .select('id')
+          .eq('location_id', selectedLocation.id);
+        
+        if (cabins && cabins.length > 0) {
+          const cabinIds = cabins.map(cabin => cabin.id);
+          
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('*')
+            .in('cabin_id', cabinIds);
+          
+          if (bookings) {
+            const bookedDays: { [cabinId: string]: { [date: string]: { [turn: string]: boolean } } } = {};
+            
+            bookings.forEach(booking => {
+              if (!bookedDays[booking.cabin_id]) {
+                bookedDays[booking.cabin_id] = {};
+              }
+              if (!bookedDays[booking.cabin_id][booking.date]) {
+                bookedDays[booking.cabin_id][booking.date] = {
+                  morning: false,
+                  afternoon: false,
+                  evening: false
+                };
+              }
+              bookedDays[booking.cabin_id][booking.date][booking.shift] = true;
+            });
+            
+            setDaysBooked(bookedDays);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error loading booking data:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os dados de reservas.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handlePriceUpdate = (cabinId: string, date: string, turn: string, price: number) => {
-    // Store the updated price in state
-    setCabinPrices(prev => ({
-      ...prev,
-      [cabinId]: price
-    }));
-    
-    toast({
-      title: "Preço atualizado",
-      description: `O preço para ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} (${
-        turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
-      }) foi atualizado para R$ ${price}.`,
-    });
+  const loadCabinPrices = async () => {
+    try {
+      if (!selectedLocation) return;
+
+      // Load cabin pricing data from the database
+      const { data: cabinsData, error } = await supabase
+        .from('cabins')
+        .select('id, pricing')
+        .eq('location_id', selectedLocation.id);
+
+      if (error) throw error;
+
+      if (cabinsData) {
+        const prices: { [cabinId: string]: number } = {};
+        const slotPricingData: { [cabinId: string]: { [date: string]: { [turn: string]: number } } } = {};
+
+        cabinsData.forEach(cabin => {
+          // Set default cabin price
+          const defaultPrice = cabin.pricing?.defaultPricing?.price || 100;
+          prices[cabin.id] = defaultPrice;
+          
+          // Set slot-specific prices if available
+          if (cabin.pricing?.specificDates) {
+            slotPricingData[cabin.id] = {};
+            
+            Object.entries(cabin.pricing.specificDates).forEach(([date, dateData]) => {
+              slotPricingData[cabin.id][date] = {};
+              Object.entries(dateData as {[turn: string]: {price: number}}).forEach(([turn, turnData]) => {
+                slotPricingData[cabin.id][date][turn] = turnData.price || defaultPrice;
+              });
+            });
+          }
+        });
+
+        setCabinPrices(prices);
+        setSlotPrices(slotPricingData);
+      }
+    } catch (error) {
+      console.error("Error loading cabin prices:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os preços das cabines.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleStatusChange = async (cabinId: string, date: string, turn: string, isManualClose: boolean) => {
+    try {
+      setManuallyClosedDates(prev => {
+        const updated = { ...prev };
+        if (!updated[cabinId]) {
+          updated[cabinId] = {};
+        }
+        if (!updated[cabinId][date]) {
+          updated[cabinId][date] = {
+            morning: false,
+            afternoon: false,
+            evening: false
+          };
+        }
+        updated[cabinId][date][turn] = isManualClose;
+        return updated;
+      });
+
+      // Update cabin availability in the database
+      const { data: cabin } = await supabase
+        .from('cabins')
+        .select('pricing')
+        .eq('id', cabinId)
+        .single();
+
+      if (cabin) {
+        const updatedPricing = cabin.pricing || { defaultPricing: {}, specificDates: {} };
+        
+        // Make sure specificDates exists
+        if (!updatedPricing.specificDates) {
+          updatedPricing.specificDates = {};
+        }
+        
+        // Initialize the date entry if it doesn't exist
+        if (!updatedPricing.specificDates[date]) {
+          updatedPricing.specificDates[date] = {};
+        }
+        
+        // Initialize the turn entry if it doesn't exist
+        if (!updatedPricing.specificDates[date][turn]) {
+          updatedPricing.specificDates[date][turn] = {
+            price: cabinPrices[cabinId] || 100,
+            available: !isManualClose
+          };
+        } else {
+          // Update the availability
+          updatedPricing.specificDates[date][turn].available = !isManualClose;
+        }
+        
+        // Update the database
+        const { error } = await supabase
+          .from('cabins')
+          .update({ pricing: updatedPricing })
+          .eq('id', cabinId);
+          
+        if (error) throw error;
+      }
+
+      toast({
+        title: isManualClose ? "Turno fechado manualmente" : "Turno reaberto",
+        description: `${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} - ${
+          turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
+        }`,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o status do turno.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handlePriceUpdate = async (cabinId: string, date: string, turn: string, price: number) => {
+    try {
+      // Update local state
+      setSlotPrices(prev => {
+        const updated = { ...prev };
+        if (!updated[cabinId]) {
+          updated[cabinId] = {};
+        }
+        if (!updated[cabinId][date]) {
+          updated[cabinId][date] = {
+            morning: cabinPrices[cabinId] || 100,
+            afternoon: cabinPrices[cabinId] || 100,
+            evening: cabinPrices[cabinId] || 100
+          };
+        }
+        updated[cabinId][date][turn] = price;
+        return updated;
+      });
+      
+      // Update the database
+      const { data: cabin } = await supabase
+        .from('cabins')
+        .select('pricing')
+        .eq('id', cabinId)
+        .single();
+
+      if (cabin) {
+        const updatedPricing = cabin.pricing || { defaultPricing: {}, specificDates: {} };
+        
+        // Make sure specificDates exists
+        if (!updatedPricing.specificDates) {
+          updatedPricing.specificDates = {};
+        }
+        
+        // Initialize the date entry if it doesn't exist
+        if (!updatedPricing.specificDates[date]) {
+          updatedPricing.specificDates[date] = {};
+        }
+        
+        // Initialize the turn entry if it doesn't exist
+        if (!updatedPricing.specificDates[date][turn]) {
+          updatedPricing.specificDates[date][turn] = {
+            price: price,
+            available: !manuallyClosedDates[cabinId]?.[date]?.[turn]
+          };
+        } else {
+          // Update the price
+          updatedPricing.specificDates[date][turn].price = price;
+        }
+        
+        // Update the database
+        const { error } = await supabase
+          .from('cabins')
+          .update({ pricing: updatedPricing })
+          .eq('id', cabinId);
+          
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Preço atualizado",
+        description: `O preço para ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} (${
+          turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
+        }) foi atualizado para R$ ${price}.`,
+      });
+    } catch (error) {
+      console.error("Error updating price:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o preço.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -105,6 +323,7 @@ export const AvailabilitySettings = ({
                   onPriceChange={(date, turn, price) => handlePriceUpdate(cabin.id, date, turn, price)}
                   onStatusChange={(date, turn, isManualClose) => handleStatusChange(cabin.id, date, turn, isManualClose)}
                   manuallyClosedDates={manuallyClosedDates[cabin.id] || {}}
+                  slotPrices={slotPrices[cabin.id]}
                 />
               </div>
             </CardContent>

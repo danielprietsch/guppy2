@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lock, Pencil } from "lucide-react";
+import { Check, Lock, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimeSlotCardProps {
@@ -104,6 +104,16 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 onClick={(e) => e.stopPropagation()}
                 className="w-24 text-black pr-8 border-2 border-white/50 focus:border-white focus:ring-2 focus:ring-white/30 transition-all"
               />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePriceSubmit();
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-white/20 rounded-full transition-all hover:scale-110 flex items-center justify-center"
+              >
+                <Check className="h-4 w-4 text-green-600 hover:text-green-400 transition-colors" />
+              </button>
               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/10 pointer-events-none rounded-md"></div>
             </div>
           ) : (
