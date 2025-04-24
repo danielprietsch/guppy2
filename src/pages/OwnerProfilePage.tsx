@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types"; 
@@ -11,14 +10,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 const OwnerProfilePage = () => {
   const navigate = useNavigate();
-  const { profile, isLoading, error, updateProfile } = useOwnerProfile();
+  const { currentUser, isLoading, setCurrentUser } = useOwnerProfile();
   const [formData, setFormData] = useState({
-    name: profile?.name || "",
-    email: profile?.email || "",
-    phoneNumber: profile?.phoneNumber || "",
-    bio: profile?.bio || "",
-    companyName: profile?.companyName || "",
-    cnpj: profile?.cnpj || "",
+    name: currentUser?.name || "",
+    email: currentUser?.email || "",
+    phoneNumber: currentUser?.phoneNumber || "",
+    bio: currentUser?.bio || "",
+    companyName: currentUser?.companyName || "",
+    cnpj: currentUser?.cnpj || "",
   });
 
   if (isLoading) {
@@ -61,10 +60,25 @@ const OwnerProfilePage = () => {
 
   const handleSaveProfile = async () => {
     try {
-      await updateProfile({
-        ...formData,
-        userType: "owner" as const,
-      });
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          name: formData.name,
+          email: formData.email,
+          phone_number: formData.phoneNumber,
+        })
+        .eq('id', currentUser?.id);
+      
+      if (error) throw error;
+
+      if (currentUser) {
+        setCurrentUser({
+          ...currentUser,
+          name: formData.name,
+          email: formData.email,
+          phoneNumber: formData.phoneNumber,
+        });
+      }
 
       toast({
         title: "Perfil atualizado",
@@ -89,7 +103,7 @@ const OwnerProfilePage = () => {
     navigate("/login");
   };
 
-  if (!profile) {
+  if (!currentUser) {
     return (
       <div className="container py-12 flex items-center justify-center">
         <div className="text-center">

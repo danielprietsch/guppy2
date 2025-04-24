@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -16,7 +16,7 @@ const ProfessionalProfilePage = () => {
   const [profile, setProfile] = useState<User | null>(null);
   
   // This would be replaced with actual data fetch from Supabase
-  useState(() => {
+  useEffect(() => {
     const checkSession = async () => {
       try {
         setIsLoading(true);
@@ -49,11 +49,12 @@ const ProfessionalProfilePage = () => {
           return;
         }
         
+        // Create a properly typed User object from userData
         setProfile({
           id: userData.id,
           name: userData.name,
           email: userData.email,
-          userType: userData.user_type,
+          userType: userData.user_type as "professional",
           avatarUrl: userData.avatar_url,
           phoneNumber: userData.phone_number,
           specialties: userData.specialties || [],
