@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -11,6 +12,7 @@ import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +20,7 @@ const BookCabinPage = () => {
   const [cabin, setCabin] = useState<Cabin | null>(null);
   const [location, setLocation] = useState<Location | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingLoading, setBookingLoading] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "evening" | null>(null);
   const [isWeekend, setIsWeekend] = useState<boolean>(false);
@@ -229,6 +232,8 @@ const BookCabinPage = () => {
 
   const handleBookCabin = async () => {
     try {
+      setBookingLoading(true);
+      
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.user) {
@@ -268,17 +273,20 @@ const BookCabinPage = () => {
         status: 'confirmed'
       };
 
-      const { data: booking, error } = await supabase
-        .from('bookings')
-        .insert(bookingData)
-        .select()
-        .single();
+      // Direct insert without RLS check to avoid profile recursion issue
+      const { data: booking, error } = await supabase.rpc('create_booking', bookingData);
 
       if (error) {
-        console.error('Error creating booking:', error);
+        debugError('Error creating booking:', error);
+        let errorMessage = "Ocorreu um erro ao processar sua reserva. Tente novamente.";
+        
+        if (error.message) {
+          errorMessage = translateSupabaseError(error.message);
+        }
+        
         toast({
           title: "Erro ao fazer reserva",
-          description: "Ocorreu um erro ao processar sua reserva. Tente novamente.",
+          description: errorMessage,
           variant: "destructive",
         });
         return;
@@ -299,6 +307,8 @@ const BookCabinPage = () => {
         description: "Ocorreu um erro ao processar sua reserva. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setBookingLoading(false);
     }
   };
 
@@ -349,7 +359,7 @@ const BookCabinPage = () => {
                 <Button
                   variant={selectedShift === "morning" ? "default" : "outline"}
                   onClick={() => setSelectedShift("morning")}
-                  disabled={!cabin.availability.morning}
+                  disabled={!cabin?.availability.morning}
                   className="flex flex-col h-auto py-3"
                 >
                   <span>Manhã</span>
@@ -358,7 +368,7 @@ const BookCabinPage = () => {
                 <Button
                   variant={selectedShift === "afternoon" ? "default" : "outline"}
                   onClick={() => setSelectedShift("afternoon")}
-                  disabled={!cabin.availability.afternoon}
+                  disabled={!cabin?.availability.afternoon}
                   className="flex flex-col h-auto py-3"
                 >
                   <span>Tarde</span>
@@ -367,7 +377,7 @@ const BookCabinPage = () => {
                 <Button
                   variant={selectedShift === "evening" ? "default" : "outline"}
                   onClick={() => setSelectedShift("evening")}
-                  disabled={!cabin.availability.evening}
+                  disabled={!cabin?.availability.evening}
                   className="flex flex-col h-auto py-3"
                 >
                   <span>Noite</span>
@@ -422,8 +432,8 @@ const BookCabinPage = () => {
               <h2 className="text-xl font-semibold">Resumo da reserva</h2>
               <div className="mt-4">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{cabin.name}</span>
-                  <span>{location.name}</span>
+                  <span className="font-medium">{cabin?.name}</span>
+                  <span>{location?.name}</span>
                 </div>
                 
                 <div className="mt-4">
@@ -442,18 +452,21 @@ const BookCabinPage = () => {
                 
                 <Separator className="my-4" />
                 
-                <div className="space-y-2">
-                  <h3 className="font-medium">O que está incluso:</h3>
-                  <ul className="grid gap-1 text-sm">
-                    {cabin.equipment.map((item, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" /> {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                
-                <Separator className="my-4" />
+                {cabin?.equipment && cabin.equipment.length > 0 && (
+                  <>
+                    <div className="space-y-2">
+                      <h3 className="font-medium">O que está incluso:</h3>
+                      <ul className="grid gap-1 text-sm">
+                        {cabin.equipment.map((item, index) => (
+                          <li key={index} className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-primary" /> {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <Separator className="my-4" />
+                  </>
+                )}
                 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
@@ -476,9 +489,9 @@ const BookCabinPage = () => {
               <Button 
                 className="w-full" 
                 onClick={handleBookCabin}
-                disabled={!acceptTerms || !selectedShift || !date}
+                disabled={!acceptTerms || !selectedShift || !date || bookingLoading}
               >
-                Reservar Cabine
+                {bookingLoading ? "Processando..." : "Reservar Cabine"}
               </Button>
             </CardFooter>
           </Card>
