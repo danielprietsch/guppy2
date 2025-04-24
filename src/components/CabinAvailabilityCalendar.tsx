@@ -3,13 +3,8 @@ import * as React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
-import { Input } from "@/components/ui/input";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
+import { useNavigate } from "react-router-dom";
 
 interface CabinAvailabilityCalendarProps {
   selectedTurn: "morning" | "afternoon" | "evening";
@@ -23,150 +18,47 @@ interface CabinAvailabilityCalendarProps {
 }
 
 const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
-  selectedTurn,
   daysBooked,
-  onSelectDates,
-  selectedDates,
-  pricePerDay,
   onPriceChange,
   onStatusChange,
-  manuallyClosedDates = {}
+  manuallyClosedDates = {},
+  pricePerDay
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
-  const [editingPrice, setEditingPrice] = React.useState<{date: string; turn: string; price: number} | null>(null);
+  const navigate = useNavigate();
 
   const fmtDate = (date: Date) => format(date, "yyyy-MM-dd");
 
-  const modifiers = {
-    booked: (date: Date) =>
-      daysBooked[fmtDate(date)] && daysBooked[fmtDate(date)][selectedTurn],
-    selected: (date: Date) => selectedDates.includes(fmtDate(date)),
-    available: (date: Date) => 
-      !selectedDates.includes(fmtDate(date)) && 
-      !(daysBooked[fmtDate(date)] && daysBooked[fmtDate(date)][selectedTurn]) &&
-      !(manuallyClosedDates[fmtDate(date)] && manuallyClosedDates[fmtDate(date)][selectedTurn]),
-    manuallyClosed: (date: Date) =>
-      manuallyClosedDates[fmtDate(date)] && manuallyClosedDates[fmtDate(date)][selectedTurn]
-  };
-
-  const handleDayClick = (date: Date, turn: string) => {
-    const d = fmtDate(date);
-    if (daysBooked[d] && daysBooked[d][turn]) {
-      return;
-    }
-
-    // Se estiver disponível, marca como fechado manualmente
-    if (!(manuallyClosedDates[d] && manuallyClosedDates[d][turn])) {
-      onStatusChange?.(d, turn, true);
-    } else {
-      // Se estiver fechado manualmente, volta para disponível
-      onStatusChange?.(d, turn, false);
-    }
-  };
-
-  const handlePriceEdit = (date: string, turn: string, currentPrice: number) => {
-    setEditingPrice({ date, turn, price: currentPrice });
-  };
-
-  const handlePriceChange = (newPrice: string) => {
-    if (editingPrice && onPriceChange) {
-      const price = parseFloat(newPrice);
-      if (!isNaN(price) && price >= 0) {
-        onPriceChange(editingPrice.date, editingPrice.turn, price);
-      }
-      setEditingPrice(null);
+  const getTurnoLabel = (turno: string) => {
+    switch (turno) {
+      case "morning": return "Manhã";
+      case "afternoon": return "Tarde";
+      case "evening": return "Noite";
+      default: return turno;
     }
   };
 
   const renderDayContent = (day: Date) => {
     const dateStr = fmtDate(day);
-    const isBooked = {
-      morning: daysBooked[dateStr]?.morning || false,
-      afternoon: daysBooked[dateStr]?.afternoon || false,
-      evening: daysBooked[dateStr]?.evening || false,
-    };
-    
-    const isManuallyClosed = {
-      morning: manuallyClosedDates[dateStr]?.morning || false,
-      afternoon: manuallyClosedDates[dateStr]?.afternoon || false,
-      evening: manuallyClosedDates[dateStr]?.evening || false,
-    };
-
-    const turnos = [
-      { key: "morning", label: "Manhã" },
-      { key: "afternoon", label: "Tarde" },
-      { key: "evening", label: "Noite" }
-    ];
+    const turnos = ["morning", "afternoon", "evening"];
 
     return (
-      <div className="flex flex-col items-center w-full h-full min-h-[120px]">
-        <div className="text-sm mb-1 font-medium">{format(day, "d")}</div>
-        <div className="grid grid-cols-1 gap-1 w-full px-1">
-          {turnos.map(({ key, label }) => {
-            const isCurrentTurnSelected = selectedTurn === key;
-            return (
-              <Popover key={key}>
-                <PopoverTrigger asChild>
-                  <div
-                    className={cn(
-                      "h-8 w-full rounded-sm cursor-pointer transition-colors flex items-center justify-center text-xs font-medium",
-                      isBooked[key as keyof typeof isBooked]
-                        ? "bg-red-500 text-white"
-                        : isManuallyClosed[key as keyof typeof isManuallyClosed]
-                        ? "bg-yellow-300 text-gray-800"
-                        : "bg-green-500 hover:bg-green-600 text-white",
-                      "relative group"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isCurrentTurnSelected) {
-                        handleDayClick(day, key);
-                      }
-                    }}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      if (!isBooked[key as keyof typeof isBooked] && !isManuallyClosed[key as keyof typeof isManuallyClosed]) {
-                        handlePriceEdit(dateStr, key, pricePerDay);
-                      }
-                    }}
-                    title={`${label} - R$ ${pricePerDay}`}
-                  >
-                    {label}
-                    {editingPrice?.date === dateStr && editingPrice?.turn === key ? (
-                      <Input
-                        type="number"
-                        className="absolute inset-0 w-full h-full p-1 text-xs bg-white"
-                        value={editingPrice.price}
-                        onChange={(e) => handlePriceChange(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        autoFocus
-                        onBlur={() => setEditingPrice(null)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handlePriceChange((e.target as HTMLInputElement).value);
-                          }
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                </PopoverTrigger>
-                <PopoverContent className="w-fit p-2" side="right">
-                  <div className="text-xs">
-                    <p className="font-medium">{format(day, "dd/MM/yyyy", { locale: ptBR })}</p>
-                    <p>{label}</p>
-                    <p>R$ {pricePerDay}</p>
-                    <p>
-                      {isBooked[key as keyof typeof isBooked]
-                        ? "Reservado"
-                        : isManuallyClosed[key as keyof typeof isManuallyClosed]
-                        ? "Fechado manualmente"
-                        : "Disponível"}
-                    </p>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            );
-          })}
+      <div className="flex flex-col gap-2 p-2 min-h-[300px]">
+        <div className="text-sm font-medium">{format(day, "d")}</div>
+        <div className="grid gap-2">
+          {turnos.map((turno) => (
+            <TimeSlotCard
+              key={`${dateStr}-${turno}`}
+              turno={getTurnoLabel(turno)}
+              price={pricePerDay}
+              isBooked={daysBooked[dateStr]?.[turno] || false}
+              isManuallyClosed={manuallyClosedDates[dateStr]?.[turno] || false}
+              onPriceEdit={(newPrice) => onPriceChange?.(dateStr, turno, newPrice)}
+              onManualClose={() => onStatusChange?.(dateStr, turno, true)}
+              onRelease={() => onStatusChange?.(dateStr, turno, false)}
+              onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}
+            />
+          ))}
         </div>
       </div>
     );
@@ -174,62 +66,31 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
 
   return (
     <div className="space-y-4">
-      <div className="mb-4">
-        <span className="font-medium mr-2">Turno selecionado:</span>
-        <span>
-          {selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"}
-        </span>
-      </div>
       <Calendar
-        mode="multiple"
-        selected={selectedDates.map((d) => new Date(d))}
-        onDayClick={() => {}} // Desabilitamos o clique no dia inteiro
+        mode="single"
         month={viewMonth}
         onMonthChange={setViewMonth}
         locale={ptBR}
-        modifiers={modifiers}
         className="w-full rounded-md border"
         classNames={{
           months: "w-full",
           month: "w-full",
           table: "w-full border-collapse",
           head_cell: "text-muted-foreground font-normal",
-          cell: "h-[140px] w-full relative p-0 border border-border",
-          day: "h-[140px] w-full p-0 font-normal aria-selected:opacity-100",
+          cell: "h-[350px] w-full relative p-0 border border-border",
+          day: "h-[350px] w-full p-0 font-normal",
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-          day_outside: "opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
+          day_today: "bg-accent text-accent-foreground",
+          day_outside: "text-muted-foreground opacity-50",
           day_disabled: "text-muted-foreground opacity-50",
-          day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
           day_hidden: "invisible",
         }}
         components={{
-          DayContent: ({ date, displayMonth }) => {
-            const isOutsideMonth = displayMonth && date.getMonth() !== displayMonth.getMonth();
-            return isOutsideMonth ? (
-              <div className="text-xs opacity-50">{date.getDate()}</div>
-            ) : (
-              renderDayContent(date)
-            );
-          }
+          DayContent: ({ date }) => renderDayContent(date)
         }}
       />
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-1">
-          <span className="h-4 w-4 bg-green-500 rounded-full inline-block"></span>
-          <span>Disponível</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="h-4 w-4 bg-yellow-300 rounded-full inline-block"></span>
-          <span>Fechado manualmente</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <span className="h-4 w-4 bg-red-500 rounded-full inline-block"></span>
-          <span>Reservado</span>
-        </div>
-      </div>
     </div>
   );
 };
 
 export default CabinAvailabilityCalendar;
-
