@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Pencil } from "lucide-react";
+import { Check, Lock, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TimeSlotCardProps {
@@ -31,7 +31,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   const [animatePrice, setAnimatePrice] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Update local price when prop changes
   useEffect(() => {
     setPriceValue(price.toString());
   }, [price]);
@@ -51,14 +50,24 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     const newPrice = parseFloat(priceValue);
     if (!isNaN(newPrice) && newPrice > 0) {
       onPriceEdit(newPrice);
-      // Animate price after update
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
     } else {
-      // Reset to original price if invalid
       setPriceValue(price.toString());
     }
     setIsEditingPrice(false);
+  };
+
+  const adjustPrice = (increment: boolean) => {
+    const currentPrice = parseFloat(priceValue);
+    if (!isNaN(currentPrice)) {
+      const step = 5; // Ajuste de R$5 por clique
+      const newPrice = increment ? currentPrice + step : currentPrice - step;
+      if (newPrice > 0) {
+        setPriceValue(newPrice.toString());
+        setIsEditingPrice(true);
+      }
+    }
   };
 
   const getStatusColor = () => {
@@ -78,16 +87,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     setIsEditingPrice(true);
   };
 
-  const handleManualCloseButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onManualClose();
-  };
-
-  const handleReleaseButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onRelease();
-  };
-
   return (
     <div 
       className={cn(
@@ -103,7 +102,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         <div className="flex items-center gap-2 mb-1">
           <span className="text-white text-sm">R$</span>
           {isEditingPrice ? (
-            <div className="relative">
+            <div className="relative flex items-center gap-1">
               <Input
                 ref={inputRef}
                 type="number"
@@ -112,17 +111,39 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 onBlur={handlePriceSubmit}
                 onKeyDown={(e) => e.key === 'Enter' && handlePriceSubmit()}
                 onClick={(e) => e.stopPropagation()}
-                className="w-16 h-7 text-xs text-black pr-6 py-1 border border-white/50 focus:border-white transition-all"
+                className="w-20 h-7 text-xs text-black py-1 border border-white/50 focus:border-white transition-all"
               />
+              <div className="flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    adjustPrice(true);
+                  }}
+                  className="h-4 w-4 p-0 hover:bg-white/20 rounded transition-all flex items-center justify-center"
+                >
+                  <ArrowUp className="h-3 w-3 text-white hover:text-yellow-200" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    adjustPrice(false);
+                  }}
+                  className="h-4 w-4 p-0 hover:bg-white/20 rounded transition-all flex items-center justify-center"
+                >
+                  <ArrowDown className="h-3 w-3 text-white hover:text-yellow-200" />
+                </button>
+              </div>
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   handlePriceSubmit();
                 }}
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-5 w-5 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
+                className="h-7 w-7 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
               >
-                <Check className="h-3 w-3 text-green-600 hover:text-green-400 transition-colors" />
+                <Check className="h-4 w-4 text-green-600 hover:text-green-400 transition-colors" />
               </button>
             </div>
           ) : (
@@ -156,7 +177,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "secondary" : "default"}
               size="sm"
-              onClick={handleManualCloseButtonClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                onManualClose();
+              }}
               className="text-xs h-6 py-0 flex-1"
             >
               {isManuallyClosed ? "Fechado" : "Fechar"}
@@ -164,7 +188,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "default" : "secondary"}
               size="sm"
-              onClick={handleReleaseButtonClick}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRelease();
+              }}
               className="text-xs h-6 py-0 flex-1"
             >
               Liberar
@@ -175,3 +202,4 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
+
