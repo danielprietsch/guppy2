@@ -9,6 +9,7 @@ import { LocationsOverview } from "@/components/owner/LocationsOverview";
 import { LocationSettings } from "@/components/owner/LocationSettings";
 import { EmptyLocationState } from "@/components/owner/EmptyLocationState";
 import { LocationOverview } from "@/components/owner/LocationOverview";
+import { OwnerAddLocationModal } from "@/components/owner/OwnerAddLocationModal";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ const OwnerDashboardPage = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [activeTab, setActiveTab] = useState("locations");
   const [locationCabins, setLocationCabins] = useState<Cabin[]>([]);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -388,6 +390,12 @@ const OwnerDashboardPage = () => {
           </div>
         </div>
       )}
+      
+      <OwnerAddLocationModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        onLocationCreated={handleLocationCreated}
+      />
     </div>
   );
 };
