@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
 import { useLocationManagement } from "@/hooks/useLocationManagement";
@@ -33,6 +33,7 @@ const OwnerDashboardPage = () => {
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
+  // Verificação de sessão executada apenas uma vez ao montar o componente
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -82,22 +83,29 @@ const OwnerDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  // Carregar locais quando o usuário estiver disponível
-  useEffect(() => {
+  // Uso do useCallback para evitar recriações desnecessárias da função
+  const loadLocations = useCallback(() => {
     if (currentUser?.id && authChecked) {
       debugLog("OwnerDashboardPage: Carregando locais para o usuário:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
   }, [currentUser, authChecked, loadUserLocations]);
 
-  // Monitorar mudanças nos locais e cabines para debugging
+  // Carregar locais quando o usuário estiver disponível
   useEffect(() => {
-    debugLog("OwnerDashboardPage: Estado atualizado:", {
-      locaisCount: userLocations.length,
-      selectedLocation: selectedLocation?.name,
-      cabinesCount: locationCabins.length
-    });
-  }, [userLocations, selectedLocation, locationCabins]);
+    loadLocations();
+  }, [loadLocations]);
+  
+  // Monitorar mudanças nos locais e cabines para debugging com dependências explícitas
+  useEffect(() => {
+    if (selectedLocation) {
+      debugLog("OwnerDashboardPage: Estado atualizado:", {
+        locaisCount: userLocations.length,
+        selectedLocation: selectedLocation.name,
+        cabinesCount: locationCabins.length
+      });
+    }
+  }, [userLocations.length, selectedLocation, locationCabins.length]);
 
   const isLoading = userLoading || locationsLoading || !authChecked;
 
