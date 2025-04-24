@@ -74,7 +74,7 @@ export const LocationApprovals = () => {
             location_name: approval.locations.name,
             owner_name: "Desconhecido",
             owner_email: "Desconhecido",
-            status: approval.status || "PENDENTE",
+            status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
             created_at: approval.created_at,
             notes: approval.notes
           };
@@ -86,7 +86,7 @@ export const LocationApprovals = () => {
           location_name: approval.locations.name,
           owner_name: ownerData?.name || "Desconhecido",
           owner_email: ownerData?.email || "Desconhecido",
-          status: approval.status || "PENDENTE",
+          status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
           created_at: approval.created_at,
           notes: approval.notes
         };

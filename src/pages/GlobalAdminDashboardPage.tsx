@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PermissionsManager } from "@/components/admin/PermissionsManager";
 import { LocationApprovals } from "@/components/admin/LocationApprovals";
-import { AdminLocalRegistration } from "@/components/admin/AdminLocalRegistration";
+import { GlobalAdminRegistration } from "@/components/admin/GlobalAdminRegistration";
 
 const GlobalAdminDashboardPage = () => {
   const navigate = useNavigate();
