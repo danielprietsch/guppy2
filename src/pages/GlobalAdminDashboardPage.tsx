@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -9,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PermissionsManager } from "@/components/admin/PermissionsManager";
 import { LocationApprovals } from "@/components/admin/LocationApprovals";
-import { GlobalAdminRegistration } from "@/components/admin/GlobalAdminRegistration";
+import { UserRegistrationForm } from "@/components/admin/UserRegistrationForm";
 
 const GlobalAdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -140,10 +139,10 @@ const GlobalAdminDashboardPage = () => {
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="permissions">Permissões</TabsTrigger>
           <TabsTrigger value="approvals">Aprovações</TabsTrigger>
-          <TabsTrigger value="admin-register">Cadastro de Admin</TabsTrigger>
+          <TabsTrigger value="user-register">Cadastro de Usuários</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="overview">
           <Card>
             <CardHeader>
               <CardTitle>Dashboard do Administrador Global</CardTitle>
@@ -178,8 +177,8 @@ const GlobalAdminDashboardPage = () => {
           <LocationApprovals />
         </TabsContent>
         
-        <TabsContent value="admin-register">
-          <GlobalAdminRegistration />
+        <TabsContent value="user-register">
+          <UserRegistrationForm />
         </TabsContent>
       </Tabs>
     </div>
