@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -233,7 +234,7 @@ export const OwnerRegistrationForm: React.FC = () => {
               name="companyName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Empresa</FormLabel>
+                  <FormLabel>Nome da Empresa (opcional)</FormLabel>
                   <FormControl>
                     <Input placeholder="Empresa Ltda" {...field} />
                   </FormControl>
@@ -248,7 +249,7 @@ export const OwnerRegistrationForm: React.FC = () => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    {taxIdType === 'cpf' ? 'CPF' : 'CNPJ'}
+                    {taxIdType === 'cpf' ? 'CPF' : 'CNPJ'} (opcional)
                     <span 
                       className="text-blue-500 text-sm ml-2 cursor-pointer"
                       onClick={() => setTaxIdType(taxIdType === 'cpf' ? 'cnpj' : 'cpf')}
