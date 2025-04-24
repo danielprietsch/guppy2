@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,103 +14,7 @@ export const useLocationManagement = () => {
   const loadedLocations = useRef<Set<string>>(new Set());
   const loadedCabins = useRef<Set<string>>(new Set());
 
-  const loadUserLocations = useCallback(async (userId: string) => {
-    if (!userId) return;
-    
-    try {
-      setIsLoading(true);
-      debugLog("useLocationManagement: Loading locations for user", userId);
-      
-      const { data: locationsData, error: locationsError } = await supabase
-        .rpc('fetch_user_locations', { p_owner_id: userId });
-          
-      if (locationsError) {
-        debugError("useLocationManagement: Error fetching locations:", locationsError);
-        
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar seus locais. Por favor, tente novamente.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Handle null/undefined data
-      if (!locationsData) {
-        debugLog("useLocationManagement: No locations data returned");
-        setUserLocations([]);
-        return;
-      }
-      
-      // Ensure locationsData is treated as an array
-      const locationsArray = Array.isArray(locationsData) ? locationsData : [];
-      processLocationData(locationsArray);
-      
-    } catch (error) {
-      debugError("useLocationManagement: Error processing locations:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao processar locais",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const processLocationData = useCallback((locationsData: any[]) => {
-    if (locationsData && locationsData.length > 0) {
-      const transformedLocations: Location[] = locationsData.map(location => {
-        let openingHours = { open: "09:00", close: "18:00" };
-        
-        if (location.opening_hours) {
-          try {
-            const hoursData = typeof location.opening_hours === 'string' 
-              ? JSON.parse(location.opening_hours)
-              : location.opening_hours;
-            
-            if (typeof hoursData === 'object' && hoursData !== null) {
-              openingHours = {
-                open: typeof hoursData.open === 'string' ? hoursData.open : "09:00",
-                close: typeof hoursData.close === 'string' ? hoursData.close : "18:00"
-              };
-            }
-          } catch (e) {
-            debugError("useLocationManagement: Error parsing opening hours:", e);
-          }
-        }
-        
-        return {
-          id: location.id,
-          name: location.name,
-          address: location.address,
-          city: location.city,
-          state: location.state,
-          zipCode: location.zip_code,
-          cabinsCount: location.cabins_count || 0,
-          openingHours: openingHours,
-          amenities: location.amenities || [],
-          imageUrl: location.image_url || "",
-          description: location.description,
-          active: location.active
-        };
-      });
-      
-      debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
-      setUserLocations(transformedLocations);
-      
-      // Se não houver localização selecionada e temos localizações, selecione a primeira
-      if (!selectedLocation && transformedLocations.length > 0) {
-        debugLog("Setting first location as selected:", transformedLocations[0].name);
-        setSelectedLocation(transformedLocations[0]);
-        loadCabinsForLocation(transformedLocations[0].id);
-      }
-    } else {
-      debugLog("useLocationManagement: No locations found for user");
-      setUserLocations([]);
-    }
-  }, [selectedLocation, loadCabinsForLocation]);
-
+  // Defining loadCabinsForLocation first, before it's used
   const loadCabinsForLocation = useCallback(async (locationId: string) => {
     if (!locationId) {
       debugLog("useLocationManagement: No location ID provided for loading cabins");
@@ -224,6 +127,103 @@ export const useLocationManagement = () => {
       setIsLoading(false);
     }
   }, []);
+
+  const loadUserLocations = useCallback(async (userId: string) => {
+    if (!userId) return;
+    
+    try {
+      setIsLoading(true);
+      debugLog("useLocationManagement: Loading locations for user", userId);
+      
+      const { data: locationsData, error: locationsError } = await supabase
+        .rpc('fetch_user_locations', { p_owner_id: userId });
+          
+      if (locationsError) {
+        debugError("useLocationManagement: Error fetching locations:", locationsError);
+        
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar seus locais. Por favor, tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Handle null/undefined data
+      if (!locationsData) {
+        debugLog("useLocationManagement: No locations data returned");
+        setUserLocations([]);
+        return;
+      }
+      
+      // Ensure locationsData is treated as an array
+      const locationsArray = Array.isArray(locationsData) ? locationsData : [];
+      processLocationData(locationsArray);
+      
+    } catch (error) {
+      debugError("useLocationManagement: Error processing locations:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao processar locais",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const processLocationData = useCallback((locationsData: any[]) => {
+    if (locationsData && locationsData.length > 0) {
+      const transformedLocations: Location[] = locationsData.map(location => {
+        let openingHours = { open: "09:00", close: "18:00" };
+        
+        if (location.opening_hours) {
+          try {
+            const hoursData = typeof location.opening_hours === 'string' 
+              ? JSON.parse(location.opening_hours)
+              : location.opening_hours;
+            
+            if (typeof hoursData === 'object' && hoursData !== null) {
+              openingHours = {
+                open: typeof hoursData.open === 'string' ? hoursData.open : "09:00",
+                close: typeof hoursData.close === 'string' ? hoursData.close : "18:00"
+              };
+            }
+          } catch (e) {
+            debugError("useLocationManagement: Error parsing opening hours:", e);
+          }
+        }
+        
+        return {
+          id: location.id,
+          name: location.name,
+          address: location.address,
+          city: location.city,
+          state: location.state,
+          zipCode: location.zip_code,
+          cabinsCount: location.cabins_count || 0,
+          openingHours: openingHours,
+          amenities: location.amenities || [],
+          imageUrl: location.image_url || "",
+          description: location.description,
+          active: location.active
+        };
+      });
+      
+      debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
+      setUserLocations(transformedLocations);
+      
+      // Se não houver localização selecionada e temos localizações, selecione a primeira
+      if (!selectedLocation && transformedLocations.length > 0) {
+        debugLog("Setting first location as selected:", transformedLocations[0].name);
+        setSelectedLocation(transformedLocations[0]);
+        loadCabinsForLocation(transformedLocations[0].id);
+      }
+    } else {
+      debugLog("useLocationManagement: No locations found for user");
+      setUserLocations([]);
+    }
+  }, [selectedLocation, loadCabinsForLocation]);
 
   const handleLocationChange = useCallback(async (locationId: string) => {
     debugLog("useLocationManagement: Changing selected location to", locationId);
