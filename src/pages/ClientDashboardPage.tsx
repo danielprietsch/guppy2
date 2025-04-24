@@ -82,7 +82,7 @@ const ClientDashboardPage = () => {
           </Card>
           
           <Card className="bg-white shadow hover:shadow-md transition-all cursor-pointer" 
-                onClick={() => navigate("/providers")}>
+                onClick={() => navigate("/professionals")}>
             <CardContent className="p-6">
               <h3 className="font-medium text-lg mb-2">Descobrir Profissionais</h3>
               <p className="text-gray-500">Encontre profissionais disponíveis.</p>
@@ -103,4 +103,3 @@ const ClientDashboardPage = () => {
 };
 
 export default ClientDashboardPage;
-

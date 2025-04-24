@@ -47,7 +47,7 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
   const rating = 4.5;
 
   return (
-    <Link to={`/professionals/${professional.id}`}>
+    <Link to={`/professional/${professional.id}`}>
       <Card className="overflow-hidden hover:shadow-md transition-shadow">
         <div className="aspect-square overflow-hidden">
           <img
