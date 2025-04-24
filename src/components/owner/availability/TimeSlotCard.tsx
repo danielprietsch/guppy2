@@ -82,11 +82,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     }
   };
 
-  const handleEditButtonClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsEditingPrice(true);
-  };
-
   return (
     <div 
       className={cn(
@@ -110,7 +105,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 onChange={handlePriceChange}
                 onBlur={handlePriceSubmit}
                 onKeyDown={(e) => e.key === 'Enter' && handlePriceSubmit()}
-                onClick={(e) => e.stopPropagation()}
                 className="w-20 h-7 text-xs text-black py-1 border border-white/50 focus:border-white transition-all"
               />
               <div className="flex flex-col gap-1">
@@ -158,7 +152,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 <button
                   type="button"
                   className="h-5 w-5 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
-                  onClick={handleEditButtonClick}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingPrice(true);
+                  }}
                 >
                   <Pencil className="h-3 w-3 text-white hover:text-yellow-200 transition-colors" />
                 </button>
@@ -202,4 +199,3 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
-
