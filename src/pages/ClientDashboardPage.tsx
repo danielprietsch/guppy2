@@ -32,7 +32,7 @@ const ClientDashboardPage = () => {
           .single();
           
         if (error || !profile) {
-          console.error("Error fetching profile:", error);
+          console.error("Erro ao buscar perfil:", error);
           toast({
             title: "Erro",
             description: "Não foi possível carregar seu perfil.",
@@ -54,7 +54,7 @@ const ClientDashboardPage = () => {
         
         setUserName(profile.name || session.user.email?.split('@')[0] || "Cliente");
       } catch (error) {
-        console.error("Error checking authentication:", error);
+        console.error("Erro ao verificar autenticação:", error);
         toast({
           title: "Erro",
           description: "Erro ao verificar autenticação",

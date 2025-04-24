@@ -43,7 +43,7 @@ const ResetPasswordPage = () => {
       console.error("Erro ao redefinir senha:", error);
       toast({
         title: "Erro",
-        description: error.message,
+        description: "Ocorreu um erro ao redefinir sua senha. Por favor, tente novamente.",
         variant: "destructive"
       });
     } finally {
