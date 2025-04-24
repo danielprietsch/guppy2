@@ -51,6 +51,7 @@ const NavBar = () => {
           phoneNumber: profileData.phone_number,
         };
         
+        console.log("NavBar: User data loaded:", userData);
         setCurrentUser(userData);
       } catch (error) {
         console.error("Error checking auth:", error);
@@ -100,6 +101,10 @@ const NavBar = () => {
     }
   };
 
+  const navigateToSearch = () => {
+    navigate("/locations");
+  };
+
   return (
     <header className="border-b">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
@@ -117,13 +122,16 @@ const NavBar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden md:block">
-            <Link to="/search">
-              <Button size="icon" variant="outline">
-                <Search className="h-4 w-4" />
-                <span className="sr-only">Search</span>
-              </Button>
-            </Link>
+          <div className="block">
+            <Button 
+              onClick={navigateToSearch}
+              size="icon" 
+              variant="outline"
+              title="Pesquisar locais e cabines"
+            >
+              <Search className="h-4 w-4" />
+              <span className="sr-only">Pesquisar locais e cabines</span>
+            </Button>
           </div>
 
           {currentUser ? (
