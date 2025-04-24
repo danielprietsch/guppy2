@@ -1,3 +1,4 @@
+
 import AuthForm from "@/components/AuthForm";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -9,7 +10,6 @@ const LoginPage = () => {
   const navigate = useNavigate();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     const checkCurrentSession = async () => {
@@ -127,92 +127,6 @@ const LoginPage = () => {
     }
   };
 
-  const resetTestUserPassword = async () => {
-    const testEmail = "teste1@teste.com";
-    const newPassword = "123456";
-    
-    try {
-      setIsResettingPassword(true);
-      
-      console.log("Resetting password for test user:", testEmail);
-      
-      const { data, error: userError } = await supabase.auth.admin.listUsers();
-      
-      if (userError) {
-        console.error("Error listing users:", userError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível verificar se o usuário teste existe.",
-          variant: "destructive"
-        });
-        setIsResettingPassword(false);
-        return;
-      }
-      
-      const users = data?.users || [];
-      const testUser = users.find(u => u.email === testEmail);
-      
-      if (!testUser) {
-        console.log("Test user not found, creating one...");
-        
-        const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
-          email: testEmail,
-          password: newPassword,
-          email_confirm: true,
-          user_metadata: {
-            name: "Usuário Teste",
-            userType: "owner",
-            avatar_url: `https://ui-avatars.com/api/?name=Usuario+Teste&background=random`
-          }
-        });
-        
-        if (signUpError) {
-          console.error("Error creating test user:", signUpError);
-          toast({
-            title: "Erro",
-            description: "Não foi possível criar o usuário teste.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Usuário teste criado",
-            description: "O usuário teste1@teste.com foi criado com senha 123456.",
-          });
-        }
-      } else {
-        console.log("Test user exists, updating password...");
-        
-        const { error: resetError } = await supabase.auth.admin.updateUserById(
-          testUser.id,
-          { password: newPassword, email_confirm: true }
-        );
-        
-        if (resetError) {
-          console.error("Error updating test user password:", resetError);
-          toast({
-            title: "Erro",
-            description: "Não foi possível redefinir a senha do usuário teste.",
-            variant: "destructive"
-          });
-        } else {
-          toast({
-            title: "Senha redefinida",
-            description: "A senha do usuário teste1@teste.com foi redefinida para 123456.",
-          });
-        }
-      }
-    } catch (error: any) {
-      console.error("Error handling test user:", error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao tentar redefinir a senha.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsResettingPassword(false);
-    }
-  };
-
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       {authError && (
@@ -220,15 +134,6 @@ const LoginPage = () => {
           <AlertDescription>{authError}</AlertDescription>
         </Alert>
       )}
-      <div className="mb-4 flex justify-center">
-        <button 
-          onClick={resetTestUserPassword}
-          className="text-sm text-blue-600 hover:underline"
-          disabled={isResettingPassword}
-        >
-          {isResettingPassword ? "Redefinindo..." : "Redefinir senha do usuário teste"}
-        </button>
-      </div>
       <AuthForm mode="login" onSubmit={handleLogin} isLoading={isLoggingIn} />
     </div>
   );
