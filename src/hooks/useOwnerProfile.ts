@@ -47,7 +47,7 @@ export const useOwnerProfile = () => {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: userTypeFromMetadata,
+            userType: userTypeFromMetadata === 'owner' ? 'owner' : 'global_admin',
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };
@@ -90,7 +90,7 @@ export const useOwnerProfile = () => {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: userType,
+            userType: userType === 'owner' ? 'owner' : 'global_admin',
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };
