@@ -3,7 +3,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  userType: "client" | "provider" | "owner" | "global_admin";
+  userType: "client" | "professional" | "owner" | "global_admin";
   avatarUrl?: string | null;
   phoneNumber?: string | null;
   roles?: string[];

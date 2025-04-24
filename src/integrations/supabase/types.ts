@@ -54,7 +54,7 @@ export type Database = {
           date: string
           id: string
           price: number
-          provider_id: string | null
+          professional_id: string | null
           service_id: string | null
           status: string | null
           time: string
@@ -66,7 +66,7 @@ export type Database = {
           date: string
           id?: string
           price: number
-          provider_id?: string | null
+          professional_id?: string | null
           service_id?: string | null
           status?: string | null
           time: string
@@ -78,7 +78,7 @@ export type Database = {
           date?: string
           id?: string
           price?: number
-          provider_id?: string | null
+          professional_id?: string | null
           service_id?: string | null
           status?: string | null
           time?: string
@@ -93,7 +93,7 @@ export type Database = {
           date: string
           id: string
           price: number
-          provider_id: string | null
+          professional_id: string | null
           shift: string
           status: string | null
           updated_at: string | null
@@ -104,7 +104,7 @@ export type Database = {
           date: string
           id?: string
           price: number
-          provider_id?: string | null
+          professional_id?: string | null
           shift: string
           status?: string | null
           updated_at?: string | null
@@ -115,7 +115,7 @@ export type Database = {
           date?: string
           id?: string
           price?: number
-          provider_id?: string | null
+          professional_id?: string | null
           shift?: string
           status?: string | null
           updated_at?: string | null
@@ -271,7 +271,7 @@ export type Database = {
           created_at: string | null
           date: string | null
           id: string
-          provider_id: string | null
+          professional_id: string | null
           rating: number
           updated_at: string | null
         }
@@ -281,7 +281,7 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           id?: string
-          provider_id?: string | null
+          professional_id?: string | null
           rating: number
           updated_at?: string | null
         }
@@ -291,7 +291,7 @@ export type Database = {
           created_at?: string | null
           date?: string | null
           id?: string
-          provider_id?: string | null
+          professional_id?: string | null
           rating?: number
           updated_at?: string | null
         }
@@ -306,7 +306,7 @@ export type Database = {
           id: string
           name: string
           price: number
-          provider_id: string | null
+          professional_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -317,7 +317,7 @@ export type Database = {
           id?: string
           name: string
           price: number
-          provider_id?: string | null
+          professional_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -328,7 +328,7 @@ export type Database = {
           id?: string
           name?: string
           price?: number
-          provider_id?: string | null
+          professional_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
