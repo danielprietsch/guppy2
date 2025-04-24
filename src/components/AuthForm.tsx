@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Scissors, User, Briefcase, Shield } from "lucide-react";
+import { Scissors, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 type AuthFormMode = "login" | "register";
@@ -55,7 +56,9 @@ const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
       if (mode === "login") {
         await onSubmit({ email, password });
       } else {
-        await onSubmit({ name, email, password, userType });
+        // When registering, map 'provider' to 'professional' for database consistency
+        const mappedUserType = userType === 'provider' ? 'professional' : userType;
+        await onSubmit({ name, email, password, userType: mappedUserType });
       }
     } catch (error) {
       console.error(error);
