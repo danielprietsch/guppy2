@@ -1,72 +1,75 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Appointment } from "@/lib/types";
-import { appointments, users } from "@/lib/mock-data";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { Calendar, Clock, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [clientAppointments, setClientAppointments] = useState<Appointment[]>([]);
-  
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
+
   useEffect(() => {
-    // Check if user is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    
-    if (storedUser) {
-      const user = JSON.parse(storedUser) as User;
-      
-      // Check if user is a client
-      if (user.userType !== "client") {
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          toast({
+            title: "Acesso negado",
+            description: "Você precisa estar logado para acessar esta página.",
+            variant: "destructive",
+          });
+          navigate("/login");
+          return;
+        }
+
+        // Get user profile
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('name, user_type')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (error || !profile) {
+          console.error("Error fetching profile:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível carregar seu perfil.",
+            variant: "destructive",
+          });
+          return;
+        }
+          
+        // Check if user is client type
+        if (profile.user_type !== "client") {
+          toast({
+            title: "Acesso negado",
+            description: "Esta página é apenas para clientes.",
+            variant: "destructive",
+          });
+          navigate("/");
+          return;
+        }
+        
+        setUserName(profile.name || session.user.email?.split('@')[0] || "Cliente");
+      } catch (error) {
+        console.error("Error checking authentication:", error);
         toast({
-          title: "Acesso negado",
-          description: "Esta página é apenas para clientes.",
+          title: "Erro",
+          description: "Erro ao verificar autenticação",
           variant: "destructive",
         });
-        navigate("/login");
-        return;
+      } finally {
+        setLoading(false);
       }
-      
-      setCurrentUser(user);
-      
-      // Filter appointments for this client
-      const userAppointments = appointments.filter(
-        (appointment) => appointment.clientId === user.id
-      );
-      setClientAppointments(userAppointments);
-    } else {
-      toast({
-        title: "Acesso negado",
-        description: "Você precisa estar logado para acessar esta página.",
-        variant: "destructive",
-      });
-      navigate("/login");
-    }
+    };
+    
+    checkAuth();
   }, [navigate]);
 
-  // Helper function to get provider name from ID
-  const getProviderName = (providerId: string) => {
-    const provider = users.find((user) => user.id === providerId);
-    return provider ? provider.name : "Desconhecido";
-  };
-  
-  // Helper function to format date
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-    return new Date(dateString).toLocaleDateString("pt-BR", options);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast({
       title: "Logout realizado",
       description: "Você foi desconectado com sucesso.",
@@ -74,223 +77,56 @@ const ClientDashboardPage = () => {
     navigate("/login");
   };
 
-  if (!currentUser) {
-    return <div>Carregando...</div>;
+  if (loading) {
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
+          <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Olá, {currentUser.name}</h1>
-          <p className="mt-1 text-gray-500">Bem-vindo ao seu painel de controle</p>
+          <h1 className="text-3xl font-bold">Olá, {userName}</h1>
+          <p className="mt-1 text-gray-500">
+            Bem-vindo ao seu painel de cliente
+          </p>
         </div>
-        <Button
-          variant="outline"
-          className="mt-4 md:mt-0"
+        <button
+          className="mt-4 md:mt-0 px-4 py-2 border rounded"
           onClick={handleLogout}
         >
           Sair
-        </Button>
+        </button>
       </div>
       
       <div className="mt-8">
-        <Tabs defaultValue="appointments">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="appointments">Meus Agendamentos</TabsTrigger>
-            <TabsTrigger value="search">Buscar Profissionais</TabsTrigger>
-            <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
-          </TabsList>
+        <h2 className="text-2xl font-semibold mb-4">Dashboard do Cliente</h2>
+        <p className="text-muted-foreground mb-6">
+          Esta é uma página de exemplo para o painel do cliente.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-medium text-lg mb-2">Minhas Reservas</h3>
+            <p className="text-gray-500">Veja suas reservas e agendamentos.</p>
+          </div>
           
-          <TabsContent value="appointments">
-            <div className="grid gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Meus Agendamentos</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {clientAppointments.length > 0 ? (
-                    <div className="space-y-4">
-                      {clientAppointments.map((appointment) => (
-                        <div
-                          key={appointment.id}
-                          className="rounded-lg border p-4 flex items-center justify-between"
-                        >
-                          <div>
-                            <div className="font-medium">
-                              {getProviderName(appointment.providerId)}
-                            </div>
-                            <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-                              <Calendar className="h-4 w-4" />
-                              <span>{formatDate(appointment.date)}</span>
-                            </div>
-                            <div className="mt-0.5 flex items-center gap-1 text-sm text-gray-500">
-                              <Clock className="h-4 w-4" />
-                              <span>{appointment.time}</span>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-medium">
-                              R$ {appointment.price.toFixed(2)}
-                            </div>
-                            <div
-                              className={`mt-1 text-xs ${
-                                appointment.status === "confirmed"
-                                  ? "text-green-600"
-                                  : appointment.status === "pending"
-                                  ? "text-amber-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {appointment.status === "confirmed"
-                                ? "Confirmado"
-                                : appointment.status === "pending"
-                                ? "Pendente"
-                                : "Cancelado"}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <h3 className="font-medium">Nenhum agendamento encontrado</h3>
-                      <p className="mt-1 text-gray-500">
-                        Você ainda não possui nenhum agendamento.
-                      </p>
-                      <Button
-                        className="mt-4"
-                        onClick={() => navigate("/providers")}
-                      >
-                        Buscar Profissionais
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-medium text-lg mb-2">Descobrir Profissionais</h3>
+            <p className="text-gray-500">Encontre profissionais disponíveis.</p>
+          </div>
           
-          <TabsContent value="search">
-            <Card>
-              <CardHeader>
-                <CardTitle>Encontrar Profissionais</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border p-4">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-5 w-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="Buscar por nome, especialidade ou local"
-                      className="flex-1 border-0 bg-transparent p-0 focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-                  {users
-                    .filter((user) => user.userType === "provider")
-                    .slice(0, 6)
-                    .map((provider) => (
-                      <div
-                        key={provider.id}
-                        className="rounded-lg border overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => navigate(`/providers/${provider.id}`)}
-                      >
-                        <div className="aspect-square overflow-hidden">
-                          <img
-                            src={provider.avatarUrl}
-                            alt={provider.name}
-                            className="h-full w-full object-cover"
-                          />
-                        </div>
-                        <div className="p-4">
-                          <div className="font-medium">{provider.name}</div>
-                          <div className="mt-1 text-sm text-gray-500">
-                            {provider.specialties?.join(", ")}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-                <div className="text-center mt-6">
-                  <Button onClick={() => navigate("/providers")}>
-                    Ver Todos os Profissionais
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Meu Perfil</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="md:w-1/3">
-                    <div className="aspect-square overflow-hidden rounded-lg">
-                      {currentUser.avatarUrl ? (
-                        <img
-                          src={currentUser.avatarUrl}
-                          alt={currentUser.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-primary/10 flex items-center justify-center text-4xl text-primary">
-                          {currentUser.name.charAt(0)}
-                        </div>
-                      )}
-                    </div>
-                    <Button className="mt-4 w-full">Alterar Foto</Button>
-                  </div>
-                  <div className="md:w-2/3 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Nome Completo</label>
-                      <input
-                        type="text"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.name}
-                        readOnly
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <input
-                        type="email"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.email}
-                        readOnly
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Telefone</label>
-                      <input
-                        type="tel"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.phoneNumber || ""}
-                        placeholder="Adicionar telefone"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Tipo de Usuário</label>
-                      <input
-                        type="text"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.userType === "client" ? "Cliente" : "Prestador de Serviço"}
-                        readOnly
-                      />
-                    </div>
-                    <div className="pt-4">
-                      <Button>Salvar Alterações</Button>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          <div className="bg-white shadow rounded-lg p-6">
+            <h3 className="font-medium text-lg mb-2">Meu Perfil</h3>
+            <p className="text-gray-500">Atualize suas informações pessoais.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

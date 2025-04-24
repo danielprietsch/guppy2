@@ -1,12 +1,13 @@
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import NotFound from "@/pages/NotFound";
-import ProviderDashboard from "@/pages/dashboards/ProviderDashboard";
-import ClientDashboard from "@/pages/dashboards/ClientDashboard";
-import OwnerDashboard from "@/pages/dashboards/OwnerDashboard";
-import ProfilePage from "@/pages/ProfilePage";
+import ProviderDashboardPage from "@/pages/ProviderDashboardPage";
+import ClientDashboardPage from "@/pages/ClientDashboardPage";
+import OwnerDashboardPage from "@/pages/OwnerDashboardPage";
+import ProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 
 const router = createBrowserRouter([
@@ -29,15 +30,15 @@ const router = createBrowserRouter([
       },
       {
         path: "/provider/dashboard",
-        element: <ProviderDashboard />,
+        element: <ProviderDashboardPage />,
       },
       {
         path: "/client/dashboard",
-        element: <ClientDashboard />,
+        element: <ClientDashboardPage />,
       },
       {
         path: "/owner/dashboard",
-        element: <OwnerDashboard />,
+        element: <OwnerDashboardPage />,
       },
       {
         path: "/profile",
