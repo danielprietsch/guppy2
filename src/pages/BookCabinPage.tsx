@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -25,7 +24,6 @@ const BookCabinPage = () => {
   const [price, setPrice] = useState<number>(0);
   const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
 
-  // Fetch cabin and location data from Supabase
   useEffect(() => {
     const fetchCabinData = async () => {
       if (!id) {
@@ -36,7 +34,6 @@ const BookCabinPage = () => {
       try {
         debugLog(`BookCabinPage: Fetching cabin with id ${id}`);
         
-        // Fetch cabin
         const { data: cabinData, error: cabinError } = await supabase
           .from('cabins')
           .select('*')
@@ -55,11 +52,9 @@ const BookCabinPage = () => {
           return;
         }
 
-        // Transform cabin data to match Cabin type
         const transformedCabin = transformCabinData(cabinData);
         setCabin(transformedCabin);
 
-        // Fetch location for this cabin
         if (cabinData.location_id) {
           const { data: locationData, error: locationError } = await supabase
             .from('locations')
@@ -70,7 +65,6 @@ const BookCabinPage = () => {
           if (locationError) {
             debugError("BookCabinPage: Error fetching location:", locationError);
           } else if (locationData) {
-            // Transform location data to match Location type
             const transformedLocation = transformLocationData(locationData);
             setLocation(transformedLocation);
           }
@@ -85,7 +79,6 @@ const BookCabinPage = () => {
     fetchCabinData();
   }, [id]);
 
-  // Transform cabin data from Supabase to match Cabin type
   const transformCabinData = (cabinData: any): Cabin => {
     let availability = { morning: true, afternoon: true, evening: true };
     
@@ -133,7 +126,6 @@ const BookCabinPage = () => {
       debugError("BookCabinPage: Error parsing pricing data", e);
     }
 
-    // Calculate initial price based on default pricing data
     let cabinPrice = 0;
     try {
       if (pricingObject.defaultPricing && 
@@ -165,7 +157,6 @@ const BookCabinPage = () => {
     };
   };
 
-  // Transform location data from Supabase to match Location type
   const transformLocationData = (locationData: any): Location => {
     let openingHours = { open: "09:00", close: "18:00" };
     
@@ -209,14 +200,12 @@ const BookCabinPage = () => {
     };
   };
 
-  // Update price based on date (weekend vs weekday)
   useEffect(() => {
     if (date && cabin) {
       const day = date.getDay();
-      const isWeekend = day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+      const isWeekend = day === 0 || day === 6;
       setIsWeekend(isWeekend);
       
-      // Try to get price from cabin pricing data
       let newPrice = 0;
       
       if (cabin.pricing && typeof cabin.pricing === 'object') {
@@ -230,7 +219,6 @@ const BookCabinPage = () => {
         }
       }
       
-      // If no price found in cabin pricing, use default values
       if (newPrice === 0) {
         newPrice = isWeekend ? 150 : 100;
       }
@@ -243,7 +231,6 @@ const BookCabinPage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
-      // Verificar se o usuário está logado
       if (!session?.user) {
         toast({
           title: "Erro",
@@ -254,7 +241,7 @@ const BookCabinPage = () => {
         return;
       }
       
-      if (!date || !selectedShift) {
+      if (!date || !selectedShift || !cabin) {
         toast({
           title: "Erro",
           description: "Por favor, selecione uma data e um turno.",
@@ -272,9 +259,31 @@ const BookCabinPage = () => {
         return;
       }
 
-      // In a real implementation, this would create a booking record in Supabase
-      // For now, we'll just simulate a successful booking with a toast notification
-      
+      const bookingData = {
+        cabin_id: cabin.id,
+        professional_id: session.user.id,
+        date: format(date, 'yyyy-MM-dd'),
+        shift: selectedShift,
+        price: price,
+        status: 'confirmed'
+      };
+
+      const { data: booking, error } = await supabase
+        .from('bookings')
+        .insert(bookingData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating booking:', error);
+        toast({
+          title: "Erro ao fazer reserva",
+          description: "Ocorreu um erro ao processar sua reserva. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       toast({
         title: "Reserva realizada com sucesso!",
         description: `Você reservou a cabine para ${format(date, "dd 'de' MMMM", { locale: ptBR })} no turno da ${
@@ -282,9 +291,9 @@ const BookCabinPage = () => {
         }.`,
       });
       
-      // Redirect to appropriate dashboard based on user type
       navigate("/client/reservations");
     } catch (error) {
+      console.error('Error in handleBookCabin:', error);
       toast({
         title: "Erro ao fazer reserva",
         description: "Ocorreu um erro ao processar sua reserva. Tente novamente.",
@@ -328,7 +337,6 @@ const BookCabinPage = () => {
                   onSelect={setDate}
                   className="rounded-md border p-3 pointer-events-auto"
                   disabled={(date) => {
-                    // Disable dates in the past
                     const today = new Date();
                     today.setHours(0, 0, 0, 0);
                     return date < today;
