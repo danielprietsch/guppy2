@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -30,9 +29,11 @@ export const LocationsOverview = ({
 }: LocationsOverviewProps) => {
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
   const [isRequestingApproval, setIsRequestingApproval] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (selectedLocation) {
+      setIsLoading(true);
       fetchApprovalStatus();
     }
   }, [selectedLocation]);
@@ -67,21 +68,13 @@ export const LocationsOverview = ({
       }
     } catch (error) {
       debugError("LocationsOverview: Error in fetchApprovalStatus:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleRequestApproval = async () => {
     if (!selectedLocation) return;
-    
-    // Validate that there's at least one cabin
-    if (locationCabins.length === 0) {
-      toast({
-        title: "Erro",
-        description: "É necessário cadastrar pelo menos uma cabine antes de solicitar aprovação.",
-        variant: "destructive",
-      });
-      return;
-    }
     
     setIsRequestingApproval(true);
     try {
@@ -163,7 +156,9 @@ export const LocationsOverview = ({
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Status do Local:</span>
-                  {approvalStatus === "APROVADO" ? (
+                  {isLoading ? (
+                    <span className="text-sm text-muted-foreground">Carregando...</span>
+                  ) : approvalStatus === "APROVADO" ? (
                     <Badge className="bg-green-500">APROVADO</Badge>
                   ) : approvalStatus === "PENDENTE" ? (
                     <Badge variant="secondary" className="bg-yellow-500 text-white">AGUARDANDO APROVAÇÃO</Badge>

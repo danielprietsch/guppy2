@@ -35,6 +35,7 @@ export const LocationApprovals = () => {
       setLoading(true);
       
       // Fetch location approval requests with location and owner details
+      debugLog("LocationApprovals: Starting to fetch approval requests");
       const { data, error } = await supabase
         .from('admin_approvals')
         .select(`
@@ -135,6 +136,7 @@ export const LocationApprovals = () => {
         return;
       }
       
+      debugLog("LocationApprovals: Approving location:", locationId);
       const { error } = await supabase
         .from('admin_approvals')
         .update({ 
@@ -199,6 +201,7 @@ export const LocationApprovals = () => {
         return;
       }
       
+      debugLog("LocationApprovals: Rejecting approval:", approvalId);
       // For now, we'll just update the status to REJEITADO
       // In a real implementation, you might want to ask for rejection reason
       const { error } = await supabase

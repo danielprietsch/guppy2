@@ -57,6 +57,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     
     // If there's an existing rejected request that we're retrying
     if (existingApproval?.id) {
+      debugLog("triggerApprovalRequest: Updating existing rejected request:", existingApproval.id);
       const { error: updateError } = await supabase
         .from('admin_approvals')
         .update({
@@ -96,6 +97,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     }
     
     // Create a new approval request
+    debugLog("triggerApprovalRequest: Creating new approval request for location:", locationId);
     const { data, error } = await supabase
       .from('admin_approvals')
       .insert({
