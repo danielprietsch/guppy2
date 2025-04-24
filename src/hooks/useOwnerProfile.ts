@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -59,18 +58,18 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Se metadados não confirmarem status, usar função do supabase que evita recursão
+        // Se metadados não confirmarem status, usar RPC function do supabase que evita recursão
         try {
-          // Usar a função is_user_owner que evita recursão RLS
-          const { data: isOwner, error: checkError } = await supabase
-            .rpc('is_user_owner', { user_id: session.user.id });
+          // Usar a função check_owner_status que evita recursão RLS
+          const { data: ownerData, error: checkError } = await supabase
+            .rpc('check_owner_status', { user_id: session.user.id });
             
           if (checkError) {
             debugError("useOwnerProfile: Error checking user type:", checkError);
             throw checkError;
           }
           
-          if (!isOwner) {
+          if (!ownerData || ownerData.length === 0) {
             setError("Você não tem permissão para acessar esta página.");
             toast({
               title: "Acesso restrito",
@@ -82,13 +81,14 @@ export const useOwnerProfile = () => {
           }
           
           // Tipo de usuário confirmado como owner
+          const ownerInfo = ownerData[0];
           const userData: User = {
-            id: session.user.id,
-            name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-            email: session.user.email || "",
+            id: ownerInfo.id,
+            name: ownerInfo.name || session.user.email?.split('@')[0] || "Usuário",
+            email: ownerInfo.email || session.user.email || "",
             userType: "owner",
-            avatarUrl: userMetadata?.avatar_url,
-            phoneNumber: null
+            avatarUrl: ownerInfo.avatar_url,
+            phoneNumber: ownerInfo.phone_number
           };
           
           debugLog("useOwnerProfile: Setting currentUser from owner check:", userData);

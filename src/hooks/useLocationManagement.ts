@@ -14,11 +14,12 @@ export const useLocationManagement = () => {
     try {
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Usar consulta direta sem depender de políticas RLS que podem causar recursão
-      const { data: locationsData, error: locationsError } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('owner_id', userId);
+      // Use a direct, unrestricted query to avoid RLS recursion
+      // This SQL query bypasses RLS to directly find the user's locations
+      const { data: locationsData, error: locationsError } = await supabase.rpc(
+        'get_owner_locations',
+        { owner_user_id: userId }
+      );
           
       if (locationsError) {
         debugError("useLocationManagement: Error fetching locations:", locationsError);
