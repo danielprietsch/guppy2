@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -5,6 +6,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
+import { Button } from "@/components/ui/button";
+import { sendPasswordResetToGlobalAdmin } from "@/utils/globalAdminUtils";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -138,6 +141,10 @@ const LoginPage = () => {
     }
   };
 
+  const handleGlobalAdminReset = async () => {
+    await sendPasswordResetToGlobalAdmin();
+  };
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       {authError && (
@@ -146,6 +153,19 @@ const LoginPage = () => {
         </Alert>
       )}
       <AuthForm mode="login" onSubmit={handleLogin} isLoading={isLoggingIn} />
+      
+      <div className="mt-8 border-t pt-6">
+        <h3 className="text-md font-medium mb-2">Área do Administrador</h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Se você é o administrador global e está com dificuldades para acessar o sistema:
+        </p>
+        <Button 
+          variant="outline" 
+          onClick={handleGlobalAdminReset}
+        >
+          Redefinir senha do admin global
+        </Button>
+      </div>
     </div>
   );
 };
