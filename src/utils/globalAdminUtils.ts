@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
@@ -151,7 +152,7 @@ export const handleGlobalAdminRegistration = async (data: {
       // Let's manually insert into the profiles table with a valid user_type
       // If global_admin isn't a valid enum value, we'll use "admin" as a fallback
       const userType = Array.isArray(allowedUserTypes) && 
-                       allowedUserTypes.includes('global_admin') ? 
+                       (allowedUserTypes as string[]).includes('global_admin') ? 
                        'global_admin' : 'admin';
       
       try {
