@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -8,6 +7,8 @@ import { OwnerSidebar } from "@/components/owner/OwnerSidebar";
 import { CabinManagement } from "@/components/owner/CabinManagement";
 import { LocationsOverview } from "@/components/owner/LocationsOverview";
 import { LocationSettings } from "@/components/owner/LocationSettings";
+import { EmptyLocationState } from "@/components/owner/EmptyLocationState";
+import { LocationOverview } from "@/components/owner/LocationOverview";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -159,20 +160,17 @@ const OwnerDashboardPage = () => {
       }
       
       const transformedCabins: Cabin[] = data.map(cabin => {
-        // Initialize default structures for pricing
         const defaultPricing = {
           defaultPricing: {},
           specificDates: {}
         };
         
-        // Initialize default structure for availability
         const defaultAvailability = {
           morning: true,
           afternoon: true, 
           evening: true
         };
         
-        // Process pricing data
         let cabinPricing = defaultPricing;
         
         try {
@@ -193,7 +191,6 @@ const OwnerDashboardPage = () => {
           console.error("Error parsing pricing data for cabin:", cabin.id, e);
         }
         
-        // Process availability data
         let cabinAvailability = defaultAvailability;
         
         try {
@@ -213,7 +210,6 @@ const OwnerDashboardPage = () => {
           console.error("Error parsing availability data for cabin:", cabin.id, e);
         }
         
-        // Construct the cabin object with properly typed data
         return {
           id: cabin.id,
           locationId: cabin.location_id,
@@ -328,71 +324,70 @@ const OwnerDashboardPage = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
-        <OwnerSidebar
-          userLocations={userLocations}
-          selectedLocation={selectedLocation}
-          onLocationChange={handleLocationChange}
-          onLocationCreated={handleLocationCreated}
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-        />
-        
-        <div className="space-y-6">
-          {!selectedLocation && userLocations.length === 0 ? (
-            <div className="bg-muted p-6 rounded-lg text-center">
-              <h3 className="font-medium text-lg mb-2">Bem-vindo ao seu Dashboard</h3>
-              <p className="text-muted-foreground mb-4">
-                Para começar, crie seu primeiro local usando o seletor à esquerda.
-              </p>
-            </div>
-          ) : (
-            <>
-              {activeTab === "locations" && selectedLocation && (
-                <LocationsOverview 
-                  selectedLocation={selectedLocation}
-                  locationCabins={locationCabins} 
-                />
-              )}
-              
-              {activeTab === "cabins" && selectedLocation && (
-                <CabinManagement 
-                  selectedLocation={selectedLocation}
-                  locationCabins={locationCabins}
-                  onCabinAdded={handleCabinAdded}
-                  onCabinUpdated={handleCabinUpdated}
-                  onCabinDeleted={handleCabinDeleted}
-                />
-              )}
-              
-              {activeTab === "pricing" && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Configuração de Preços</h2>
-                  <p className="text-muted-foreground">Gerencie os preços das suas cabines.</p>
-                </div>
-              )}
-              
-              {activeTab === "equipment" && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Equipamentos</h2>
-                  <p className="text-muted-foreground">Gerencie os equipamentos disponíveis.</p>
-                </div>
-              )}
-              
-              {activeTab === "availability" && (
-                <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">Disponibilidade</h2>
-                  <p className="text-muted-foreground">Configure a disponibilidade das cabines.</p>
-                </div>
-              )}
-              
-              {activeTab === "settings" && selectedLocation && (
-                <LocationSettings selectedLocation={selectedLocation} />
-              )}
-            </>
-          )}
+      {!selectedLocation && userLocations.length === 0 ? (
+        <EmptyLocationState onAddLocation={() => setAddModalOpen(true)} />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
+          <OwnerSidebar
+            userLocations={userLocations}
+            selectedLocation={selectedLocation}
+            onLocationChange={handleLocationChange}
+            onLocationCreated={handleLocationCreated}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+          />
+          
+          <div className="space-y-6">
+            {selectedLocation && (
+              <>
+                <LocationOverview location={selectedLocation} />
+                
+                {activeTab === "locations" && (
+                  <LocationsOverview 
+                    selectedLocation={selectedLocation}
+                    locationCabins={locationCabins} 
+                  />
+                )}
+                
+                {activeTab === "cabins" && (
+                  <CabinManagement 
+                    selectedLocation={selectedLocation}
+                    locationCabins={locationCabins}
+                    onCabinAdded={handleCabinAdded}
+                    onCabinUpdated={handleCabinUpdated}
+                    onCabinDeleted={handleCabinDeleted}
+                  />
+                )}
+                
+                {activeTab === "pricing" && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Configuração de Preços</h2>
+                    <p className="text-muted-foreground">Gerencie os preços das suas cabines.</p>
+                  </div>
+                )}
+                
+                {activeTab === "equipment" && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Equipamentos</h2>
+                    <p className="text-muted-foreground">Gerencie os equipamentos disponíveis.</p>
+                  </div>
+                )}
+                
+                {activeTab === "availability" && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Disponibilidade</h2>
+                    <p className="text-muted-foreground">Configure a disponibilidade das cabines.</p>
+                  </div>
+                )}
+                
+                {activeTab === "settings" && selectedLocation && (
+                  <LocationSettings selectedLocation={selectedLocation} />
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
