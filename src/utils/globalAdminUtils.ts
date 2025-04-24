@@ -9,7 +9,6 @@ export const sendPasswordResetToGlobalAdmin = async () => {
   try {
     debugLog("Sending password reset to global admin");
     
-    // Explicitly specify the redirect URL to ensure it works correctly
     const { data, error } = await supabase.auth.resetPasswordForEmail(
       adminEmail, 
       {
@@ -45,52 +44,28 @@ export const sendPasswordResetToGlobalAdmin = async () => {
   }
 };
 
-// Alternative approach - create a new admin user if one doesn't exist
-export const recreateGlobalAdmin = async () => {
+// Helper function to check if an email is the global admin email
+export const isGlobalAdminEmail = (email: string): boolean => {
+  return email === 'guppyadmin@nuvemtecnologia.com';
+};
+
+// Modified function to handle global admin registration
+export const handleGlobalAdminRegistration = async (data: { 
+  email: string;
+  password: string;
+  name: string;
+}) => {
   try {
-    debugLog("Attempting to recreate global admin user");
+    debugLog("Attempting to register global admin user");
     
-    // First, check if the user already exists
-    const { data, error: fetchError } = await supabase.auth.admin.listUsers({
-      page: 1,
-      perPage: 100 // Increased to make sure we capture all users
-    });
-    
-    if (fetchError) {
-      debugError("Error checking if admin exists:", fetchError);
-      throw fetchError;
-    }
-    
-    // Check if admin email exists in the returned users
-    const adminExists = data?.users && Array.isArray(data.users) && 
-      data.users.some(user => {
-        // Type guard to ensure we can safely access user properties
-        if (!user || typeof user !== 'object') return false;
-        
-        // Use type narrowing to safely check and access the email property
-        if ('email' in user) {
-          const userWithEmail = user as { email: unknown };
-          if (typeof userWithEmail.email === 'string') {
-            return userWithEmail.email === 'guppyadmin@nuvemtecnologia.com';
-          }
-        }
-        return false;
-      });
-    
-    // If user exists, try password reset
-    if (adminExists) {
-      return sendPasswordResetToGlobalAdmin();
-    }
-    
-    // Create new user
     const { data: signUpData, error } = await supabase.auth.signUp({
-      email: 'guppyadmin@nuvemtecnologia.com',
-      password: `Admin${Date.now().toString().slice(-6)}!`,
+      email: data.email,
+      password: data.password,
       options: {
         data: {
-          name: 'Global Admin',
+          name: data.name,
           userType: 'global_admin',
-          avatar_url: `https://ui-avatars.com/api/?name=Global+Admin&background=random`
+          avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
         }
       }
     });
@@ -105,10 +80,10 @@ export const recreateGlobalAdmin = async () => {
       return false;
     }
     
-    debugLog("Global admin created successfully");
+    debugLog("Global admin registered successfully");
     toast({
-      title: "Admin Global criado",
-      description: "Um email de confirmação foi enviado para guppyadmin@nuvemtecnologia.com com instruções para acesso."
+      title: "Admin Global registrado",
+      description: "Sua conta foi criada com sucesso. Verifique seu email para confirmar o cadastro."
     });
     
     return true;

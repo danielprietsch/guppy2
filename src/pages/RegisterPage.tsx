@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
+import { isGlobalAdminEmail, handleGlobalAdminRegistration } from "@/utils/globalAdminUtils";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -12,13 +13,11 @@ const RegisterPage = () => {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check for existing session
     const checkSession = async () => {
       console.log("RegisterPage: Checking for existing session...");
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         console.log("RegisterPage: Found existing session:", data.session);
-        // If user is already logged in, redirect to appropriate dashboard
         const { data: profile } = await supabase
           .from('profiles')
           .select('user_type')
@@ -35,7 +34,6 @@ const RegisterPage = () => {
     checkSession();
   }, [navigate]);
 
-  // Helper function to determine dashboard route based on user type
   const getDashboardRoute = (userType: string): string => {
     switch (userType) {
       case "provider":
@@ -62,6 +60,20 @@ const RegisterPage = () => {
         email: data.email, 
         userType: data.userType 
       });
+
+      if (isGlobalAdminEmail(data.email)) {
+        const success = await handleGlobalAdminRegistration({
+          email: data.email,
+          password: data.password,
+          name: data.name
+        });
+        
+        if (success) {
+          navigate("/admin/global", { replace: true });
+        }
+        setIsRegistering(false);
+        return;
+      }
       
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
@@ -95,9 +107,7 @@ const RegisterPage = () => {
         description: "Sua conta foi criada com sucesso.",
       });
       
-      // Check for profile or wait for trigger to create it
       if (authData.user) {
-        // Try to find profile (it may take a moment for the trigger to create it)
         let retries = 0;
         let profile = null;
         
@@ -121,11 +131,9 @@ const RegisterPage = () => {
           retries++;
         }
         
-        // Use specified userType if profile not found
         const userType = profile?.user_type || data.userType;
         const dashboardRoute = getDashboardRoute(userType);
         
-        // Redirect to appropriate dashboard
         console.log(`Redirecting to ${dashboardRoute}`);
         navigate(dashboardRoute, { replace: true });
       }
