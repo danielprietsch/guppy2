@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Lock, Pencil, ArrowUp, ArrowDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { debugLog } from "@/utils/debugLogger";
+import { debugLog, debugAreaLog } from "@/utils/debugLogger";
 
 interface TimeSlotCardProps {
   turno: string;
@@ -33,10 +33,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    debugAreaLog('PRICE_EDIT', 'Price prop updated:', price);
     setPriceValue(price.toString());
   }, [price]);
 
   useEffect(() => {
+    debugAreaLog('PRICE_EDIT', 'Edit mode changed:', isEditingPrice);
     if (isEditingPrice && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
@@ -44,17 +46,20 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   }, [isEditingPrice]);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debugAreaLog('PRICE_EDIT', 'Price input changed:', e.target.value);
     setPriceValue(e.target.value);
   };
 
   const handlePriceSubmit = () => {
     const newPrice = parseFloat(priceValue);
+    debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
       onPriceEdit(newPrice);
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
     } else {
+      debugAreaLog('PRICE_EDIT', 'Invalid price, resetting:', priceValue);
       setPriceValue(price.toString());
     }
     setIsEditingPrice(false);
@@ -62,14 +67,18 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
 
   const adjustPrice = (increment: boolean) => {
     const currentPrice = parseFloat(priceValue);
+    debugAreaLog('PRICE_EDIT', 'Adjusting price:', { currentPrice, increment });
     
     if (!isNaN(currentPrice)) {
       const step = 5; // Ajuste de R$5 por clique
       const newPrice = increment ? currentPrice + step : currentPrice - step;
       
       if (newPrice > 0) {
+        debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         setPriceValue(newPrice.toString());
-        setIsEditingPrice(true);
+        onPriceEdit(newPrice); // Aplica diretamente o preço ajustado
+        setAnimatePrice(true);
+        setTimeout(() => setAnimatePrice(false), 700);
       }
     }
   };
@@ -158,6 +167,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   className="h-5 w-5 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
+                    debugAreaLog('PRICE_EDIT', 'Entering edit mode');
                     setIsEditingPrice(true);
                   }}
                 >
