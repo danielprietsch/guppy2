@@ -1,9 +1,9 @@
+
 import { useState } from "react";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle
 } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import { Location, Cabin } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface AvailabilitySettingsProps {
   selectedLocation: Location | null;
@@ -28,23 +29,7 @@ export const AvailabilitySettings = ({
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [pricePerDay, setPricePerDay] = useState<number>(selectedCabin?.price || 100);
   
-  const [daysBooked, setDaysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({
-    [format(new Date(), "yyyy-MM-dd")]: { 
-      morning: true,
-      afternoon: false,
-      evening: false
-    },
-    [format(new Date(Date.now() + 86400000), "yyyy-MM-dd")]: {
-      morning: false,
-      afternoon: true,
-      evening: false
-    },
-    [format(new Date(Date.now() + 86400000 * 2), "yyyy-MM-dd")]: {
-      morning: false,
-      afternoon: false,
-      evening: true
-    }
-  });
+  const [daysBooked, setDaysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
 
   const handleCabinChange = (cabinId: string) => {
     const cabin = locationCabins.find(c => c.id === cabinId);
@@ -97,7 +82,7 @@ export const AvailabilitySettings = ({
     setPricePerDay(price);
     toast({
       title: "Preço atualizado",
-      description: `O preço para ${format(new Date(date), "dd/MM/yyyy")} (${
+      description: `O preço para ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} (${
         turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
       }) foi atualizado para R$ ${price}.`,
     });
@@ -108,7 +93,7 @@ export const AvailabilitySettings = ({
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>Configuração de Disponibilidade - {selectedLocation?.name}</CardTitle>
         <CardDescription>
@@ -117,7 +102,7 @@ export const AvailabilitySettings = ({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
-          <div>
+          <div className="w-full">
             <div className="mb-4">
               <label htmlFor="cabin-selector" className="block text-sm font-medium mb-2">
                 Selecione uma cabine
@@ -147,14 +132,16 @@ export const AvailabilitySettings = ({
             </div>
 
             {selectedCabin && (
-              <CabinAvailabilityCalendar
-                selectedTurn={selectedTurn}
-                daysBooked={daysBooked}
-                onSelectDates={setSelectedDates}
-                selectedDates={selectedDates}
-                pricePerDay={pricePerDay}
-                onPriceChange={handlePriceUpdate}
-              />
+              <div className="w-full overflow-x-auto">
+                <CabinAvailabilityCalendar
+                  selectedTurn={selectedTurn}
+                  daysBooked={daysBooked}
+                  onSelectDates={setSelectedDates}
+                  selectedDates={selectedDates}
+                  pricePerDay={pricePerDay}
+                  onPriceChange={handlePriceUpdate}
+                />
+              </div>
             )}
           </div>
 
@@ -163,7 +150,7 @@ export const AvailabilitySettings = ({
             
             <div className="mb-4">
               <label htmlFor="price-input" className="block text-sm font-medium mb-2">
-                Preço por dia (R$)
+                Preço por turno (R$)
               </label>
               <input
                 id="price-input"
@@ -181,7 +168,7 @@ export const AvailabilitySettings = ({
               <p>{selectedCabin?.name}</p>
               
               <p className="font-medium mt-3">Turno selecionado:</p>
-              <p className="capitalize">{selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"}</p>
+              <p>{selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"}</p>
               
               <p className="font-medium mt-3">Dias selecionados:</p>
               <p>{selectedDates.length} dia(s)</p>
@@ -195,7 +182,7 @@ export const AvailabilitySettings = ({
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground mb-4">
-                    * Os valores são calculados por dia e por turno selecionado
+                    * Os valores são calculados por turno selecionado
                   </p>
                 </>
               )}

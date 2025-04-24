@@ -1,6 +1,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import {
@@ -8,14 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-export interface CabinAvailability {
-  date: string;
-  turn: "morning" | "afternoon" | "evening";
-  status: "available" | "booked";
-}
 
 interface CabinAvailabilityCalendarProps {
   selectedTurn: "morning" | "afternoon" | "evening";
@@ -88,23 +82,29 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       evening: selectedTurn === "evening" && selectedDates.includes(dateStr),
     };
 
+    const turnos = [
+      { key: "morning", label: "Manhã" },
+      { key: "afternoon", label: "Tarde" },
+      { key: "evening", label: "Noite" }
+    ];
+
     return (
-      <div className="flex flex-col items-center w-full h-full min-h-[100px]">
-        <div className="text-xs mb-1 font-medium">{format(day, "d")}</div>
-        <div className="grid grid-cols-1 gap-2 w-full px-2">
-          {["morning", "afternoon", "evening"].map((turn) => {
-            const isCurrentTurnSelected = selectedTurn === turn;
+      <div className="flex flex-col items-center w-full h-full min-h-[120px]">
+        <div className="text-sm mb-1 font-medium">{format(day, "d")}</div>
+        <div className="grid grid-cols-1 gap-1 w-full px-1">
+          {turnos.map(({ key, label }) => {
+            const isCurrentTurnSelected = selectedTurn === key;
             return (
-              <Popover key={turn}>
+              <Popover key={key}>
                 <PopoverTrigger asChild>
                   <div
                     className={cn(
-                      "h-6 w-full rounded-sm cursor-pointer transition-colors",
-                      isBooked[turn as keyof typeof isBooked]
-                        ? "bg-red-500"
-                        : isSelected[turn as keyof typeof isSelected]
-                        ? "bg-primary"
-                        : "bg-green-500 hover:bg-green-600",
+                      "h-8 w-full rounded-sm cursor-pointer transition-colors flex items-center justify-center text-xs font-medium",
+                      isBooked[key as keyof typeof isBooked]
+                        ? "bg-red-500 text-white"
+                        : isSelected[key as keyof typeof isSelected]
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-green-500 hover:bg-green-600 text-white",
                       "relative group"
                     )}
                     onClick={(e) => {
@@ -115,16 +115,17 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                     }}
                     onDoubleClick={(e) => {
                       e.stopPropagation();
-                      if (!isBooked[turn as keyof typeof isBooked]) {
-                        handlePriceEdit(dateStr, turn, pricePerDay);
+                      if (!isBooked[key as keyof typeof isBooked]) {
+                        handlePriceEdit(dateStr, key, pricePerDay);
                       }
                     }}
-                    title={`${turn.charAt(0).toUpperCase() + turn.slice(1)} - R$ ${pricePerDay}`}
+                    title={`${label} - R$ ${pricePerDay}`}
                   >
-                    {editingPrice?.date === dateStr && editingPrice?.turn === turn ? (
+                    {label}
+                    {editingPrice?.date === dateStr && editingPrice?.turn === key ? (
                       <Input
                         type="number"
-                        className="w-full h-full p-0 text-xs"
+                        className="absolute inset-0 w-full h-full p-1 text-xs bg-white"
                         value={editingPrice.price}
                         onChange={(e) => handlePriceChange(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
@@ -141,8 +142,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                 </PopoverTrigger>
                 <PopoverContent className="w-fit p-2" side="right">
                   <div className="text-xs">
-                    <p className="font-medium">{format(day, "dd/MM/yyyy")}</p>
-                    <p className="capitalize">{turn}</p>
+                    <p className="font-medium">{format(day, "dd/MM/yyyy", { locale: ptBR })}</p>
+                    <p>{label}</p>
                     <p>R$ {pricePerDay}</p>
                   </div>
                 </PopoverContent>
@@ -158,7 +159,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     <div className="space-y-4">
       <div className="mb-4">
         <span className="font-medium mr-2">Turno selecionado:</span>
-        <span className="capitalize">
+        <span>
           {selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"}
         </span>
       </div>
@@ -168,6 +169,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         onDayClick={handleDayClick}
         month={viewMonth}
         onMonthChange={setViewMonth}
+        locale={ptBR}
         modifiers={modifiers}
         className="w-full rounded-md border"
         classNames={{
@@ -175,8 +177,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           month: "w-full",
           table: "w-full border-collapse",
           head_cell: "text-muted-foreground font-normal",
-          cell: "h-[120px] w-full relative p-0 border border-border",
-          day: "h-[120px] w-full p-0 font-normal aria-selected:opacity-100",
+          cell: "h-[140px] w-full relative p-0 border border-border",
+          day: "h-[140px] w-full p-0 font-normal aria-selected:opacity-100",
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
           day_outside: "opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
           day_disabled: "text-muted-foreground opacity-50",
@@ -214,15 +216,13 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {selectedDates.map((date) => (
               <div key={date} className="text-sm bg-primary/10 rounded-md p-2 flex justify-between items-center">
-                <span>{format(new Date(date), "dd/MM/yyyy")}</span>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-6 w-6 p-0"
+                <span>{format(new Date(date), "dd/MM/yyyy", { locale: ptBR })}</span>
+                <button 
+                  className="h-6 w-6 p-0 hover:bg-gray-200 rounded-full"
                   onClick={() => onSelectDates(selectedDates.filter(d => d !== date))}
                 >
                   ×
-                </Button>
+                </button>
               </div>
             ))}
           </div>
