@@ -80,7 +80,7 @@ export const useOwnerProfile = () => {
         }
         
         // Fix type issue: ensure userType is one of the allowed values
-        const userTypeFromProfile = profileData.user_type;
+        const userTypeFromProfile = profileData.user_type as string;
         let validUserType: "owner" | "professional" | "client" | "global_admin";
         
         // Check if the profile data contains a valid user_type and assign the appropriate type
