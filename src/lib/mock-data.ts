@@ -1,72 +1,6 @@
-import { User, Location, Cabin, Service, Booking, Appointment, Review } from "./types";
+import { Location, Cabin, Service, Booking, Appointment, Review } from "./types";
 
-// Usuários mantêm informações gerais, só alterando cidade se for apresentada explicitamente — usuários são genéricos.
-
-export const users: User[] = [
-  {
-    id: "1",
-    name: "Ana Silva",
-    email: "ana.silva@example.com",
-    userType: "professional",
-    phoneNumber: "(71) 98765-4321",
-    avatarUrl: "https://randomuser.me/api/portraits/women/1.jpg",
-    specialties: ["Cabelereiro", "Colorista"]
-  },
-  {
-    id: "2",
-    name: "Carlos Oliveira",
-    email: "carlos.oliveira@example.com",
-    userType: "professional",
-    phoneNumber: "(71) 91234-5678",
-    avatarUrl: "https://randomuser.me/api/portraits/men/2.jpg",
-    specialties: ["Barbeiro", "Barba Designer"]
-  },
-  {
-    id: "3",
-    name: "Mariana Santos",
-    email: "mariana.santos@example.com",
-    userType: "professional",
-    phoneNumber: "(71) 99876-5432",
-    avatarUrl: "https://randomuser.me/api/portraits/women/3.jpg",
-    specialties: ["Manicure", "Pedicure"]
-  },
-  {
-    id: "4",
-    name: "João Costa",
-    email: "joao.costa@example.com",
-    userType: "client",
-    phoneNumber: "(71) 98888-7777",
-    avatarUrl: "https://randomuser.me/api/portraits/men/4.jpg"
-  },
-  {
-    id: "5",
-    name: "Fernanda Lima",
-    email: "fernanda.lima@example.com",
-    userType: "client",
-    phoneNumber: "(71) 97777-6666",
-    avatarUrl: "https://randomuser.me/api/portraits/women/5.jpg"
-  },
-  {
-    id: "6",
-    name: "Roberto Almeida",
-    email: "roberto.almeida@example.com",
-    userType: "owner",
-    phoneNumber: "(71) 96666-5555",
-    avatarUrl: "https://randomuser.me/api/portraits/men/6.jpg",
-    ownedLocationIds: ["1", "2"]
-  },
-  {
-    id: "7",
-    name: "Patricia Gomes",
-    email: "patricia.gomes@example.com",
-    userType: "owner",
-    phoneNumber: "(71) 95555-4444",
-    avatarUrl: "https://randomuser.me/api/portraits/women/7.jpg",
-    ownedLocationIds: ["3", "4"]
-  }
-];
-
-// LOCAIS TODOS EM SALVADOR/IMBUÍ + novo local "CCI Loja 12"
+// Mantendo apenas os dados mock que ainda são necessários em outras partes do sistema
 export const locations: Location[] = [
   {
     id: "1",
@@ -109,7 +43,6 @@ export const locations: Location[] = [
   }
 ];
 
-// CABINES – associadas ao local correto, sempre com endereço em Imbuí/Salvador
 export const cabins: Cabin[] = [
   {
     id: "1",
@@ -231,7 +164,6 @@ export const services: Service[] = [
   }
 ];
 
-// BOOKINGS mantêm associações funcionais
 export const bookings: Booking[] = [
   {
     id: "1",

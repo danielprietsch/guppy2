@@ -1,21 +1,35 @@
 
 import React, { useState } from "react";
-import { users } from "@/lib/mock-data";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { User } from "@/lib/types";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter users to only include professionals
-  const professionals: User[] = users.filter((user) => user.userType === "professional");
-  console.log("Found professionals:", professionals.length);
+  const { data: professionals = [], isLoading } = useQuery({
+    queryKey: ['professionals'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_type', 'professional');
+      
+      if (error) {
+        console.error('Error fetching professionals:', error);
+        return [];
+      }
+      
+      return data as User[];
+    }
+  });
   
   // Filter professionals based on search query
   const filteredProfessionals = professionals.filter(professional => 
-    professional.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    professional.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (professional.specialties && professional.specialties.some(specialty => 
       specialty.toLowerCase().includes(searchQuery.toLowerCase())
     ))
@@ -42,20 +56,28 @@ const ProfessionalsPage = () => {
         />
       </div>
       
-      <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {filteredProfessionals.length > 0 ? (
-          filteredProfessionals.map((professional) => (
-            <ProfessionalCard key={professional.id} professional={professional} />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <h3 className="text-lg font-medium">Nenhum profissional encontrado</h3>
-            <p className="mt-1 text-gray-500">
-              Tente ajustar sua busca ou remover filtros
-            </p>
-          </div>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="mt-12 text-center">
+          <p>Carregando profissionais...</p>
+        </div>
+      ) : (
+        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {filteredProfessionals.length > 0 ? (
+            filteredProfessionals.map((professional) => (
+              <ProfessionalCard key={professional.id} professional={professional} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <h3 className="text-lg font-medium">Nenhum profissional encontrado</h3>
+              <p className="mt-1 text-gray-500">
+                {searchQuery 
+                  ? "Tente ajustar sua busca ou remover filtros"
+                  : "Não há profissionais cadastrados no momento"}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
