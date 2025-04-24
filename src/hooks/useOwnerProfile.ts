@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -37,16 +36,20 @@ export const useOwnerProfile = () => {
         
         debugLog("useOwnerProfile: Session found, checking user type");
         
-        // Use check_owner_status function instead of is_user_owner to avoid RLS recursion
-        const { data: ownerData, error: ownerCheckError } = await supabase
-          .rpc('check_owner_status', { user_id: session.user.id });
+        // Query for the profile data directly instead of using RPC
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .eq('user_type', 'owner')
+          .single();
           
-        if (ownerCheckError) {
-          debugError("useOwnerProfile: Error checking owner status:", ownerCheckError);
-          throw ownerCheckError;
+        if (profileError) {
+          debugError("useOwnerProfile: Error checking owner status:", profileError);
+          throw profileError;
         }
         
-        if (!ownerData) {
+        if (!profileData) {
           debugLog("useOwnerProfile: User is not an owner");
           if (isMounted) {
             setError("Você não tem permissão para acessar esta página.");
@@ -64,21 +67,21 @@ export const useOwnerProfile = () => {
         let userType: "owner" | "professional" | "client" | "global_admin" = "owner"; // Default to owner
         
         // Check if the profile data contains a valid user_type
-        if (ownerData.user_type === "owner" || 
-            ownerData.user_type === "professional" || 
-            ownerData.user_type === "client" || 
-            ownerData.user_type === "global_admin") {
-          userType = ownerData.user_type as "owner" | "professional" | "client" | "global_admin";
+        if (profileData.user_type === "owner" || 
+            profileData.user_type === "professional" || 
+            profileData.user_type === "client" || 
+            profileData.user_type === "global_admin") {
+          userType = profileData.user_type as "owner" | "professional" | "client" | "global_admin";
         }
         
         // User is confirmed as owner
         const userData: User = {
-          id: ownerData.id,
-          name: ownerData.name || session.user.email?.split('@')[0] || "Usuário",
-          email: ownerData.email || session.user.email || "",
+          id: profileData.id,
+          name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
+          email: profileData.email || session.user.email || "",
           userType: userType,
-          avatarUrl: ownerData.avatar_url,
-          phoneNumber: ownerData.phone_number
+          avatarUrl: profileData.avatar_url,
+          phoneNumber: profileData.phone_number
         };
         
         if (isMounted) {
