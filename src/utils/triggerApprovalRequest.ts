@@ -34,7 +34,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     
     const userId = sessionData.session.user.id;
     
-    // Step 1: First verify location ownership using the security definer function
+    // Step 1: Verify location ownership using the security definer function
     // This completely bypasses RLS and avoids recursion
     const { data: isOwner, error: ownershipError } = await supabase
       .rpc('check_location_ownership', { 
