@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -73,10 +72,18 @@ const RegisterPage = () => {
         });
         
         if (success) {
+          toast({
+            title: "Administrador global registrado com sucesso",
+            description: "Redirecionando para o dashboard de administrador global"
+          });
           navigate("/admin/global", { replace: true });
+          setIsRegistering(false);
+          return Promise.resolve();
+        } else {
+          setAuthError("Erro ao registrar administrador global");
+          setIsRegistering(false);
+          return Promise.reject(new Error("Erro ao registrar administrador global"));
         }
-        setIsRegistering(false);
-        return;
       }
       
       const { data: authData, error } = await supabase.auth.signUp({

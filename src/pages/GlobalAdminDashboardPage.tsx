@@ -28,19 +28,39 @@ const GlobalAdminDashboardPage = () => {
           return;
         }
 
+        debugLog("GlobalAdminDashboardPage: Session found, checking if user is admin");
+        
+        // First check user metadata for quick access
+        const userTypeFromMetadata = session.user.user_metadata?.userType;
+        debugLog("GlobalAdminDashboardPage: User type from metadata:", userTypeFromMetadata);
+        
+        if (userTypeFromMetadata === "global_admin") {
+          debugLog("GlobalAdminDashboardPage: User is global_admin according to metadata");
+          setUserName(session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador");
+          setLoading(false);
+          return;
+        }
+
+        // If not in metadata, check profile
         const { data: profile, error } = await supabase
           .from('profiles')
           .select('name, user_type')
           .eq('id', session.user.id)
           .single();
           
-        if (error || !profile) {
+        if (error) {
           debugError("GlobalAdminDashboardPage: Error fetching profile:", error);
+          toast({
+            title: "Erro ao carregar perfil",
+            description: "Não foi possível verificar suas credenciais.",
+            variant: "destructive",
+          });
+          navigate("/login");
           return;
         }
           
-        if (profile.user_type !== "global_admin") {
-          debugLog("GlobalAdminDashboardPage: Non-admin user attempting to access");
+        if (!profile || profile.user_type !== "global_admin") {
+          debugLog("GlobalAdminDashboardPage: Non-admin user attempting to access:", profile?.user_type);
           toast({
             title: "Acesso negado",
             description: "Esta página é apenas para administradores globais.",
@@ -50,9 +70,10 @@ const GlobalAdminDashboardPage = () => {
           return;
         }
         
-        setUserName(profile.name || "Administrador");
+        setUserName(profile.name || session.user.email?.split('@')[0] || "Administrador");
       } catch (error) {
         debugError("GlobalAdminDashboardPage: Authentication error:", error);
+        navigate("/login");
       } finally {
         setLoading(false);
       }
@@ -90,12 +111,13 @@ const GlobalAdminDashboardPage = () => {
             Painel do Administrador Global
           </p>
         </div>
-        <button
-          className="mt-4 md:mt-0 px-4 py-2 border rounded"
+        <Button
           onClick={handleLogout}
+          variant="outline"
+          className="mt-4 md:mt-0"
         >
           Sair
-        </button>
+        </Button>
       </div>
       
       <div className="mt-8">
@@ -105,19 +127,19 @@ const GlobalAdminDashboardPage = () => {
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-card shadow rounded-lg p-6">
             <h3 className="font-medium text-lg mb-2">Usuários</h3>
-            <p className="text-gray-500">Gerenciar usuários e permissões.</p>
+            <p className="text-muted-foreground">Gerenciar usuários e permissões.</p>
           </div>
           
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-card shadow rounded-lg p-6">
             <h3 className="font-medium text-lg mb-2">Configurações</h3>
-            <p className="text-gray-500">Configurações do sistema.</p>
+            <p className="text-muted-foreground">Configurações do sistema.</p>
           </div>
           
-          <div className="bg-white shadow rounded-lg p-6">
+          <div className="bg-card shadow rounded-lg p-6">
             <h3 className="font-medium text-lg mb-2">Relatórios</h3>
-            <p className="text-gray-500">Visualizar relatórios do sistema.</p>
+            <p className="text-muted-foreground">Visualizar relatórios do sistema.</p>
           </div>
         </div>
       </div>

@@ -21,7 +21,7 @@ const LoginPage = () => {
           console.log("LoginPage: Session found, user is authenticated:", session.user);
           
           // Get user type from metadata first as a fallback
-          const userType = session.user.user_metadata?.userType || "client";
+          const userTypeFromMetadata = session.user.user_metadata?.userType || "client";
           
           // Try to get from profile if possible
           try {
@@ -32,7 +32,9 @@ const LoginPage = () => {
               .maybeSingle();
               
             if (profile) {
+              console.log("LoginPage: Found profile with user_type:", profile.user_type);
               const dashboardRoute = getDashboardRoute(profile.user_type);
+              console.log("LoginPage: Redirecting to dashboard route:", dashboardRoute);
               navigate(dashboardRoute, { replace: true });
               return;
             }
@@ -40,8 +42,10 @@ const LoginPage = () => {
             console.error("Error fetching profile:", error);
           }
           
-          // Fallback to metadata
-          const dashboardRoute = getDashboardRoute(userType);
+          // Fallback to metadata if profile not found or error occurs
+          console.log("LoginPage: Using metadata user type:", userTypeFromMetadata);
+          const dashboardRoute = getDashboardRoute(userTypeFromMetadata);
+          console.log("LoginPage: Redirecting to dashboard route (fallback):", dashboardRoute);
           navigate(dashboardRoute, { replace: true });
         } else {
           console.log("LoginPage: No active session found");
@@ -55,6 +59,7 @@ const LoginPage = () => {
   }, [navigate]);
 
   const getDashboardRoute = (userType: string): string => {
+    console.log("LoginPage: Getting dashboard route for user type:", userType);
     switch (userType) {
       case "global_admin":
         return "/admin/global";
@@ -105,12 +110,14 @@ const LoginPage = () => {
             .maybeSingle();
             
           if (profile) {
+            console.log("Login: Found profile with user_type:", profile.user_type);
             const dashboardRoute = getDashboardRoute(profile.user_type);
             console.log(`Redirecting to ${dashboardRoute} (from profile)`);
             navigate(dashboardRoute, { replace: true });
           } else {
             // Fallback to metadata
             const userType = authData.user.user_metadata?.userType || "client";
+            console.log("Login: No profile found, using metadata user_type:", userType);
             const dashboardRoute = getDashboardRoute(userType);
             console.log(`Redirecting to ${dashboardRoute} (from metadata)`);
             navigate(dashboardRoute, { replace: true });
@@ -120,6 +127,7 @@ const LoginPage = () => {
           
           // Fallback to metadata if profile fetch fails
           const userType = authData.user.user_metadata?.userType || "client";
+          console.log("Login: Error fetching profile, using metadata user_type:", userType);
           const dashboardRoute = getDashboardRoute(userType);
           console.log(`Redirecting to ${dashboardRoute} (fallback)`);
           navigate(dashboardRoute, { replace: true });
