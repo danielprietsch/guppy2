@@ -85,6 +85,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                 handleDayClick(day);
               }
             }}
+            title="Manhã"
           />
           <div 
             className={cn(
@@ -101,6 +102,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                 handleDayClick(day);
               }
             }}
+            title="Tarde"
           />
           <div 
             className={cn(
@@ -117,6 +119,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
                 handleDayClick(day);
               }
             }}
+            title="Noite"
           />
         </div>
       </div>

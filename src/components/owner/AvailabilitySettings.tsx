@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +11,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { Location, Cabin } from "@/lib/types";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
+import { format } from "date-fns";
 
 interface AvailabilitySettingsProps {
   selectedLocation: Location | null;
@@ -20,20 +24,81 @@ export const AvailabilitySettings = ({
   selectedLocation, 
   locationCabins 
 }: AvailabilitySettingsProps) => {
-  const handleToggleCabinAvailability = (cabinId: string, period: "morning" | "afternoon" | "evening") => {
-    toast({
-      title: "Disponibilidade atualizada",
-      description: `A disponibilidade da cabine foi atualizada para o período: ${
-        period === "morning" ? "Manhã" : period === "afternoon" ? "Tarde" : "Noite"
-      }`,
-    });
+  const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(locationCabins[0] || null);
+  const [selectedTurn, setSelectedTurn] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [selectedDates, setSelectedDates] = useState<string[]>([]);
+  const [pricePerDay, setPricePerDay] = useState<number>(selectedCabin?.price || 100);
+  
+  // Mock data for cabin bookings - in a real app this would come from the database
+  const [daysBooked, setDaysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({
+    [format(new Date(), "yyyy-MM-dd")]: { 
+      morning: true,
+      afternoon: false,
+      evening: false
+    },
+    [format(new Date(Date.now() + 86400000), "yyyy-MM-dd")]: {
+      morning: false,
+      afternoon: true,
+      evening: false
+    },
+    [format(new Date(Date.now() + 86400000 * 2), "yyyy-MM-dd")]: {
+      morning: false,
+      afternoon: false,
+      evening: true
+    }
+  });
+
+  const handleCabinChange = (cabinId: string) => {
+    const cabin = locationCabins.find(c => c.id === cabinId);
+    if (cabin) {
+      setSelectedCabin(cabin);
+      setPricePerDay(cabin.price || 100);
+    }
+  };
+
+  const handleTurnChange = (turn: "morning" | "afternoon" | "evening") => {
+    setSelectedTurn(turn);
+    // Reset selections when changing turn
+    setSelectedDates([]);
   };
 
   const handleSaveAvailability = () => {
+    if (!selectedCabin) return;
+    
+    // In a real app, you would save this data to the database
+    const updatedBookings = { ...daysBooked };
+    
+    selectedDates.forEach(date => {
+      if (!updatedBookings[date]) {
+        updatedBookings[date] = {
+          morning: false,
+          afternoon: false,
+          evening: false
+        };
+      }
+      updatedBookings[date][selectedTurn] = true;
+    });
+    
+    setDaysBooked(updatedBookings);
+    setSelectedDates([]);
+    
     toast({
       title: "Disponibilidade salva",
-      description: "A disponibilidade das cabines foi atualizada com sucesso.",
+      description: `As datas selecionadas foram configuradas para o turno ${
+        selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"
+      }.`,
     });
+  };
+
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value > 0) {
+      setPricePerDay(value);
+    }
+  };
+
+  const calculateTotalPrice = () => {
+    return selectedDates.length * pricePerDay;
   };
 
   return (
@@ -41,58 +106,103 @@ export const AvailabilitySettings = ({
       <CardHeader>
         <CardTitle>Configuração de Disponibilidade - {selectedLocation?.name}</CardTitle>
         <CardDescription>
-          Defina a disponibilidade das cabines por período
+          Configure a disponibilidade das cabines por períodos e dias
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <table className="w-full">
-          <thead>
-            <tr>
-              <th className="text-left">Cabine</th>
-              <th className="text-center">Manhã</th>
-              <th className="text-center">Tarde</th>
-              <th className="text-center">Noite</th>
-            </tr>
-          </thead>
-          <tbody>
-            {locationCabins.map((cabin) => (
-              <tr key={cabin.id} className="border-t">
-                <td className="py-3">{cabin.name}</td>
-                <td className="text-center">
-                  <Button
-                    variant={cabin.availability.morning ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleToggleCabinAvailability(cabin.id, "morning")}
-                  >
-                    {cabin.availability.morning ? "Disponível" : "Indisponível"}
-                  </Button>
-                </td>
-                <td className="text-center">
-                  <Button
-                    variant={cabin.availability.afternoon ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleToggleCabinAvailability(cabin.id, "afternoon")}
-                  >
-                    {cabin.availability.afternoon ? "Disponível" : "Indisponível"}
-                  </Button>
-                </td>
-                <td className="text-center">
-                  <Button
-                    variant={cabin.availability.evening ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleToggleCabinAvailability(cabin.id, "evening")}
-                  >
-                    {cabin.availability.evening ? "Disponível" : "Indisponível"}
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
+          <div>
+            <div className="mb-4">
+              <label htmlFor="cabin-selector" className="block text-sm font-medium mb-2">
+                Selecione uma cabine
+              </label>
+              <select 
+                id="cabin-selector"
+                className="w-full border rounded-md p-2"
+                onChange={(e) => handleCabinChange(e.target.value)}
+                value={selectedCabin?.id || ""}
+              >
+                {locationCabins.map((cabin) => (
+                  <option key={cabin.id} value={cabin.id}>
+                    {cabin.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <Tabs defaultValue="morning" onValueChange={(v) => handleTurnChange(v as any)}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="morning">Manhã</TabsTrigger>
+                  <TabsTrigger value="afternoon">Tarde</TabsTrigger>
+                  <TabsTrigger value="evening">Noite</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {selectedCabin && (
+              <CabinAvailabilityCalendar
+                selectedTurn={selectedTurn}
+                daysBooked={daysBooked}
+                onSelectDates={setSelectedDates}
+                selectedDates={selectedDates}
+              />
+            )}
+          </div>
+
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-lg font-medium mb-4">Resumo e Preço</h3>
+            
+            <div className="mb-4">
+              <label htmlFor="price-input" className="block text-sm font-medium mb-2">
+                Preço por dia (R$)
+              </label>
+              <input
+                id="price-input"
+                type="number"
+                className="w-full border rounded-md p-2"
+                value={pricePerDay}
+                onChange={handlePriceChange}
+                min="1"
+                step="1"
+              />
+            </div>
+            
+            <div className="mb-6">
+              <p className="font-medium">Cabine selecionada:</p>
+              <p>{selectedCabin?.name}</p>
+              
+              <p className="font-medium mt-3">Turno selecionado:</p>
+              <p className="capitalize">{selectedTurn === "morning" ? "Manhã" : selectedTurn === "afternoon" ? "Tarde" : "Noite"}</p>
+              
+              <p className="font-medium mt-3">Dias selecionados:</p>
+              <p>{selectedDates.length} dia(s)</p>
+              
+              {selectedDates.length > 0 && (
+                <>
+                  <div className="border-t border-b py-3 my-3">
+                    <div className="flex justify-between">
+                      <span>Subtotal ({selectedDates.length} dias):</span>
+                      <span>R$ {calculateTotalPrice().toFixed(2)}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    * Os valores são calculados por dia e por turno selecionado
+                  </p>
+                </>
+              )}
+            </div>
+            
+            <Button 
+              onClick={handleSaveAvailability} 
+              className="w-full"
+              disabled={selectedDates.length === 0}
+            >
+              Salvar configuração
+            </Button>
+          </div>
+        </div>
       </CardContent>
-      <CardFooter>
-        <Button onClick={handleSaveAvailability}>Salvar Disponibilidade</Button>
-      </CardFooter>
     </Card>
   );
 };
