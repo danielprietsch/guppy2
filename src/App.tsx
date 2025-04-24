@@ -11,7 +11,7 @@ import OwnerProfilePage from "@/pages/OwnerProfilePage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import HomePage from "@/pages/HomePage";
 import LocationsPage from "@/pages/LocationsPage";
-import ProfessionalsPage from "@/pages/ProvidersPage";
+import ProfessionalsPage from "@/pages/ProfessionalsPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
@@ -20,6 +20,7 @@ import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
 import GlobalAdminProfilePage from "@/pages/GlobalAdminProfilePage";
 import ProfessionalProfilePage from "@/pages/ProfessionalProfilePage";
+import ProfessionalDetailPage from "@/pages/ProfessionalDetailPage";
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,10 @@ const router = createBrowserRouter([
       {
         path: "/professional/profile",
         element: <ProfessionalProfilePage />,
+      },
+      {
+        path: "/professional/:id",
+        element: <ProfessionalDetailPage />,
       },
       {
         path: "/client/dashboard",
