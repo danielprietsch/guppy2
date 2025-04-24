@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -15,6 +14,8 @@ import { useState } from "react";
 import { triggerApprovalRequest } from "@/utils/triggerApprovalRequest";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 interface LocationsOverviewProps {
   selectedLocation: Location | null;
@@ -39,14 +40,33 @@ export const LocationsOverview = ({
   const fetchApprovalStatus = async () => {
     if (!selectedLocation) return;
     
-    const { data, error } = await supabase
-      .from('admin_approvals')
-      .select('status')
-      .eq('location_id', selectedLocation.id)
-      .maybeSingle();
+    try {
+      debugLog("LocationsOverview: Fetching approval status for location", selectedLocation.id);
+      const { data, error } = await supabase
+        .from('admin_approvals')
+        .select('status')
+        .eq('location_id', selectedLocation.id)
+        .maybeSingle();
+        
+      if (error) {
+        debugError("LocationsOverview: Error fetching approval status:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível verificar o status de aprovação do local.",
+          variant: "destructive",
+        });
+        return;
+      }
       
-    if (!error && data) {
-      setApprovalStatus(data.status);
+      if (data) {
+        debugLog("LocationsOverview: Approval status found:", data.status);
+        setApprovalStatus(data.status);
+      } else {
+        debugLog("LocationsOverview: No approval status found");
+        setApprovalStatus(null);
+      }
+    } catch (error) {
+      debugError("LocationsOverview: Error in fetchApprovalStatus:", error);
     }
   };
 
@@ -55,12 +75,23 @@ export const LocationsOverview = ({
     
     setIsRequestingApproval(true);
     try {
+      debugLog("LocationsOverview: Requesting approval for location", selectedLocation.id);
       const result = await triggerApprovalRequest(selectedLocation.id);
+      debugLog("LocationsOverview: Approval request result:", result);
+      
       if (result.success) {
+        // Immediate update for better UX
+        setApprovalStatus("PENDENTE");
+        // Then fetch from server to confirm
         await fetchApprovalStatus();
       }
     } catch (error) {
-      console.error("Error requesting approval:", error);
+      debugError("LocationsOverview: Error requesting approval:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao solicitar a aprovação. Por favor, tente novamente.",
+        variant: "destructive",
+      });
     } finally {
       setIsRequestingApproval(false);
     }
@@ -133,7 +164,7 @@ export const LocationsOverview = ({
                   )}
                 </div>
                 
-                {!approvalStatus && (
+                {(!approvalStatus || approvalStatus === "REJEITADO") && (
                   <Button 
                     onClick={handleRequestApproval}
                     disabled={isRequestingApproval}

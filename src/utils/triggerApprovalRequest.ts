@@ -8,6 +8,8 @@ import { debugLog, debugError } from "@/utils/debugLogger";
  */
 export const triggerApprovalRequest = async (locationId: string) => {
   try {
+    debugLog("triggerApprovalRequest: Starting approval request for location", locationId);
+    
     // Check if there's already an approval request
     const { data: existingApproval, error: checkError } = await supabase
       .from('admin_approvals')
@@ -43,13 +45,42 @@ export const triggerApprovalRequest = async (locationId: string) => {
       return { success: false, message: "already-pending" };
     }
     
+    // If there's an existing rejected request that we're retrying
+    if (existingApproval?.id) {
+      const { error: updateError } = await supabase
+        .from('admin_approvals')
+        .update({
+          status: "PENDENTE",
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingApproval.id);
+        
+      if (updateError) {
+        debugError("triggerApprovalRequest: Error updating approval request:", updateError);
+        toast({
+          title: "Erro",
+          description: "Não foi possível solicitar a aprovação do local.",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+      
+      toast({
+        title: "Sucesso",
+        description: "Solicitação de aprovação enviada com sucesso.",
+      });
+      
+      return { success: true };
+    }
+    
     // Create a new approval request
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('admin_approvals')
       .insert({
         location_id: locationId,
         status: "PENDENTE"
-      });
+      })
+      .select();
       
     if (error) {
       debugError("triggerApprovalRequest: Error creating approval request:", error);
@@ -60,6 +91,8 @@ export const triggerApprovalRequest = async (locationId: string) => {
       });
       return { success: false };
     }
+    
+    debugLog("triggerApprovalRequest: Approval request created successfully", data);
     
     toast({
       title: "Sucesso",
