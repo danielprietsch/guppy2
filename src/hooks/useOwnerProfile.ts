@@ -10,6 +10,7 @@ export const useOwnerProfile = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     debugLog("useOwnerProfile: Initializing");
@@ -65,6 +66,7 @@ export const useOwnerProfile = () => {
             
           if (userTypeError) {
             debugError("useOwnerProfile: Error checking user type:", userTypeError);
+            setError("Ocorreu um erro ao verificar seu perfil.");
             toast({
               title: "Erro",
               description: "Ocorreu um erro ao verificar seu perfil.",
@@ -76,6 +78,7 @@ export const useOwnerProfile = () => {
           
           // Verificar se o tipo de usuário está na lista de tipos permitidos
           if (!allowedUserTypes.includes(userType)) {
+            setError("Você não tem permissão para acessar esta página.");
             toast({
               title: "Acesso restrito",
               description: "Você não tem permissão para acessar esta página.",
@@ -99,6 +102,7 @@ export const useOwnerProfile = () => {
           setIsLoading(false);
         } catch (error) {
           debugError("useOwnerProfile: Error in profile verification:", error);
+          setError("Ocorreu um erro ao verificar seu perfil.");
           toast({
             title: "Erro",
             description: "Ocorreu um erro ao verificar seu perfil.",
@@ -108,6 +112,7 @@ export const useOwnerProfile = () => {
         }
       } catch (error) {
         debugError("useOwnerProfile: Error checking auth status:", error);
+        setError("Ocorreu um erro ao verificar sua autenticação.");
         toast({
           title: "Erro",
           description: "Ocorreu um erro ao verificar sua autenticação.",
@@ -143,5 +148,5 @@ export const useOwnerProfile = () => {
     };
   }, [navigate]);
 
-  return { currentUser, isLoading, setCurrentUser };
+  return { currentUser, isLoading, error, setCurrentUser };
 };

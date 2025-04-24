@@ -9,12 +9,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LocationApprovals } from "@/components/admin/LocationApprovals";
 import { PermissionsManager } from "@/components/admin/PermissionsManager";
 import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileForm";
+import { User } from "@/lib/types";
 
 const AdminDashboardPage = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("locations");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -32,6 +34,8 @@ const AdminDashboardPage = () => {
           navigate("/login");
           return;
         }
+        
+        debugLog("AdminDashboardPage: Session found, user:", session.user);
         
         const { data: isGlobalAdmin, error: adminCheckError } = await supabase
           .rpc('is_global_admin', { user_id: session.user.id });
@@ -54,6 +58,27 @@ const AdminDashboardPage = () => {
         
         debugLog("AdminDashboardPage: User is confirmed as admin");
         setIsAdmin(true);
+        
+        // Fetch user profile data
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profileError) {
+          debugError("AdminDashboardPage: Error fetching user profile:", profileError);
+        } else if (profileData) {
+          // Create user object from profile data
+          setCurrentUser({
+            id: profileData.id,
+            name: profileData.name || session.user.email?.split('@')[0] || "Admin",
+            email: profileData.email || session.user.email || "",
+            userType: "global_admin",
+            avatarUrl: profileData.avatar_url,
+            phoneNumber: profileData.phone_number
+          });
+        }
       } catch (error) {
         debugError("AdminDashboardPage: Error:", error);
         toast({
@@ -135,7 +160,12 @@ const AdminDashboardPage = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <GlobalAdminProfileForm />
+              {currentUser && (
+                <GlobalAdminProfileForm 
+                  currentUser={currentUser} 
+                  setCurrentUser={setCurrentUser} 
+                />
+              )}
             </CardContent>
           </Card>
         </TabsContent>

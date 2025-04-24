@@ -4,8 +4,8 @@ import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 
 // Main Layout Components
-import { NavBar } from "@/components/NavBar";
-import { Footer } from "@/components/Footer";
+import NavBar from "@/components/NavBar";
+import Footer from "@/components/Footer";
 
 // Pages
 import HomePage from "./HomePage";

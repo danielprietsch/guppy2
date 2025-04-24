@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,7 +56,8 @@ const ProfessionalProfilePage = () => {
           userType: userData.user_type as "professional",
           avatarUrl: userData.avatar_url,
           phoneNumber: userData.phone_number,
-          specialties: userData.specialties || [],
+          // If userData.specialties is undefined, use an empty array instead
+          specialties: Array.isArray(userData.specialties) ? userData.specialties : [],
         });
       } catch (error) {
         console.error("Error loading profile:", error);
@@ -149,14 +151,18 @@ const ProfessionalProfilePage = () => {
               <div className="space-y-2">
                 <Label>Especialidades</Label>
                 <div className="flex flex-wrap gap-2">
-                  {profile?.specialties?.map((specialty, i) => (
-                    <span
-                      key={i}
-                      className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
-                    >
-                      {specialty}
-                    </span>
-                  ))}
+                  {profile?.specialties && profile.specialties.length > 0 ? (
+                    profile.specialties.map((specialty, i) => (
+                      <span
+                        key={i}
+                        className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                      >
+                        {specialty}
+                      </span>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Nenhuma especialidade adicionada</p>
+                  )}
                 </div>
                 <Button type="button" variant="outline" size="sm" className="mt-2">
                   Adicionar Especialidade
