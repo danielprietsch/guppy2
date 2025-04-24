@@ -49,7 +49,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     const turnos = ["morning", "afternoon", "evening"];
 
     return (
-      <div className="flex flex-col gap-2 p-2 min-h-[300px]">
+      <div className="flex flex-col gap-2 p-2 h-full">
         <div className="text-sm font-medium">{format(day, "d")}</div>
         <div className="grid gap-2">
           {turnos.map((turno) => (
@@ -83,8 +83,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           month: "w-full",
           table: "w-full border-collapse",
           head_cell: "text-muted-foreground font-normal",
-          cell: "h-[350px] w-full relative p-0 border border-border",
-          day: "h-[350px] w-full p-0 font-normal",
+          cell: "h-auto p-0 border border-border relative",
+          day: "h-auto w-full p-0 font-normal",
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
           day_today: "bg-accent text-accent-foreground",
           day_outside: "text-muted-foreground opacity-50",
