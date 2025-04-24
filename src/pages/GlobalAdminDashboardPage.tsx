@@ -140,7 +140,7 @@ const GlobalAdminDashboardPage = () => {
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="permissions">Permissões</TabsTrigger>
           <TabsTrigger value="approvals">Aprovações</TabsTrigger>
-          <TabsTrigger value="admin-register">Admin Local</TabsTrigger>
+          <TabsTrigger value="admin-register">Cadastro de Admin</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-4">
@@ -179,7 +179,7 @@ const GlobalAdminDashboardPage = () => {
         </TabsContent>
         
         <TabsContent value="admin-register">
-          <AdminLocalRegistration />
+          <GlobalAdminRegistration />
         </TabsContent>
       </Tabs>
     </div>

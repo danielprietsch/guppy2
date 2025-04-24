@@ -4,9 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,12 +15,11 @@ const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  locationName: z.string().min(1, "Nome do local é obrigatório"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export const AdminLocalRegistration = () => {
+export const GlobalAdminRegistration = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const form = useForm<FormValues>({
@@ -30,7 +28,6 @@ export const AdminLocalRegistration = () => {
       name: "",
       email: "",
       password: "",
-      locationName: "",
     },
   });
 
@@ -38,83 +35,61 @@ export const AdminLocalRegistration = () => {
     try {
       setIsSubmitting(true);
       
-      // Step 1: Create the admin user account
+      // Create the global admin user account
       const { data: userData, error: userError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             name: data.name,
-            userType: "owner", // Admin local is an owner with special permissions
+            userType: "global_admin",
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
           }
         }
       });
       
       if (userError || !userData.user) {
-        debugError("AdminLocalRegistration: Error creating user:", userError);
+        debugError("GlobalAdminRegistration: Error creating user:", userError);
         toast({
           title: "Erro",
-          description: "Não foi possível criar o usuário administrador local.",
+          description: "Não foi possível criar o usuário administrador global.",
           variant: "destructive",
         });
         return;
       }
       
-      debugLog("AdminLocalRegistration: User created successfully:", userData.user.id);
+      debugLog("GlobalAdminRegistration: User created successfully:", userData.user.id);
       
-      // Step 2: Add admin role to user
+      // Add global admin role to user
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert({
           user_id: userData.user.id,
-          role: "admin" // This will signify they are a local admin
+          role: "global_admin"
         });
         
       if (roleError) {
-        debugError("AdminLocalRegistration: Error adding admin role:", roleError);
-        // Continue anyway, the user was created
-      }
-      
-      // Step 3: Create a default location for the admin
-      const { data: locationData, error: locationError } = await supabase
-        .from('locations')
-        .insert({
-          name: data.locationName,
-          owner_id: userData.user.id,
-          address: "A definir",
-          city: "A definir",
-          state: "A definir",
-          zip_code: "00000-000",
-          active: true // Automatically approved since created by global admin
-        })
-        .select('id')
-        .single();
-      
-      if (locationError) {
-        debugError("AdminLocalRegistration: Error creating location:", locationError);
+        debugError("GlobalAdminRegistration: Error adding global admin role:", roleError);
         toast({
           title: "Aviso",
-          description: "Usuário criado, mas não foi possível criar o local automaticamente.",
+          description: "Usuário criado, mas houve um erro ao atribuir a função de administrador global.",
           variant: "destructive",
         });
-      } else {
-        debugLog("AdminLocalRegistration: Location created successfully:", locationData.id);
       }
       
       toast({
         title: "Sucesso",
-        description: "Administrador local criado com sucesso.",
+        description: "Administrador global criado com sucesso.",
       });
       
       // Reset the form
       form.reset();
       
     } catch (error) {
-      debugError("AdminLocalRegistration: Error in onSubmit:", error);
+      debugError("GlobalAdminRegistration: Error in onSubmit:", error);
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao criar o administrador local.",
+        description: "Ocorreu um erro ao criar o administrador global.",
         variant: "destructive",
       });
     } finally {
@@ -125,9 +100,9 @@ export const AdminLocalRegistration = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cadastro de Administrador Local</CardTitle>
+        <CardTitle>Cadastro de Administrador Global</CardTitle>
         <CardDescription>
-          Crie um novo administrador local com seu respectivo local
+          Crie um novo administrador global do sistema
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -175,22 +150,8 @@ export const AdminLocalRegistration = () => {
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="locationName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome do Local</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Studio Beauty" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Criando..." : "Cadastrar Administrador Local"}
+              {isSubmitting ? "Criando..." : "Cadastrar Administrador Global"}
             </Button>
           </form>
         </Form>
