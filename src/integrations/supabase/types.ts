@@ -428,6 +428,63 @@ export type Database = {
         }
         Returns: string
       }
+      create_location: {
+        Args: {
+          p_owner_id: string
+          p_name: string
+          p_address: string
+          p_city: string
+          p_state: string
+          p_zip_code: string
+          p_opening_hours?: Json
+          p_image_url?: string
+          p_description?: string
+          p_amenities?: string[]
+        }
+        Returns: string
+      }
+      fetch_all_locations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active: boolean | null
+          address: string
+          amenities: string[] | null
+          approval_status: string
+          cabins_count: number | null
+          city: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          opening_hours: Json | null
+          owner_id: string
+          state: string
+          updated_at: string | null
+          zip_code: string
+        }[]
+      }
+      fetch_user_locations: {
+        Args: { p_owner_id: string }
+        Returns: {
+          active: boolean | null
+          address: string
+          amenities: string[] | null
+          approval_status: string
+          cabins_count: number | null
+          city: string
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          opening_hours: Json | null
+          owner_id: string
+          state: string
+          updated_at: string | null
+          zip_code: string
+        }[]
+      }
       get_all_users: {
         Args: Record<PropertyKey, never>
         Returns: {

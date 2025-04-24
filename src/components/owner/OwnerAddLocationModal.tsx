@@ -85,23 +85,19 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       
       const openingHours = { open: "08:00", close: "20:00" };
       
+      // Usar a nova função create_location
       const { data, error } = await supabase
-        .from('locations')
-        .insert({
-          owner_id: userId,
-          name: values.nome,
-          address: values.endereco,
-          city: values.cidade,
-          state: values.estado,
-          zip_code: values.cep || "",
-          opening_hours: openingHours as unknown as Json,
-          amenities: [],
-          cabins_count: 0,
-          image_url: previewImage || DEFAULT_IMAGE,
-          description: ""
-        })
-        .select()
-        .single();
+        .rpc('create_location', {
+          p_owner_id: userId,
+          p_name: values.nome,
+          p_address: values.endereco,
+          p_city: values.cidade,
+          p_state: values.estado,
+          p_zip_code: values.cep || "",
+          p_opening_hours: openingHours as unknown as Json,
+          p_image_url: previewImage || DEFAULT_IMAGE,
+          p_description: ""
+        });
 
       if (error) {
         console.error("❌ ERROR CREATING LOCATION:", error);
@@ -110,20 +106,35 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         return;
       }
 
-      console.log("✅ Location created successfully:", data);
+      console.log("✅ Location created successfully, ID:", data);
+      
+      // Buscar o local recém-criado para obter todos os dados
+      const { data: locationData, error: locationError } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('id', data)
+        .single();
+        
+      if (locationError) {
+        console.error("❌ ERROR FETCHING CREATED LOCATION:", locationError);
+        debugError("OwnerAddLocationModal: Error fetching created location:", locationError);
+        toast.error("Local criado mas não foi possível carregar os detalhes");
+        return;
+      }
 
       const novoLocation: Location = {
-        id: data.id,
-        name: data.name,
-        address: data.address,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zip_code,
-        cabinsCount: data.cabins_count || 0,
-        openingHours: (data.opening_hours as unknown as { open: string; close: string }) || { open: "09:00", close: "18:00" },
-        amenities: data.amenities || [],
-        imageUrl: data.image_url,
-        description: data.description || ""
+        id: locationData.id,
+        name: locationData.name,
+        address: locationData.address,
+        city: locationData.city,
+        state: locationData.state,
+        zipCode: locationData.zip_code,
+        cabinsCount: locationData.cabins_count || 0,
+        openingHours: (locationData.opening_hours as unknown as { open: string; close: string }) || { open: "09:00", close: "18:00" },
+        amenities: locationData.amenities || [],
+        imageUrl: locationData.image_url,
+        description: locationData.description || "",
+        active: locationData.active
       };
 
       debugLog("OwnerAddLocationModal: Location created successfully:", novoLocation.id);

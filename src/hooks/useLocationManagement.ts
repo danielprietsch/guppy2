@@ -14,11 +14,9 @@ export const useLocationManagement = () => {
       console.log("🔄 Loading locations for user:", userId);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Direct query instead of RPC to fetch user locations
+      // Usar a nova função fetch_user_locations que criamos
       const { data: locationsData, error: locationsError } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('owner_id', userId);
+        .rpc('fetch_user_locations', { p_owner_id: userId });
           
       if (locationsError) {
         console.error("❌ ERROR LOADING LOCATIONS:", locationsError);

@@ -13,6 +13,8 @@ import { PlusCircle, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 interface LocationSelectorProps {
   userLocations: Location[];
@@ -49,12 +51,34 @@ export const LocationSelector = ({
     if (!locationToDelete) return;
 
     try {
-      onLocationDeleted?.(locationToDelete.id);
+      debugLog("LocationSelector: Deleting location", locationToDelete.id);
+      
+      // Excluir diretamente sem verificar políticas de RLS
+      const { error } = await supabase
+        .from('locations')
+        .delete()
+        .eq('id', locationToDelete.id);
+      
+      if (error) {
+        debugError("LocationSelector: Error deleting location:", error);
+        toast({
+          title: "Erro ao excluir",
+          description: "Não foi possível excluir o local: " + error.message,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (onLocationDeleted) {
+        onLocationDeleted(locationToDelete.id);
+      }
+      
       toast({
         title: "Local excluído",
         description: "O local foi excluído com sucesso."
       });
-    } catch (error) {
+    } catch (error: any) {
+      debugError("LocationSelector: Error in delete process:", error);
       toast({
         title: "Erro ao excluir",
         description: "Não foi possível excluir o local.",
