@@ -1,5 +1,4 @@
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
+import { ProfileImageUpload } from "../profile/ProfileImageUpload";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -36,36 +36,33 @@ interface OwnerProfileFormProps {
 
 export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFormProps) {
   const navigate = useNavigate();
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      phoneNumber: "",
-      avatarUrl: "",
-    },
+  const [formData, setFormData] = useState({
+    name: currentUser.name,
+    email: currentUser.email,
+    phoneNumber: currentUser.phoneNumber || "",
+    avatarUrl: currentUser.avatarUrl || "",
   });
 
   useEffect(() => {
     if (currentUser) {
-      form.reset({
+      setFormData({
         name: currentUser.name,
         email: currentUser.email,
         phoneNumber: currentUser.phoneNumber || "",
         avatarUrl: currentUser.avatarUrl || "",
       });
     }
-  }, [currentUser, form]);
+  }, [currentUser]);
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function handleSaveProfile() {
     try {
       const { error } = await supabase
         .from('profiles')
         .update({
-          name: values.name,
-          email: values.email,
-          phone_number: values.phoneNumber,
-          avatar_url: values.avatarUrl,
+          name: formData.name,
+          email: formData.email,
+          phone_number: formData.phoneNumber,
+          avatar_url: formData.avatarUrl,
         })
         .eq('id', currentUser.id);
         
@@ -75,10 +72,10 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
       
       const updatedUser = {
         ...currentUser,
-        name: values.name,
-        email: values.email,
-        phoneNumber: values.phoneNumber,
-        avatarUrl: values.avatarUrl,
+        name: formData.name,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        avatarUrl: formData.avatarUrl,
       };
       
       setCurrentUser(updatedUser);
@@ -87,88 +84,94 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
         title: "Perfil atualizado",
         description: "Seus dados foram atualizados com sucesso.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({
         title: "Erro ao atualizar perfil",
-        description: "Ocorreu um erro ao atualizar seus dados.",
+        description: error.message || "Ocorreu um erro ao atualizar seus dados.",
         variant: "destructive",
       });
     }
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nome</FormLabel>
-              <FormControl>
-                <Input placeholder="Seu nome completo" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+    <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
+      <ProfileImageUpload
+        userId={currentUser.id}
+        currentAvatarUrl={currentUser.avatarUrl}
+        onImageUploaded={(url) => {
+          setFormData(prev => ({ ...prev, avatarUrl: url }));
+        }}
+        className="mb-6"
+      />
+      
+      <FormField
+        control={useForm().control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Nome</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="Seu nome completo" 
+                value={formData.name}
+                onChange={(e) => setFormData({...formData, name: e.target.value})}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="seu@email.com" {...field} type="email" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FormField
+        control={useForm().control}
+        name="email"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Email</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="seu@email.com" 
+                value={formData.email}
+                type="email" 
+                readOnly
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="phoneNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Telefone</FormLabel>
-              <FormControl>
-                <Input placeholder="(00) 00000-0000" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <FormField
+        control={useForm().control}
+        name="phoneNumber"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Telefone</FormLabel>
+            <FormControl>
+              <Input 
+                placeholder="(00) 00000-0000" 
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({...formData, phoneNumber: e.target.value})}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
 
-        <FormField
-          control={form.control}
-          name="avatarUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>URL da foto de perfil</FormLabel>
-              <FormControl>
-                <Input placeholder="https://exemplo.com/sua-foto.jpg" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end gap-4">
-          <Button 
-            variant="outline" 
-            onClick={() => navigate(-1)}
-            type="button"
-          >
-            Cancelar
-          </Button>
-          <Button type="submit">
-            Salvar alterações
-          </Button>
-        </div>
-      </form>
-    </Form>
+      <div className="flex justify-end gap-4">
+        <Button 
+          variant="outline" 
+          onClick={() => navigate(-1)}
+          type="button"
+        >
+          Cancelar
+        </Button>
+        <Button type="button" onClick={handleSaveProfile}>
+          Salvar alterações
+        </Button>
+      </div>
+    </form>
   );
 }

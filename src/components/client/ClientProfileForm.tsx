@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -17,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
+import { ProfileImageUpload } from "../profile/ProfileImageUpload";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -86,6 +86,15 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <ProfileImageUpload
+          userId={currentUser.id}
+          currentAvatarUrl={currentUser.avatarUrl}
+          onImageUploaded={(url) => {
+            form.setValue("avatarUrl", url);
+          }}
+          className="mb-6"
+        />
+        
         <FormField
           control={form.control}
           name="name"
