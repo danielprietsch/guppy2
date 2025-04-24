@@ -23,6 +23,7 @@ import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
 import GlobalAdminProfilePage from "@/pages/GlobalAdminProfilePage";
 import ProfessionalProfilePage from "@/pages/ProfessionalProfilePage";
 import ProfessionalDetailPage from "@/pages/ProfessionalDetailPage";
+import CabinSearchPage from "@/pages/CabinSearchPage";
 
 const router = createBrowserRouter([
   {
@@ -93,6 +94,10 @@ const router = createBrowserRouter([
       {
         path: "/book-cabin/:id",
         element: <BookCabinPage />,
+      },
+      {
+        path: "/search-cabins",
+        element: <CabinSearchPage />,
       },
       {
         path: "/professionals",

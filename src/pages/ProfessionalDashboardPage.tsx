@@ -5,7 +5,7 @@ import { bookings, appointments, services, cabins, locations } from "@/lib/mock-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { Calendar, Clock, DollarSign, Plus, Users } from "lucide-react";
+import { Calendar, Clock, DollarSign, Plus, Users, Search } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import CabinBookingModal from "@/components/CabinBookingModal";
@@ -49,9 +49,7 @@ const ProfessionalDashboardPage = () => {
         
         debugLog("ProfessionalDashboardPage: Session found, user:", session.user);
         
-        // First check user metadata
         let userType = session.user.user_metadata?.userType;
-        // Convert provider to professional if needed
         if (userType === 'provider') {
           userType = 'professional';
         }
@@ -59,7 +57,6 @@ const ProfessionalDashboardPage = () => {
         if (userType && userType === 'professional') {
           debugLog("ProfessionalDashboardPage: User is professional according to metadata");
           
-          // Set current user from metadata
           setCurrentUser({
             id: session.user.id,
             name: session.user.user_metadata?.name || 'Profissional',
@@ -70,11 +67,10 @@ const ProfessionalDashboardPage = () => {
           
           loadProfessionalData(session.user.id);
           setIsLoading(false);
-          return; // User is professional, allow access
+          return;
         }
 
         try {
-          // Then check profile if metadata doesn't confirm
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
@@ -83,11 +79,9 @@ const ProfessionalDashboardPage = () => {
 
           if (error) {
             debugError("ProfessionalDashboardPage: Error fetching profile:", error);
-            // If there's an error querying profiles but metadata indicates professional, allow access
             if (userType === 'professional') {
               debugLog("ProfessionalDashboardPage: Falling back to metadata user type");
               
-              // Set current user from metadata
               setCurrentUser({
                 id: session.user.id,
                 name: session.user.user_metadata?.name || 'Profissional',
@@ -105,7 +99,6 @@ const ProfessionalDashboardPage = () => {
           debugLog("ProfessionalDashboardPage: Profile data:", profile);
 
           if (!profile || profile.user_type !== 'professional') {
-            // Only redirect if we can confirm user is not a professional
             if (userType !== 'professional') {
               debugLog("ProfessionalDashboardPage: User is not professional, redirecting");
               toast({
@@ -116,19 +109,18 @@ const ProfessionalDashboardPage = () => {
               navigate("/");
               return;
             } else {
-              // Metadata says professional but no profile, use metadata
               setCurrentUser({
-                id: session.user.id,
-                name: session.user.user_metadata?.name || 'Profissional',
-                email: session.user.email || '',
+                id: profile.id,
+                name: profile.name || session.user.user_metadata?.name || 'Profissional',
+                email: profile.email || session.user.email || '',
                 userType: 'professional',
-                avatarUrl: session.user.user_metadata?.avatar_url,
+                avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
+                phoneNumber: profile.phone_number
               });
               
               loadProfessionalData(session.user.id);
             }
           } else {
-            // Profile exists and confirms professional
             setCurrentUser({
               id: profile.id,
               name: profile.name || session.user.user_metadata?.name || 'Profissional',
@@ -141,7 +133,6 @@ const ProfessionalDashboardPage = () => {
             loadProfessionalData(session.user.id);
           }
         } catch (error) {
-          // If we can't determine from profile but metadata says professional, allow access
           debugError("ProfessionalDashboardPage: Error in profile check:", error);
           if (userType === 'professional') {
             setCurrentUser({
@@ -172,7 +163,6 @@ const ProfessionalDashboardPage = () => {
   }, [navigate]);
 
   const loadProfessionalData = (userId: string) => {
-    // Load the professional's data from mock or Supabase
     const userBookings = bookings.filter(
       (booking) => booking.providerId === userId
     );
@@ -352,20 +342,23 @@ const ProfessionalDashboardPage = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Minhas Reservas de Cabines</CardTitle>
                 <Button
-                  onClick={() => setModalReserveOpen(true)}
+                  onClick={() => navigate("/search-cabins")}
                   variant="default"
                 >
-                  Reservar Nova Cabine
+                  <Search className="h-4 w-4 mr-2" />
+                  Procurar Cabines
                 </Button>
               </CardHeader>
               <CardContent>
-                <CabinBookingModal
-                  open={modalReserveOpen}
-                  onClose={() => setModalReserveOpen(false)}
-                  currentUser={currentUser}
-                  professionalBookings={professionalBookings}
-                  onSubmitBookings={handleAddBookingsFromModal}
-                />
+                {modalReserveOpen && (
+                  <CabinBookingModal
+                    open={modalReserveOpen}
+                    onClose={() => setModalReserveOpen(false)}
+                    currentUser={currentUser}
+                    professionalBookings={professionalBookings}
+                    onSubmitBookings={handleAddBookingsFromModal}
+                  />
+                )}
                 {professionalBookings.length > 0 ? (
                   <div className="space-y-4">
                     {professionalBookings.map((booking) => {
@@ -419,9 +412,10 @@ const ProfessionalDashboardPage = () => {
                     </p>
                     <Button
                       className="mt-4"
-                      onClick={() => setModalReserveOpen(true)}
+                      onClick={() => navigate("/search-cabins")}
                     >
-                      Reservar Cabine
+                      <Search className="h-4 w-4 mr-2" />
+                      Procurar Cabines
                     </Button>
                   </div>
                 )}
