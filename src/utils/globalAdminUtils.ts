@@ -46,7 +46,8 @@ export const sendPasswordResetToGlobalAdmin = async () => {
 
 // Helper function to check if an email is the global admin email
 export const isGlobalAdminEmail = (email: string): boolean => {
-  return email === 'guppyadmin@nuvemtecnologia.com';
+  // Removido para permitir qualquer email como global_admin
+  return false;
 };
 
 // Modified function to handle global admin registration

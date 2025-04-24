@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -5,7 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
-import { isGlobalAdminEmail, handleGlobalAdminRegistration } from "@/utils/globalAdminUtils";
+import { handleGlobalAdminRegistration } from "@/utils/globalAdminUtils";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -40,6 +41,8 @@ const RegisterPage = () => {
         return "/provider/dashboard";
       case "owner":
         return "/owner/dashboard";
+      case "global_admin":
+        return "/admin/global";
       default:
         return "/client/dashboard";
     }
@@ -49,7 +52,7 @@ const RegisterPage = () => {
     name: string;
     email: string;
     password: string;
-    userType: "client" | "provider" | "owner";
+    userType: "client" | "provider" | "owner" | "global_admin";
   }) => {
     console.log("Iniciando processo de registro...");
     setIsRegistering(true);
@@ -61,7 +64,8 @@ const RegisterPage = () => {
         userType: data.userType 
       });
 
-      if (isGlobalAdminEmail(data.email)) {
+      if (data.userType === "global_admin") {
+        console.log("Registrando como administrador global");
         const success = await handleGlobalAdminRegistration({
           email: data.email,
           password: data.password,
