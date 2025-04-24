@@ -115,14 +115,13 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 {parseFloat(price.toString()).toFixed(2)}
               </span>
               {!isBooked && !isManuallyClosed && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 p-0 hover:bg-white/20 transition-all hover:scale-110"
+                <button
+                  type="button"
+                  className="h-6 w-6 p-0 hover:bg-white/20 rounded-full transition-all hover:scale-110 flex items-center justify-center"
                   onClick={handleEditButtonClick}
                 >
                   <Pencil className="h-4 w-4 text-white hover:text-yellow-200 transition-colors" />
-                </Button>
+                </button>
               )}
             </div>
           )}
