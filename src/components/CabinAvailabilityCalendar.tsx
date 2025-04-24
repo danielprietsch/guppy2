@@ -38,6 +38,12 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     }
   };
 
+  const handlePriceEdit = (date: string, turno: string, newPrice: number) => {
+    if (onPriceChange) {
+      onPriceChange(date, turno, newPrice);
+    }
+  };
+
   const renderDayContent = (day: Date) => {
     const dateStr = fmtDate(day);
     const turnos = ["morning", "afternoon", "evening"];
@@ -53,7 +59,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
               price={pricePerDay}
               isBooked={daysBooked[dateStr]?.[turno] || false}
               isManuallyClosed={manuallyClosedDates[dateStr]?.[turno] || false}
-              onPriceEdit={(newPrice) => onPriceChange?.(dateStr, turno, newPrice)}
+              onPriceEdit={(newPrice) => handlePriceEdit(dateStr, turno, newPrice)}
               onManualClose={() => onStatusChange?.(dateStr, turno, true)}
               onRelease={() => onStatusChange?.(dateStr, turno, false)}
               onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}

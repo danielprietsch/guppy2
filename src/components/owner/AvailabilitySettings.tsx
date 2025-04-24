@@ -22,9 +22,17 @@ export const AvailabilitySettings = ({
   selectedLocation, 
   locationCabins 
 }: AvailabilitySettingsProps) => {
+  // Initialize state for each cabin
   const [selectedDates, setSelectedDates] = useState<{ [cabinId: string]: string[] }>({});
   const [daysBooked, setDaysBooked] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: boolean } } }>({});
   const [manuallyClosedDates, setManuallyClosedDates] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: boolean } } }>({});
+  const [cabinPrices, setCabinPrices] = useState<{ [cabinId: string]: number }>(() => {
+    const prices: { [cabinId: string]: number } = {};
+    locationCabins.forEach(cabin => {
+      prices[cabin.id] = cabin.price || 100;
+    });
+    return prices;
+  });
 
   const handleStatusChange = (cabinId: string, date: string, turn: string, isManualClose: boolean) => {
     setManuallyClosedDates(prev => {
@@ -52,6 +60,12 @@ export const AvailabilitySettings = ({
   };
 
   const handlePriceUpdate = (cabinId: string, date: string, turn: string, price: number) => {
+    // Store the updated price in state
+    setCabinPrices(prev => ({
+      ...prev,
+      [cabinId]: price
+    }));
+    
     toast({
       title: "Preço atualizado",
       description: `O preço para ${format(new Date(date), "dd/MM/yyyy", { locale: ptBR })} (${
@@ -71,30 +85,32 @@ export const AvailabilitySettings = ({
         </CardHeader>
       </Card>
 
-      {locationCabins.map((cabin) => (
-        <Card key={cabin.id} className="w-full">
-          <CardHeader>
-            <CardTitle>{cabin.name}</CardTitle>
-            <CardDescription>
-              Gerencie a disponibilidade e preços desta cabine
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="w-full overflow-x-auto">
-              <CabinAvailabilityCalendar
-                selectedTurn="morning"
-                daysBooked={daysBooked[cabin.id] || {}}
-                onSelectDates={(dates) => setSelectedDates({ ...selectedDates, [cabin.id]: dates })}
-                selectedDates={selectedDates[cabin.id] || []}
-                pricePerDay={cabin.price || 100}
-                onPriceChange={(date, turn, price) => handlePriceUpdate(cabin.id, date, turn, price)}
-                onStatusChange={(date, turn, isManualClose) => handleStatusChange(cabin.id, date, turn, isManualClose)}
-                manuallyClosedDates={manuallyClosedDates[cabin.id] || {}}
-              />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+      <div className="space-y-8">
+        {locationCabins.map((cabin) => (
+          <Card key={cabin.id} className="w-full">
+            <CardHeader>
+              <CardTitle>Cabine: {cabin.name}</CardTitle>
+              <CardDescription>
+                Gerencie a disponibilidade e preços desta cabine
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="w-full overflow-x-auto">
+                <CabinAvailabilityCalendar
+                  selectedTurn="morning"
+                  daysBooked={daysBooked[cabin.id] || {}}
+                  onSelectDates={(dates) => setSelectedDates({ ...selectedDates, [cabin.id]: dates })}
+                  selectedDates={selectedDates[cabin.id] || []}
+                  pricePerDay={cabinPrices[cabin.id] || cabin.price || 100}
+                  onPriceChange={(date, turn, price) => handlePriceUpdate(cabin.id, date, turn, price)}
+                  onStatusChange={(date, turn, isManualClose) => handleStatusChange(cabin.id, date, turn, isManualClose)}
+                  manuallyClosedDates={manuallyClosedDates[cabin.id] || {}}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

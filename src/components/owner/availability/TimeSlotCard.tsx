@@ -29,6 +29,11 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(price.toString());
 
+  // Update local price when prop changes
+  React.useEffect(() => {
+    setPriceValue(price.toString());
+  }, [price]);
+
   const handlePriceDoubleClick = () => {
     if (!isBooked && !isManuallyClosed) {
       setIsEditingPrice(true);
@@ -43,6 +48,9 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     const newPrice = parseFloat(priceValue);
     if (!isNaN(newPrice) && newPrice > 0) {
       onPriceEdit(newPrice);
+    } else {
+      // Reset to original price if invalid
+      setPriceValue(price.toString());
     }
     setIsEditingPrice(false);
   };
@@ -53,12 +61,21 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     return "bg-green-500";
   };
 
+  const handleCardClick = () => {
+    if (isBooked && onViewBooking) {
+      onViewBooking();
+    }
+  };
+
   return (
-    <div className={cn(
-      "p-4 rounded-lg shadow-sm transition-colors",
-      getStatusColor(),
-      isBooked ? "cursor-pointer" : ""
-    )} onClick={() => isBooked && onViewBooking?.()}>
+    <div 
+      className={cn(
+        "p-4 rounded-lg shadow-sm transition-colors",
+        getStatusColor(),
+        isBooked ? "cursor-pointer" : ""
+      )} 
+      onClick={handleCardClick}
+    >
       <div className="flex flex-col gap-2">
         <div className="text-lg font-medium text-white">{turno}</div>
         
@@ -71,6 +88,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               onChange={handlePriceChange}
               onBlur={handlePriceSubmit}
               onKeyDown={(e) => e.key === 'Enter' && handlePriceSubmit()}
+              onClick={(e) => e.stopPropagation()} // Prevent card click when editing
               autoFocus
               className="w-24 text-black"
             />
@@ -79,7 +97,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               onDoubleClick={handlePriceDoubleClick}
               className="cursor-text text-white"
             >
-              {price.toFixed(2)}
+              {parseFloat(price.toString()).toFixed(2)}
             </div>
           )}
         </div>
@@ -94,7 +112,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "secondary" : "default"}
               size="sm"
-              onClick={onManualClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onManualClose();
+              }}
               className="flex-1"
             >
               {isManuallyClosed ? "Fechado" : "Fechar"}
@@ -102,7 +123,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <Button
               variant={isManuallyClosed ? "default" : "secondary"}
               size="sm"
-              onClick={onRelease}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRelease();
+              }}
               className="flex-1"
             >
               Liberar
