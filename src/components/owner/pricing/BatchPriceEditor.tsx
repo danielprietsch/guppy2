@@ -43,6 +43,11 @@ export const BatchPriceEditor: React.FC<BatchPriceEditorProps> = ({
   
   const [selectedWeekdays, setSelectedWeekdays] = React.useState(weekdays);
 
+  // Atualizar apenas quando o defaultPrice realmente mudar
+  React.useEffect(() => {
+    setPrice(defaultPrice.toString());
+  }, [defaultPrice]);
+
   // Handle weekday selection
   const handleWeekdayChange = (id: string) => {
     setSelectedWeekdays(prev => 

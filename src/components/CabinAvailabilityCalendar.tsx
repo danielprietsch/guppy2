@@ -41,23 +41,24 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     }
   };
 
-  const handlePriceEdit = (date: string, turno: string, newPrice: number) => {
+  // Usar useCallback para funções de handlers
+  const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: number) => {
     debugAreaLog('PRICE_EDIT', 'Handling price edit:', { date, turno, newPrice });
     if (onPriceChange) {
       onPriceChange(date, turno, newPrice);
     }
-  };
+  }, [onPriceChange]);
 
-  const handleStatusChange = (date: string, turno: string, isManualClose: boolean) => {
+  const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
     debugAreaLog('PRICE_EDIT', 'Status change:', { date, turno, isManualClose });
     if (onStatusChange) {
       onStatusChange(date, turno, isManualClose);
     }
-  };
+  }, [onStatusChange]);
 
-  const getSlotPrice = (dateStr: string, turno: string): number => {
+  const getSlotPrice = React.useCallback((dateStr: string, turno: string): number => {
     return slotPrices?.[dateStr]?.[turno] || pricePerDay;
-  };
+  }, [slotPrices, pricePerDay]);
 
   // Memoize the day content rendering function
   const renderDayContent = React.useCallback((day: Date) => {
@@ -84,7 +85,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         </div>
       </div>
     );
-  }, [daysBooked, manuallyClosedDates, slotPrices, pricePerDay, navigate]);
+  }, [daysBooked, manuallyClosedDates, getSlotPrice, handlePriceEdit, handleStatusChange, navigate]);
 
   // Memoize the calendar component
   const MemoizedCalendar = React.useMemo(() => (
@@ -120,4 +121,13 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   );
 };
 
-export default React.memo(CabinAvailabilityCalendar);
+// Usando React.memo com comparação personalizada para evitar renderizações desnecessárias
+export default React.memo(CabinAvailabilityCalendar, (prevProps, nextProps) => {
+  // Comparar apenas as props mais importantes que afetam a renderização
+  return (
+    prevProps.pricePerDay === nextProps.pricePerDay &&
+    JSON.stringify(prevProps.daysBooked) === JSON.stringify(nextProps.daysBooked) &&
+    JSON.stringify(prevProps.manuallyClosedDates) === JSON.stringify(nextProps.manuallyClosedDates) &&
+    JSON.stringify(prevProps.slotPrices) === JSON.stringify(nextProps.slotPrices)
+  );
+});

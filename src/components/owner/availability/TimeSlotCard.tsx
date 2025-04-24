@@ -31,15 +31,22 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   const [priceValue, setPriceValue] = useState(price.toString());
   const [animatePrice, setAnimatePrice] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Usando uma ref para controlar a última atualização de preço e evitar loops
+  const lastPriceRef = useRef<number>(price);
 
+  // Atualizar o valor do preço apenas quando o preço prop realmente mudar
   useEffect(() => {
-    debugAreaLog('PRICE_EDIT', 'Price prop updated:', price);
-    setPriceValue(price.toString());
+    if (lastPriceRef.current !== price) {
+      debugAreaLog('PRICE_EDIT', 'Price prop updated:', price);
+      setPriceValue(price.toString());
+      lastPriceRef.current = price;
+    }
   }, [price]);
 
   useEffect(() => {
-    debugAreaLog('PRICE_EDIT', 'Edit mode changed:', isEditingPrice);
     if (isEditingPrice && inputRef.current) {
+      debugAreaLog('PRICE_EDIT', 'Edit mode changed:', isEditingPrice);
       inputRef.current.focus();
       inputRef.current.select();
     }
@@ -60,7 +67,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       setTimeout(() => setAnimatePrice(false), 700);
     } else {
       debugAreaLog('PRICE_EDIT', 'Invalid price, resetting:', priceValue);
-      setPriceValue(price.toString());
+      setPriceValue(lastPriceRef.current.toString());
     }
     setIsEditingPrice(false);
   };

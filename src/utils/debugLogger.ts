@@ -8,6 +8,13 @@ export const DEBUG_AREAS = {
   USER_ACTIONS: false
 };
 
+// Control verbosity level for specific areas
+export const DEBUG_VERBOSITY = {
+  PRICE_EDIT: 1, // 1 = essentials only, 2 = detailed, 3 = all
+  AVAILABILITY: 2,
+  USER_ACTIONS: 2
+};
+
 export const debugLog = (...args: any[]) => {
   if (DEBUG_MODE) {
     console.log('[DEBUG]', ...args);
@@ -20,9 +27,19 @@ export const debugError = (...args: any[]) => {
   }
 };
 
-// Function for area-specific logs
+// Function for area-specific logs with verbosity control
 export const debugAreaLog = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => {
-  if (DEBUG_MODE || DEBUG_AREAS[area]) {
+  // Default verbosity level is high (3) to log everything if not configured
+  const verbosityLevel = DEBUG_VERBOSITY[area] || 3;
+  
+  if ((DEBUG_MODE || DEBUG_AREAS[area]) && verbosityLevel >= 2) {
     console.log(`[DEBUG:${area}]`, ...args);
+  }
+};
+
+// Critical logs that should be logged regardless of verbosity
+export const debugAreaCritical = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => {
+  if (DEBUG_MODE || DEBUG_AREAS[area]) {
+    console.log(`[DEBUG:${area}:CRITICAL]`, ...args);
   }
 };
