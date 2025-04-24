@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -11,6 +12,9 @@ import { EmptyLocationState } from "@/components/owner/EmptyLocationState";
 import { LocationOverview } from "@/components/owner/LocationOverview";
 import { OwnerAddLocationModal } from "@/components/owner/OwnerAddLocationModal";
 import { AddCabinModal } from "@/components/owner/AddCabinModal";
+import { PricingSettings } from "@/components/owner/PricingSettings";
+import { EquipmentSettings } from "@/components/owner/EquipmentSettings";
+import { AvailabilitySettings } from "@/components/owner/AvailabilitySettings";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
@@ -395,24 +399,24 @@ const OwnerDashboardPage = () => {
                 )}
                 
                 {activeTab === "pricing" && (
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold">Configuração de Preços</h2>
-                    <p className="text-muted-foreground">Gerencie os preços das suas cabines.</p>
-                  </div>
+                  <PricingSettings
+                    selectedLocation={selectedLocation}
+                    locationCabins={locationCabins}
+                  />
                 )}
                 
                 {activeTab === "equipment" && (
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold">Equipamentos</h2>
-                    <p className="text-muted-foreground">Gerencie os equipamentos disponíveis.</p>
-                  </div>
+                  <EquipmentSettings
+                    selectedLocation={selectedLocation}
+                    locationCabins={locationCabins}
+                  />
                 )}
                 
                 {activeTab === "availability" && (
-                  <div className="space-y-4">
-                    <h2 className="text-xl font-semibold">Disponibilidade</h2>
-                    <p className="text-muted-foreground">Configure a disponibilidade das cabines.</p>
-                  </div>
+                  <AvailabilitySettings
+                    selectedLocation={selectedLocation}
+                    locationCabins={locationCabins}
+                  />
                 )}
                 
                 {activeTab === "settings" && selectedLocation && (
