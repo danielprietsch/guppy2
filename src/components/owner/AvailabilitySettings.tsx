@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import {
   Card,
@@ -29,7 +28,6 @@ export const AvailabilitySettings = ({
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
   const [pricePerDay, setPricePerDay] = useState<number>(selectedCabin?.price || 100);
   
-  // Mock data for cabin bookings - in a real app this would come from the database
   const [daysBooked, setDaysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({
     [format(new Date(), "yyyy-MM-dd")]: { 
       morning: true,
@@ -58,14 +56,12 @@ export const AvailabilitySettings = ({
 
   const handleTurnChange = (turn: "morning" | "afternoon" | "evening") => {
     setSelectedTurn(turn);
-    // Reset selections when changing turn
     setSelectedDates([]);
   };
 
   const handleSaveAvailability = () => {
     if (!selectedCabin) return;
     
-    // In a real app, you would save this data to the database
     const updatedBookings = { ...daysBooked };
     
     selectedDates.forEach(date => {
@@ -95,6 +91,16 @@ export const AvailabilitySettings = ({
     if (!isNaN(value) && value > 0) {
       setPricePerDay(value);
     }
+  };
+
+  const handlePriceUpdate = (date: string, turn: string, price: number) => {
+    setPricePerDay(price);
+    toast({
+      title: "Preço atualizado",
+      description: `O preço para ${format(new Date(date), "dd/MM/yyyy")} (${
+        turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"
+      }) foi atualizado para R$ ${price}.`,
+    });
   };
 
   const calculateTotalPrice = () => {
@@ -146,6 +152,8 @@ export const AvailabilitySettings = ({
                 daysBooked={daysBooked}
                 onSelectDates={setSelectedDates}
                 selectedDates={selectedDates}
+                pricePerDay={pricePerDay}
+                onPriceChange={handlePriceUpdate}
               />
             )}
           </div>
