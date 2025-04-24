@@ -3,57 +3,43 @@ import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
 
-export const createGlobalAdmin = async () => {
+export const sendPasswordResetToGlobalAdmin = async () => {
   const adminEmail = 'guppyadmin@nuvemtecnologia.com';
   
   try {
-    debugLog("Creating global admin user");
+    debugLog("Sending password reset to global admin");
     
-    // First check if the admin already exists
-    const { data: existingAdmin } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('email', adminEmail)
-      .eq('user_type', 'global_admin')
-      .single();
-      
-    if (existingAdmin) {
-      debugLog("Global admin already exists");
-      return;
-    }
-
-    // Create the admin user
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: adminEmail,
-      password: 'temp' + Math.random().toString(36),
-      options: {
-        data: {
-          name: 'Administrador Global',
-          userType: 'global_admin',
-        }
-      }
-    });
-
-    if (authError) {
-      debugError("Error creating global admin:", authError);
-      return;
-    }
-
-    // Send password reset email
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      adminEmail,
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      adminEmail, 
       {
-        redirectTo: window.location.origin + '/reset-password',
+        redirectTo: window.location.origin + '/reset-password'
       }
     );
-
-    if (resetError) {
-      debugError("Error sending reset password email:", resetError);
-      return;
+    
+    if (error) {
+      debugError("Error sending password reset:", error);
+      toast({
+        title: "Erro ao redefinir senha",
+        description: error.message,
+        variant: "destructive"
+      });
+      return false;
     }
-
-    debugLog("Global admin created successfully");
+    
+    debugLog("Password reset email sent successfully");
+    toast({
+      title: "Email de redefinição enviado",
+      description: "Um link para redefinir a senha foi enviado para guppyadmin@nuvemtecnologia.com"
+    });
+    
+    return true;
   } catch (error) {
-    debugError("Error in createGlobalAdmin:", error);
+    debugError("Unexpected error in sendPasswordResetToGlobalAdmin:", error);
+    toast({
+      title: "Erro",
+      description: "Ocorreu um erro inesperado. Tente novamente.",
+      variant: "destructive"
+    });
+    return false;
   }
 };
