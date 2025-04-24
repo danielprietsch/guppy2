@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { UserTypeSelector } from '@/components/registration/UserTypeSelector';
 import { ProfessionalRegistrationForm } from '@/components/registration/ProfessionalRegistrationForm';
 import { ClientRegistrationForm } from '@/components/registration/ClientRegistrationForm';
-import { toast } from '@/hooks/use-toast';
+import { OwnerRegistrationForm } from '@/components/registration/OwnerRegistrationForm';
 
 const RegisterPage: React.FC = () => {
   const [selectedUserType, setSelectedUserType] = useState<'client' | 'professional' | 'owner' | null>(null);
@@ -18,6 +18,8 @@ const RegisterPage: React.FC = () => {
         return <ProfessionalRegistrationForm />;
       case 'client':
         return <ClientRegistrationForm />;
+      case 'owner':
+        return <OwnerRegistrationForm />;
       default:
         return null;
     }
