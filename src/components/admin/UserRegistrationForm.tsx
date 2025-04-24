@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,6 +10,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { cn } from "@/lib/utils";
+import { UserPlus, UserCog } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -35,6 +36,21 @@ export const UserRegistrationForm = () => {
       userType: "owner",
     },
   });
+
+  const userTypes = [
+    {
+      value: "owner",
+      label: "Dono de Local",
+      description: "Pode gerenciar locais e configurações específicas do estabelecimento",
+      icon: UserPlus
+    },
+    {
+      value: "global_admin",
+      label: "Administrador Global",
+      description: "Acesso total ao sistema e gerenciamento de usuários",
+      icon: UserCog
+    }
+  ];
 
   const onSubmit = async (data: FormValues) => {
     try {
@@ -111,7 +127,7 @@ export const UserRegistrationForm = () => {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="name"
@@ -161,28 +177,37 @@ export const UserRegistrationForm = () => {
                 <FormItem className="space-y-3">
                   <FormLabel>Tipo de Usuário</FormLabel>
                   <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      className="flex flex-col space-y-1"
-                    >
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="owner" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Dono de Local
-                        </FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-3 space-y-0">
-                        <FormControl>
-                          <RadioGroupItem value="global_admin" />
-                        </FormControl>
-                        <FormLabel className="font-normal">
-                          Administrador Global
-                        </FormLabel>
-                      </FormItem>
-                    </RadioGroup>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {userTypes.map((type) => {
+                        const Icon = type.icon;
+                        return (
+                          <div
+                            key={type.value}
+                            className={cn(
+                              "relative flex cursor-pointer rounded-lg px-5 py-4 shadow-md border-2 transition-colors",
+                              field.value === type.value
+                                ? "border-primary bg-primary/5"
+                                : "border-muted bg-card hover:bg-accent/5"
+                            )}
+                            onClick={() => field.onChange(type.value)}
+                          >
+                            <div className="flex w-full items-center justify-between">
+                              <div className="flex items-center space-x-4">
+                                <div className="shrink-0">
+                                  <Icon className="w-8 h-8 text-primary" />
+                                </div>
+                                <div>
+                                  <p className="text-base font-medium">{type.label}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {type.description}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
