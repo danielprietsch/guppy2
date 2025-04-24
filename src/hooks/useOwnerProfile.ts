@@ -66,12 +66,23 @@ export const useOwnerProfile = () => {
           throw profileError;
         }
         
+        // Fix type issue: ensure userType is one of the allowed values
+        let userType: "owner" | "professional" | "client" | "global_admin" = "owner"; // Default to owner
+        
+        // Check if the profile data contains a valid user_type
+        if (profileData.user_type === "owner" || 
+            profileData.user_type === "professional" || 
+            profileData.user_type === "client" || 
+            profileData.user_type === "global_admin") {
+          userType = profileData.user_type as "owner" | "professional" | "client" | "global_admin";
+        }
+        
         // User is confirmed as owner
         const userData: User = {
           id: profileData.id,
           name: profileData.name || session.user.email?.split('@')[0] || "Usuário",
           email: profileData.email || session.user.email || "",
-          userType: profileData.user_type || "owner",
+          userType: userType,
           avatarUrl: profileData.avatar_url,
           phoneNumber: profileData.phone_number
         };
