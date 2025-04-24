@@ -26,16 +26,25 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   onRelease,
   onViewBooking
 }) => {
+  console.log('TimeSlotCard Render - Received Props:', { 
+    turno, 
+    price, 
+    isBooked, 
+    isManuallyClosed 
+  });
+
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(price.toString());
   const [animatePrice, setAnimatePrice] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    console.log('Price changed externally:', price);
     setPriceValue(price.toString());
   }, [price]);
 
   useEffect(() => {
+    console.log('isEditingPrice changed:', isEditingPrice);
     if (isEditingPrice && inputRef.current) {
       inputRef.current.focus();
       inputRef.current.select();
@@ -43,16 +52,20 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   }, [isEditingPrice]);
 
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Price input changed:', e.target.value);
     setPriceValue(e.target.value);
   };
 
   const handlePriceSubmit = () => {
     const newPrice = parseFloat(priceValue);
+    console.log('Submitting new price:', newPrice);
+    
     if (!isNaN(newPrice) && newPrice > 0) {
       onPriceEdit(newPrice);
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
     } else {
+      console.warn('Invalid price:', priceValue);
       setPriceValue(price.toString());
     }
     setIsEditingPrice(false);
@@ -60,10 +73,14 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
 
   const adjustPrice = (increment: boolean) => {
     const currentPrice = parseFloat(priceValue);
+    console.log('Adjusting price:', { currentPrice, increment });
+    
     if (!isNaN(currentPrice)) {
       const step = 5; // Ajuste de R$5 por clique
       const newPrice = increment ? currentPrice + step : currentPrice - step;
+      
       if (newPrice > 0) {
+        console.log('New calculated price:', newPrice);
         setPriceValue(newPrice.toString());
         setIsEditingPrice(true);
       }
