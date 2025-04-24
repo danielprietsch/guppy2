@@ -42,7 +42,7 @@ const NavBar = () => {
             id: session.user.id,
             name: nameFromMetadata || session.user.email?.split('@')[0] || "User",
             email: session.user.email || "",
-            userType: userTypeFromMetadata as "professional" | "client" | "owner" | "global_admin",
+            user_type: userTypeFromMetadata as "professional" | "client" | "owner" | "global_admin",
             avatarUrl: avatarFromMetadata,
           };
           
@@ -70,7 +70,7 @@ const NavBar = () => {
           id: profileData.id,
           name: profileData.name || session.user.email?.split('@')[0] || "User",
           email: profileData.email || session.user.email || "",
-          userType: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
+          user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
           avatarUrl: profileData.avatar_url,
           phoneNumber: profileData.phone_number,
         };

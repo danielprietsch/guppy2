@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -48,7 +47,7 @@ export const useOwnerProfile = () => {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: userTypeFromMetadata === 'owner' ? 'owner' : 'global_admin',
+            user_type: userTypeFromMetadata === 'owner' ? 'owner' : 'global_admin',
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };
@@ -93,7 +92,7 @@ export const useOwnerProfile = () => {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: userType === 'owner' ? 'owner' : 'global_admin',
+            user_type: userType === 'owner' ? 'owner' : 'global_admin',
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: null
           };

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -50,7 +51,7 @@ export const useClientProfile = () => {
             id: session.user.id,
             name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: 'client',
+            user_type: 'client',
             avatarUrl: userMetadata?.avatar_url,
             phoneNumber: userMetadata?.phone_number || null
           };
@@ -94,7 +95,7 @@ export const useClientProfile = () => {
           id: session.user.id,
           name: profile.name || session.user.email?.split('@')[0] || "Usuário",
           email: profile.email || session.user.email || "",
-          userType: 'client',
+          user_type: 'client',
           avatarUrl: profile.avatar_url,
           phoneNumber: profile.phone_number
         };

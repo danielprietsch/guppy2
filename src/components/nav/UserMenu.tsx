@@ -28,20 +28,20 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
 
   // Determine dashboard and profile routes based on user type
   const dashboardRoute = 
-    currentUser.userType === "global_admin"
+    currentUser.user_type === "global_admin"
       ? "/admin/global"
-      : currentUser.userType === "professional"
+      : currentUser.user_type === "professional"
       ? "/professional/dashboard"
-      : currentUser.userType === "owner"
+      : currentUser.user_type === "owner"
       ? "/owner/dashboard"
       : "/client/dashboard";
       
   const profileRoute = 
-    currentUser.userType === "global_admin"
+    currentUser.user_type === "global_admin"
       ? "/admin/profile"
-      : currentUser.userType === "professional"
+      : currentUser.user_type === "professional"
       ? "/professional/profile"
-      : currentUser.userType === "owner"
+      : currentUser.user_type === "owner"
       ? "/owner/profile"
       : "/client/profile";
 
@@ -57,7 +57,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     professional: "Profissional",
     owner: "Franqueado",
     global_admin: "Administrador Global"
-  }[currentUser.userType] || "Usuário";
+  }[currentUser.user_type] || "Usuário";
 
   return (
     <div className="flex items-center gap-4">

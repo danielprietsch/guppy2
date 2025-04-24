@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,7 @@ const ProfessionalProfilePage = () => {
             id: session.user.id,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: session.user.email || "",
-            userType: 'professional',
+            user_type: 'professional',
             avatarUrl: session.user.user_metadata?.avatar_url,
             specialties: [],
             phoneNumber: session.user.user_metadata?.phone_number,
@@ -72,7 +73,7 @@ const ProfessionalProfilePage = () => {
                 id: session.user.id,
                 name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
                 email: session.user.email || "",
-                userType: 'professional',
+                user_type: 'professional',
                 avatarUrl: session.user.user_metadata?.avatar_url,
                 specialties: [],
                 phoneNumber: session.user.user_metadata?.phone_number,
@@ -103,7 +104,7 @@ const ProfessionalProfilePage = () => {
                 id: session.user.id,
                 name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
                 email: session.user.email || "",
-                userType: 'professional',
+                user_type: 'professional',
                 avatarUrl: session.user.user_metadata?.avatar_url,
                 specialties: [],
                 phoneNumber: session.user.user_metadata?.phone_number,
@@ -130,7 +131,7 @@ const ProfessionalProfilePage = () => {
             id: userData.id,
             name: userData.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: userData.email || session.user.email || "",
-            userType: userData.user_type as "professional",
+            user_type: userData.user_type as "professional",
             avatarUrl: userData.avatar_url || session.user.user_metadata?.avatar_url,
             specialties: [],
             phoneNumber: userData.phone_number,
@@ -148,7 +149,7 @@ const ProfessionalProfilePage = () => {
               id: session.user.id,
               name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
               email: session.user.email || "",
-              userType: 'professional',
+              user_type: 'professional',
               avatarUrl: session.user.user_metadata?.avatar_url,
               specialties: [],
               phoneNumber: session.user.user_metadata?.phone_number,

@@ -39,7 +39,7 @@ export function useGlobalAdminProfile(): UseGlobalAdminProfileReturn {
             id: session.user.id,
             name: profileData.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador",
             email: profileData.email || session.user.email || "",
-            userType: "global_admin",
+            user_type: "global_admin",
             avatarUrl: profileData.avatar_url || session.user.user_metadata?.avatar_url,
             phoneNumber: profileData.phone_number || session.user.user_metadata?.phone_number
           };
@@ -52,7 +52,7 @@ export function useGlobalAdminProfile(): UseGlobalAdminProfileReturn {
             id: session.user.id,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador",
             email: session.user.email || "",
-            userType: "global_admin",
+            user_type: "global_admin",
             avatarUrl: session.user.user_metadata?.avatar_url,
             phoneNumber: session.user.user_metadata?.phone_number
           };
