@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -32,24 +31,18 @@ export const LocationApprovals = () => {
     try {
       setLoading(true);
       
-      // Fetch location approval requests with location and owner details
-      const { data, error } = await supabase
+      const { data: approvalsData, error: approvalsError } = await supabase
         .from('admin_approvals')
         .select(`
-          id,
-          location_id,
-          status,
-          notes,
-          created_at,
-          locations!inner (
+          *,
+          location:locations(
             name,
             owner_id
           )
-        `)
-        .order('created_at', { ascending: false });
+        `);
       
-      if (error) {
-        debugError("LocationApprovals: Error fetching approvals:", error);
+      if (approvalsError) {
+        debugError("LocationApprovals: Error fetching approvals:", approvalsError);
         toast({
           title: "Erro",
           description: "Não foi possível carregar as solicitações de aprovação.",
@@ -59,11 +52,11 @@ export const LocationApprovals = () => {
       }
 
       // Now, fetch owner details for each location
-      const locationsWithOwners = await Promise.all((data || []).map(async (approval) => {
+      const approvalsList = await Promise.all((approvalsData || []).map(async (approval) => {
         const { data: ownerData, error: ownerError } = await supabase
           .from('profiles')
           .select('name, email')
-          .eq('id', approval.locations.owner_id)
+          .eq('id', approval.location.owner_id)
           .single();
           
         if (ownerError) {
@@ -71,7 +64,7 @@ export const LocationApprovals = () => {
           return {
             id: approval.id,
             location_id: approval.location_id,
-            location_name: approval.locations.name,
+            location_name: approval.location.name,
             owner_name: "Desconhecido",
             owner_email: "Desconhecido",
             status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
@@ -83,7 +76,7 @@ export const LocationApprovals = () => {
         return {
           id: approval.id,
           location_id: approval.location_id,
-          location_name: approval.locations.name,
+          location_name: approval.location.name,
           owner_name: ownerData?.name || "Desconhecido",
           owner_email: ownerData?.email || "Desconhecido",
           status: (approval.status || "PENDENTE") as "PENDENTE" | "APROVADO" | "REJEITADO",
@@ -92,7 +85,7 @@ export const LocationApprovals = () => {
         };
       }));
       
-      setApprovals(locationsWithOwners);
+      setApprovals(approvalsList);
       
     } catch (error) {
       debugError("LocationApprovals: Error in fetchApprovals:", error);
