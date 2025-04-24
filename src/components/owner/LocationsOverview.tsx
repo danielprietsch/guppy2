@@ -1,3 +1,4 @@
+
 import {
   Card,
   CardContent,
@@ -34,6 +35,7 @@ export const LocationsOverview = ({
   useEffect(() => {
     if (selectedLocation) {
       setIsLoading(true);
+      debugLog("LocationsOverview: Location changed, fetching approval status for:", selectedLocation.id);
       fetchApprovalStatus();
     }
   }, [selectedLocation]);
@@ -74,19 +76,57 @@ export const LocationsOverview = ({
   };
 
   const handleRequestApproval = async () => {
-    if (!selectedLocation) return;
+    if (!selectedLocation) {
+      debugLog("LocationsOverview: No location selected, cannot request approval");
+      return;
+    }
+    
+    // Log cabins count before validation
+    debugLog("LocationsOverview: Cabins count before validation:", locationCabins.length);
+    
+    // Validate that there's at least one cabin
+    if (locationCabins.length === 0) {
+      debugLog("LocationsOverview: Validation failed - No cabins");
+      toast({
+        title: "Erro",
+        description: "É necessário cadastrar pelo menos uma cabine antes de solicitar aprovação.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsRequestingApproval(true);
+    debugLog("LocationsOverview: Starting approval request for location", selectedLocation.id);
+    
     try {
-      debugLog("LocationsOverview: Requesting approval for location", selectedLocation.id);
+      // Log parameters being sent to triggerApprovalRequest
+      debugLog("LocationsOverview: Calling triggerApprovalRequest with params:", {
+        locationId: selectedLocation.id, 
+        cabinsCount: locationCabins.length
+      });
+      
       const result = await triggerApprovalRequest(selectedLocation.id, locationCabins.length);
+      
+      // Log the result from triggerApprovalRequest
       debugLog("LocationsOverview: Approval request result:", result);
       
       if (result.success) {
+        debugLog("LocationsOverview: Approval request was successful");
         // Immediate update for better UX
         setApprovalStatus("PENDENTE");
         // Then fetch from server to confirm
         await fetchApprovalStatus();
+      } else {
+        // Log specific failure messages
+        if (result.message === "no-cabins") {
+          debugLog("LocationsOverview: Approval request failed - No cabins");
+        } else if (result.message === "already-approved") {
+          debugLog("LocationsOverview: Local already approved");
+        } else if (result.message === "already-pending") {
+          debugLog("LocationsOverview: Approval already pending");
+        } else {
+          debugLog("LocationsOverview: Approval request failed with unknown message:", result.message);
+        }
       }
     } catch (error) {
       debugError("LocationsOverview: Error requesting approval:", error);
@@ -97,6 +137,7 @@ export const LocationsOverview = ({
       });
     } finally {
       setIsRequestingApproval(false);
+      debugLog("LocationsOverview: Request approval process completed");
     }
   };
 

@@ -9,9 +9,11 @@ import { debugLog, debugError } from "@/utils/debugLogger";
 export const triggerApprovalRequest = async (locationId: string, cabinsCount: number) => {
   try {
     debugLog("triggerApprovalRequest: Starting approval request for location", locationId);
+    debugLog("triggerApprovalRequest: Cabins count:", cabinsCount);
     
     // Validate the location has at least one cabin
     if (cabinsCount < 1) {
+      debugLog("triggerApprovalRequest: Validation failed - No cabins");
       toast({
         title: "Erro",
         description: "O local precisa ter pelo menos uma cabine cadastrada para solicitar aprovação.",
@@ -21,6 +23,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     }
     
     // Check if there's already an approval request
+    debugLog("triggerApprovalRequest: Checking for existing approval requests");
     const { data: existingApproval, error: checkError } = await supabase
       .from('admin_approvals')
       .select('id, status')
@@ -37,8 +40,11 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       return { success: false };
     }
     
+    debugLog("triggerApprovalRequest: Existing approval check result:", existingApproval);
+    
     // If there's an existing approved request, don't create a new one
     if (existingApproval?.status === "APROVADO") {
+      debugLog("triggerApprovalRequest: Location already approved");
       toast({
         title: "Aviso",
         description: "Este local já foi aprovado.",
@@ -48,6 +54,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     
     // If there's a pending request, don't create a new one
     if (existingApproval?.status === "PENDENTE") {
+      debugLog("triggerApprovalRequest: Approval already pending");
       toast({
         title: "Aviso",
         description: "Já existe uma solicitação de aprovação pendente para este local.",
@@ -58,13 +65,16 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
     // If there's an existing rejected request that we're retrying
     if (existingApproval?.id) {
       debugLog("triggerApprovalRequest: Updating existing rejected request:", existingApproval.id);
-      const { error: updateError } = await supabase
+      
+      debugLog("triggerApprovalRequest: Sending update request to admin_approvals table");
+      const { error: updateError, data: updateData } = await supabase
         .from('admin_approvals')
         .update({
           status: "PENDENTE",
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingApproval.id);
+        .eq('id', existingApproval.id)
+        .select();
         
       if (updateError) {
         debugError("triggerApprovalRequest: Error updating approval request:", updateError);
@@ -76,16 +86,22 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         return { success: false };
       }
       
+      debugLog("triggerApprovalRequest: Approval updated successfully:", updateData);
+      
       // Update locations table status
-      const { error: locationError } = await supabase
+      debugLog("triggerApprovalRequest: Updating location active status to false");
+      const { error: locationError, data: locationData } = await supabase
         .from('locations')
         .update({ 
           active: false // Keep as inactive until approved
         })
-        .eq('id', locationId);
+        .eq('id', locationId)
+        .select();
       
       if (locationError) {
         debugError("triggerApprovalRequest: Error updating location status:", locationError);
+      } else {
+        debugLog("triggerApprovalRequest: Location status updated successfully:", locationData);
       }
       
       toast({
@@ -116,7 +132,20 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       return { success: false };
     }
     
-    debugLog("triggerApprovalRequest: Approval request created successfully", data);
+    debugLog("triggerApprovalRequest: Approval request created successfully:", data);
+    
+    // Also update the location status to ensure consistency
+    debugLog("triggerApprovalRequest: Setting location active status to false");
+    const { error: locationUpdateError } = await supabase
+      .from('locations')
+      .update({ active: false })
+      .eq('id', locationId);
+      
+    if (locationUpdateError) {
+      debugError("triggerApprovalRequest: Error updating location active status:", locationUpdateError);
+    } else {
+      debugLog("triggerApprovalRequest: Location active status updated successfully");
+    }
     
     toast({
       title: "Sucesso",
