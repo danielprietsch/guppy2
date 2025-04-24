@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import type { Booking, Location, Cabin } from "@/lib/types";
 
 const ClientReservationsPage = () => {
   const navigate = useNavigate();
@@ -34,36 +35,31 @@ const ClientReservationsPage = () => {
           return;
         }
 
-        // This is a mock implementation for now
-        // In a real implementation, you would fetch reservations from Supabase
-        // const { data, error } = await supabase
-        //   .from('bookings')
-        //   .select('*, cabin:cabins(name, location_id), location:locations(name)')
-        //   .eq('client_id', session.user.id)
+        // Fetch bookings with cabin and location details
+        const { data: bookings, error } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            cabin:cabins (
+              name,
+              location:locations (
+                name,
+                address,
+                city,
+                state
+              )
+            )
+          `)
+          .eq('professional_id', session.user.id)
+          .eq('status', 'confirmed');
 
-        // Mock data for demonstration
-        const mockReservations = [
-          {
-            id: "1",
-            date: new Date().toISOString(),
-            shift: "morning",
-            status: "confirmed",
-            cabinName: "Cabine Premium 1",
-            locationName: "Salão Central",
-            professionalName: "Ana Silva"
-          },
-          {
-            id: "2",
-            date: new Date(Date.now() + 86400000 * 3).toISOString(), // 3 days later
-            shift: "afternoon",
-            status: "pending",
-            cabinName: "Cabine VIP 2",
-            locationName: "Estúdio Beleza",
-            professionalName: "João Costa"
-          }
-        ];
+        if (error) {
+          debugError("Error fetching reservations:", error);
+          throw error;
+        }
 
-        setReservations(mockReservations);
+        debugLog("Fetched reservations:", bookings);
+        setReservations(bookings || []);
 
       } catch (error) {
         debugError("Error fetching reservations:", error);
@@ -79,32 +75,6 @@ const ClientReservationsPage = () => {
 
     fetchReservations();
   }, [navigate]);
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-800";
-      case "pending":
-        return "bg-amber-100 text-amber-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "Confirmada";
-      case "pending":
-        return "Pendente";
-      case "cancelled":
-        return "Cancelada";
-      default:
-        return status;
-    }
-  };
 
   const getShiftText = (shift: string) => {
     switch (shift) {
@@ -143,7 +113,7 @@ const ClientReservationsPage = () => {
           </p>
         </div>
         <Button
-          onClick={() => navigate("/client/dashboard")}
+          onClick={() => navigate("/professional/dashboard")}
           variant="outline"
         >
           Voltar ao Dashboard
@@ -160,7 +130,6 @@ const ClientReservationsPage = () => {
                   <TableHead>Cabine</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Turno</TableHead>
-                  <TableHead>Profissional</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -168,28 +137,29 @@ const ClientReservationsPage = () => {
               <TableBody>
                 {reservations.map((reservation) => (
                   <TableRow key={reservation.id}>
-                    <TableCell>{reservation.locationName}</TableCell>
-                    <TableCell>{reservation.cabinName}</TableCell>
+                    <TableCell>
+                      {reservation.cabin?.location?.name || "Local não encontrado"}
+                    </TableCell>
+                    <TableCell>{reservation.cabin?.name || "Cabine não encontrada"}</TableCell>
                     <TableCell>
                       {format(new Date(reservation.date), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell>{getShiftText(reservation.shift)}</TableCell>
-                    <TableCell>{reservation.professionalName}</TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(reservation.status)}`}>
-                        {getStatusText(reservation.status)}
+                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Confirmada
                       </span>
                     </TableCell>
                     <TableCell>
                       <Button
                         variant="outline"
                         size="sm"
-                        disabled={reservation.status === "cancelled"}
                         className="text-xs"
                         onClick={() => {
+                          // In the future, this could show more details or allow cancellation
                           toast({
-                            title: "Funcionalidade em desenvolvimento",
-                            description: "O cancelamento de reservas estará disponível em breve.",
+                            title: "Detalhes da reserva",
+                            description: `Reserva para ${format(new Date(reservation.date), "dd/MM/yyyy", { locale: ptBR })} - ${getShiftText(reservation.shift)}`,
                           });
                         }}
                       >
@@ -209,13 +179,13 @@ const ClientReservationsPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              Você ainda não possui nenhuma reserva. Explore nossos profissionais e faça seu agendamento.
+              Você ainda não possui nenhuma reserva. Explore nossos espaços e faça seu agendamento.
             </p>
             <Button
-              onClick={() => navigate("/professionals")}
+              onClick={() => navigate("/search-cabins")}
               className="mt-4"
             >
-              Descobrir Profissionais
+              Procurar Cabines
             </Button>
           </CardContent>
         </Card>
