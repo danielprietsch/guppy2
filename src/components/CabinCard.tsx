@@ -1,3 +1,4 @@
+
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,19 +20,41 @@ interface CabinCardProps {
 }
 
 const CabinCard = ({ cabin, location }: CabinCardProps) => {
-  const [userType, setUserType] = useState<string | null>(null);
+  const [isProfessional, setIsProfessional] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const checkUserType = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', session.user.id)
-          .single();
+      setIsLoading(true);
+      try {
+        // Verificar se há uma sessão ativa
+        const { data: { session } } = await supabase.auth.getSession();
         
-        setUserType(profile?.user_type || null);
+        if (session?.user) {
+          // Verificar primeiro nos metadados do usuário (mais confiável)
+          const userType = session.user.user_metadata?.userType;
+          
+          if (userType === 'professional' || userType === 'provider') {
+            setIsProfessional(true);
+            setIsLoading(false);
+            return;
+          }
+          
+          // Se não houver nos metadados, verificar na tabela de perfis
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile && (profile.user_type === 'professional' || profile.user_type === 'provider')) {
+            setIsProfessional(true);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao verificar tipo de usuário:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -87,9 +110,16 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
             <div>{formatShiftStatus(cabin.availability.evening)}</div>
           </div>
         </div>
+        {cabin.price && (
+          <p className="mt-3 font-semibold">R$ {cabin.price.toFixed(2)}</p>
+        )}
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        {userType === 'professional' || userType === 'provider' ? (
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground text-center w-full">
+            Verificando permissões...
+          </p>
+        ) : isProfessional ? (
           <Link to={`/book-cabin/${cabin.id}`} className="w-full">
             <Button size="sm" className="w-full">
               Reservar Cabine
