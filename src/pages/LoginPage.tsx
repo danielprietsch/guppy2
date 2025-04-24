@@ -59,6 +59,14 @@ const LoginPage = () => {
     setAuthError(null);
     
     try {
+      // Adiciona uma verificação extra para o usuário admin
+      if (data.email === 'guppyadmin@nuvemtecnologia.com') {
+        // Você pode adicionar validações adicionais aqui, como:
+        // - Verificar se o IP de login está em uma lista de IPs permitidos
+        // - Adicionar autenticação de dois fatores
+        console.log("Login de usuário admin detectado");
+      }
+      
       console.log("Tentando login com email:", data.email);
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
