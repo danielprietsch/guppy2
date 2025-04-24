@@ -1,3 +1,4 @@
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Index from "@/pages/Index";
 import LoginPage from "@/pages/LoginPage";
@@ -16,6 +17,7 @@ import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
 import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
+import GlobalAdminProfilePage from "@/pages/GlobalAdminProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -82,6 +84,10 @@ const router = createBrowserRouter([
       {
         path: "/admin/global",
         element: <GlobalAdminDashboardPage />,
+      },
+      {
+        path: "/admin/profile",
+        element: <GlobalAdminProfilePage />,
       },
     ],
   },

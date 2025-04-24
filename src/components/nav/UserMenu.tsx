@@ -42,7 +42,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
       : currentUser.userType === "provider"
       ? "/provider/profile"
       : currentUser.userType === "owner"
-      ? "/owner/profile"
+      ? "/profile"
       : "/client/profile";
 
   // Extract first letter of name for avatar fallback
