@@ -1,4 +1,3 @@
-
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -6,7 +5,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
-import { sendPasswordResetToGlobalAdmin } from "@/utils/globalAdminUtils";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -40,9 +38,6 @@ const LoginPage = () => {
     };
     
     checkCurrentSession();
-
-    // Create global admin user if it doesn't exist
-    sendPasswordResetToGlobalAdmin();
   }, [navigate]);
 
   const getDashboardRoute = (userType: string): string => {
