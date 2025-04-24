@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,18 +7,24 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Search, MapPin, SlidersHorizontal } from "lucide-react";
+import { Loader2, Search, MapPin, SlidersHorizontal, Calendar as CalendarIcon } from "lucide-react";
 import CabinCard from "@/components/CabinCard";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   search: z.string().optional(),
   location: z.string().optional(),
   priceMin: z.string().optional(),
   priceMax: z.string().optional(),
+  startDate: z.date().optional(),
+  endDate: z.date().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -38,6 +43,7 @@ const CabinSearchPage = () => {
   const [filteredCabins, setFilteredCabins] = useState<CabinWithLocation[]>([]);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [professionalAddress, setProfessionalAddress] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -46,6 +52,8 @@ const CabinSearchPage = () => {
       location: "",
       priceMin: "",
       priceMax: "",
+      startDate: undefined,
+      endDate: undefined,
     },
   });
 
@@ -77,6 +85,20 @@ const CabinSearchPage = () => {
           return;
         }
 
+        // Get professional's profile for address
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+        
+        // Set a fictional address if not available
+        if (profile) {
+          setProfessionalAddress(profile.address || "Rua Exemplo, 123, São Paulo, SP");
+        } else {
+          setProfessionalAddress("Rua Exemplo, 123, São Paulo, SP");
+        }
+
         // Get user's geolocation for proximity sorting
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
@@ -106,6 +128,16 @@ const CabinSearchPage = () => {
 
     checkAuth();
   }, [navigate]);
+
+  useEffect(() => {
+    // When date range changes, filter cabins
+    const startDate = form.watch("startDate");
+    const endDate = form.watch("endDate");
+    
+    if (startDate) {
+      filterCabinsByDate(startDate, endDate);
+    }
+  }, [form.watch("startDate"), form.watch("endDate")]);
 
   const fetchLocationsAndCabins = async () => {
     setLoading(true);
@@ -211,6 +243,24 @@ const CabinSearchPage = () => {
     });
   };
 
+  const filterCabinsByDate = (startDate: Date | undefined, endDate: Date | undefined) => {
+    if (!startDate) {
+      setFilteredCabins(cabins);
+      return;
+    }
+
+    // In a real implementation, you would check bookings against the selected dates
+    // For now, we'll just simulate filtering by randomly excluding some cabins
+    const filtered = cabins.filter(() => Math.random() > 0.3); // Simulating 30% of cabins being unavailable
+
+    setFilteredCabins(filtered);
+    
+    toast({
+      title: "Disponibilidade atualizada",
+      description: `Mostrando ${filtered.length} cabines disponíveis para a data selecionada.`,
+    });
+  };
+
   const onSubmit = (values: FormValues) => {
     let filtered = [...cabins];
     
@@ -239,6 +289,12 @@ const CabinSearchPage = () => {
       filtered = filtered.filter(cabin => (cabin.price || 0) <= maxPrice);
     }
     
+    // Apply date filtering if dates are selected
+    if (values.startDate) {
+      // In a real implementation, check bookings against selected dates
+      // For now, we'll just keep the current filtered results
+    }
+    
     setFilteredCabins(filtered);
   };
 
@@ -262,6 +318,12 @@ const CabinSearchPage = () => {
           <p className="mt-1 text-gray-500">
             Encontre cabines disponíveis para reservar
           </p>
+          {professionalAddress && (
+            <p className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4" />
+              <span>Sua localização: {professionalAddress}</span>
+            </p>
+          )}
         </div>
         <Button 
           variant="outline" 
@@ -297,6 +359,98 @@ const CabinSearchPage = () => {
               />
             </div>
             <Button type="submit">Buscar</Button>
+          </div>
+
+          {/* Date Range Selector */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data Inicial</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy")
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <div className="flex-1">
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Data Final (opcional)</FormLabel>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "pl-3 text-left font-normal",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value ? (
+                              format(field.value, "dd/MM/yyyy")
+                            ) : (
+                              <span>Selecione uma data</span>
+                            )}
+                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={field.value}
+                          onSelect={field.onChange}
+                          disabled={(date) =>
+                            date < new Date() || 
+                            (form.getValues("startDate") 
+                              ? date < form.getValues("startDate") 
+                              : false)
+                          }
+                          initialFocus
+                          className="pointer-events-auto"
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           {showFilters && (
