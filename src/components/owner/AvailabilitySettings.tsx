@@ -14,6 +14,21 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 
+// Define interface for pricing structure
+interface CabinPricing {
+  defaultPricing: {
+    price?: number;
+  };
+  specificDates: {
+    [date: string]: {
+      [turn: string]: {
+        price: number;
+        available?: boolean;
+      };
+    };
+  };
+}
+
 interface AvailabilitySettingsProps {
   selectedLocation: Location | null;
   locationCabins: Cabin[];
@@ -113,17 +128,20 @@ export const AvailabilitySettings = ({
         const slotPricingData: { [cabinId: string]: { [date: string]: { [turn: string]: number } } } = {};
 
         cabinsData.forEach(cabin => {
+          // Safely process the cabin pricing data with proper type checking
+          const pricingData = cabin.pricing as CabinPricing | null;
+          
           // Set default cabin price
-          const defaultPrice = cabin.pricing?.defaultPricing?.price || 100;
+          const defaultPrice = pricingData?.defaultPricing?.price || 100;
           prices[cabin.id] = defaultPrice;
           
           // Set slot-specific prices if available
-          if (cabin.pricing?.specificDates) {
+          if (pricingData && pricingData.specificDates) {
             slotPricingData[cabin.id] = {};
             
-            Object.entries(cabin.pricing.specificDates).forEach(([date, dateData]) => {
+            Object.entries(pricingData.specificDates).forEach(([date, dateData]) => {
               slotPricingData[cabin.id][date] = {};
-              Object.entries(dateData as {[turn: string]: {price: number}}).forEach(([turn, turnData]) => {
+              Object.entries(dateData).forEach(([turn, turnData]) => {
                 slotPricingData[cabin.id][date][turn] = turnData.price || defaultPrice;
               });
             });
@@ -162,43 +180,49 @@ export const AvailabilitySettings = ({
       });
 
       // Update cabin availability in the database
-      const { data: cabin } = await supabase
+      const { data: cabinData, error: fetchError } = await supabase
         .from('cabins')
         .select('pricing')
         .eq('id', cabinId)
         .single();
 
-      if (cabin) {
-        const updatedPricing = cabin.pricing || { defaultPricing: {}, specificDates: {} };
+      if (fetchError) throw fetchError;
+
+      if (cabinData) {
+        // Safely cast to our CabinPricing interface
+        const pricingData = cabinData.pricing as CabinPricing || { 
+          defaultPricing: {}, 
+          specificDates: {} 
+        };
         
-        // Make sure specificDates exists
-        if (!updatedPricing.specificDates) {
-          updatedPricing.specificDates = {};
+        // Make sure structures exist
+        if (!pricingData.specificDates) {
+          pricingData.specificDates = {};
         }
         
         // Initialize the date entry if it doesn't exist
-        if (!updatedPricing.specificDates[date]) {
-          updatedPricing.specificDates[date] = {};
+        if (!pricingData.specificDates[date]) {
+          pricingData.specificDates[date] = {};
         }
         
         // Initialize the turn entry if it doesn't exist
-        if (!updatedPricing.specificDates[date][turn]) {
-          updatedPricing.specificDates[date][turn] = {
+        if (!pricingData.specificDates[date][turn]) {
+          pricingData.specificDates[date][turn] = {
             price: cabinPrices[cabinId] || 100,
             available: !isManualClose
           };
         } else {
           // Update the availability
-          updatedPricing.specificDates[date][turn].available = !isManualClose;
+          pricingData.specificDates[date][turn].available = !isManualClose;
         }
         
         // Update the database
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('cabins')
-          .update({ pricing: updatedPricing })
+          .update({ pricing: pricingData })
           .eq('id', cabinId);
           
-        if (error) throw error;
+        if (updateError) throw updateError;
       }
 
       toast({
@@ -237,43 +261,49 @@ export const AvailabilitySettings = ({
       });
       
       // Update the database
-      const { data: cabin } = await supabase
+      const { data: cabinData, error: fetchError } = await supabase
         .from('cabins')
         .select('pricing')
         .eq('id', cabinId)
         .single();
 
-      if (cabin) {
-        const updatedPricing = cabin.pricing || { defaultPricing: {}, specificDates: {} };
+      if (fetchError) throw fetchError;
+
+      if (cabinData) {
+        // Safely cast to our CabinPricing interface
+        const pricingData = cabinData.pricing as CabinPricing || {
+          defaultPricing: {},
+          specificDates: {}
+        };
         
         // Make sure specificDates exists
-        if (!updatedPricing.specificDates) {
-          updatedPricing.specificDates = {};
+        if (!pricingData.specificDates) {
+          pricingData.specificDates = {};
         }
         
         // Initialize the date entry if it doesn't exist
-        if (!updatedPricing.specificDates[date]) {
-          updatedPricing.specificDates[date] = {};
+        if (!pricingData.specificDates[date]) {
+          pricingData.specificDates[date] = {};
         }
         
         // Initialize the turn entry if it doesn't exist
-        if (!updatedPricing.specificDates[date][turn]) {
-          updatedPricing.specificDates[date][turn] = {
+        if (!pricingData.specificDates[date][turn]) {
+          pricingData.specificDates[date][turn] = {
             price: price,
             available: !manuallyClosedDates[cabinId]?.[date]?.[turn]
           };
         } else {
           // Update the price
-          updatedPricing.specificDates[date][turn].price = price;
+          pricingData.specificDates[date][turn].price = price;
         }
         
         // Update the database
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from('cabins')
-          .update({ pricing: updatedPricing })
+          .update({ pricing: pricingData })
           .eq('id', cabinId);
           
-        if (error) throw error;
+        if (updateError) throw updateError;
       }
       
       toast({
