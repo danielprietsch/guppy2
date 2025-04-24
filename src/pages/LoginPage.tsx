@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -16,9 +17,9 @@ const LoginPage = () => {
     const checkCurrentSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log("LoginPage: Checking current session:", session);
+        debugLog("LoginPage: Checking current session:", session);
         if (session) {
-          console.log("LoginPage: Session found, user is authenticated:", session.user);
+          debugLog("LoginPage: Session found, user is authenticated:", session.user);
           
           // Get user type from metadata first as a fallback
           const userTypeFromMetadata = session.user.user_metadata?.userType || "client";
@@ -32,26 +33,26 @@ const LoginPage = () => {
               .maybeSingle();
               
             if (profile) {
-              console.log("LoginPage: Found profile with user_type:", profile.user_type);
+              debugLog("LoginPage: Found profile with user_type:", profile.user_type);
               const dashboardRoute = getDashboardRoute(profile.user_type);
-              console.log("LoginPage: Redirecting to dashboard route:", dashboardRoute);
+              debugLog("LoginPage: Redirecting to dashboard route:", dashboardRoute);
               navigate(dashboardRoute, { replace: true });
               return;
             }
           } catch (error) {
-            console.error("Error fetching profile:", error);
+            debugError("Error fetching profile:", error);
           }
           
           // Fallback to metadata if profile not found or error occurs
-          console.log("LoginPage: Using metadata user type:", userTypeFromMetadata);
+          debugLog("LoginPage: Using metadata user type:", userTypeFromMetadata);
           const dashboardRoute = getDashboardRoute(userTypeFromMetadata);
-          console.log("LoginPage: Redirecting to dashboard route (fallback):", dashboardRoute);
+          debugLog("LoginPage: Redirecting to dashboard route (fallback):", dashboardRoute);
           navigate(dashboardRoute, { replace: true });
         } else {
-          console.log("LoginPage: No active session found");
+          debugLog("LoginPage: No active session found");
         }
       } catch (error) {
-        console.error("Error checking session:", error);
+        debugError("Error checking session:", error);
       }
     };
     
@@ -59,7 +60,7 @@ const LoginPage = () => {
   }, [navigate]);
 
   const getDashboardRoute = (userType: string): string => {
-    console.log("LoginPage: Getting dashboard route for user type:", userType);
+    debugLog("LoginPage: Getting dashboard route for user type:", userType);
     switch (userType) {
       case "global_admin":
         return "/admin/global";
@@ -73,12 +74,12 @@ const LoginPage = () => {
   };
 
   const handleLogin = async (data: { email: string; password: string }) => {
-    console.log("Iniciando processo de login...");
+    debugLog("Iniciando processo de login...");
     setIsLoggingIn(true);
     setAuthError(null);
     
     try {
-      console.log("Tentando login com:", { email: data.email });
+      debugLog("Tentando login com:", { email: data.email });
       
       const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
@@ -86,7 +87,7 @@ const LoginPage = () => {
       });
       
       if (error) {
-        console.error("Erro no login:", error);
+        debugError("Erro no login:", error);
         const translatedError = translateSupabaseError(error.message);
         setAuthError(translatedError);
         toast({
@@ -98,10 +99,19 @@ const LoginPage = () => {
         return Promise.reject(error);
       }
       
-      console.log("Login successful:", authData);
+      debugLog("Login successful:", authData);
       
       if (authData.user) {
         try {
+          // Check if this is a global admin by metadata
+          const userTypeFromMetadata = authData.user.user_metadata?.userType;
+          if (userTypeFromMetadata === 'global_admin') {
+            debugLog("Login: User is global_admin according to metadata");
+            navigate("/admin/global", { replace: true });
+            setIsLoggingIn(false);
+            return Promise.resolve();
+          }
+          
           // First try to get user type from profile
           const { data: profile } = await supabase
             .from('profiles')
@@ -110,26 +120,33 @@ const LoginPage = () => {
             .maybeSingle();
             
           if (profile) {
-            console.log("Login: Found profile with user_type:", profile.user_type);
-            const dashboardRoute = getDashboardRoute(profile.user_type);
-            console.log(`Redirecting to ${dashboardRoute} (from profile)`);
-            navigate(dashboardRoute, { replace: true });
+            debugLog("Login: Found profile with user_type:", profile.user_type);
+            
+            // Special check for global_admin
+            if (profile.user_type === 'global_admin') {
+              debugLog("Login: User is global_admin according to profile");
+              navigate("/admin/global", { replace: true });
+            } else {
+              const dashboardRoute = getDashboardRoute(profile.user_type);
+              debugLog(`Redirecting to ${dashboardRoute} (from profile)`);
+              navigate(dashboardRoute, { replace: true });
+            }
           } else {
             // Fallback to metadata
-            const userType = authData.user.user_metadata?.userType || "client";
-            console.log("Login: No profile found, using metadata user_type:", userType);
+            const userType = userTypeFromMetadata || "client";
+            debugLog("Login: No profile found, using metadata user_type:", userType);
             const dashboardRoute = getDashboardRoute(userType);
-            console.log(`Redirecting to ${dashboardRoute} (from metadata)`);
+            debugLog(`Redirecting to ${dashboardRoute} (from metadata)`);
             navigate(dashboardRoute, { replace: true });
           }
         } catch (profileError) {
-          console.error("Error fetching profile:", profileError);
+          debugError("Error fetching profile:", profileError);
           
           // Fallback to metadata if profile fetch fails
           const userType = authData.user.user_metadata?.userType || "client";
-          console.log("Login: Error fetching profile, using metadata user_type:", userType);
+          debugLog("Login: Error fetching profile, using metadata user_type:", userType);
           const dashboardRoute = getDashboardRoute(userType);
-          console.log(`Redirecting to ${dashboardRoute} (fallback)`);
+          debugLog(`Redirecting to ${dashboardRoute} (fallback)`);
           navigate(dashboardRoute, { replace: true });
         }
       }
@@ -138,7 +155,7 @@ const LoginPage = () => {
       return Promise.resolve();
       
     } catch (error: any) {
-      console.error("Erro ao processar login:", error);
+      debugError("Erro ao processar login:", error);
       const translatedError = translateSupabaseError(error.message);
       setAuthError(translatedError);
       toast({

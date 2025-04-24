@@ -1,3 +1,4 @@
+
 import { useNavigate } from "react-router-dom";
 import AuthForm from "@/components/AuthForm";
 import { toast } from "@/hooks/use-toast";
@@ -6,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
 import { handleGlobalAdminRegistration } from "@/utils/globalAdminUtils";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -27,6 +29,11 @@ const RegisterPage = () => {
         if (profile) {
           const dashboardRoute = getDashboardRoute(profile.user_type);
           navigate(dashboardRoute, { replace: true });
+        } else {
+          // Fallback to metadata
+          const userType = data.session.user.user_metadata?.userType || "client";
+          const dashboardRoute = getDashboardRoute(userType);
+          navigate(dashboardRoute, { replace: true });
         }
       }
     };
@@ -35,6 +42,7 @@ const RegisterPage = () => {
   }, [navigate]);
 
   const getDashboardRoute = (userType: string): string => {
+    debugLog("RegisterPage: Getting dashboard route for user type:", userType);
     switch (userType) {
       case "provider":
         return "/provider/dashboard";
@@ -53,18 +61,18 @@ const RegisterPage = () => {
     password: string;
     userType: "client" | "provider" | "owner" | "global_admin";
   }) => {
-    console.log("Iniciando processo de registro...");
+    debugLog("Iniciando processo de registro...");
     setIsRegistering(true);
     setAuthError(null);
     
     try {
-      console.log("Tentando registrar com:", { 
+      debugLog("Tentando registrar com:", { 
         email: data.email, 
         userType: data.userType 
       });
 
       if (data.userType === "global_admin") {
-        console.log("Registrando como administrador global");
+        debugLog("Registrando como administrador global");
         const success = await handleGlobalAdminRegistration({
           email: data.email,
           password: data.password,
@@ -76,7 +84,12 @@ const RegisterPage = () => {
             title: "Administrador global registrado com sucesso",
             description: "Redirecionando para o dashboard de administrador global"
           });
-          navigate("/admin/global", { replace: true });
+          
+          // Wait a moment for the profile to be created before redirecting
+          setTimeout(() => {
+            navigate("/admin/global", { replace: true });
+          }, 1000);
+          
           setIsRegistering(false);
           return Promise.resolve();
         } else {
@@ -111,7 +124,7 @@ const RegisterPage = () => {
         return Promise.reject(error);
       }
       
-      console.log("Registration successful:", authData);
+      debugLog("Registration successful:", authData);
       
       toast({
         title: "Cadastro realizado com sucesso!",

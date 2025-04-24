@@ -30,7 +30,7 @@ const GlobalAdminDashboardPage = () => {
 
         debugLog("GlobalAdminDashboardPage: Session found, checking if user is admin");
         
-        // First check user metadata for quick access
+        // First check user metadata for global_admin
         const userTypeFromMetadata = session.user.user_metadata?.userType;
         debugLog("GlobalAdminDashboardPage: User type from metadata:", userTypeFromMetadata);
         
@@ -50,6 +50,15 @@ const GlobalAdminDashboardPage = () => {
           
         if (error) {
           debugError("GlobalAdminDashboardPage: Error fetching profile:", error);
+          
+          // Double check metadata again before rejecting
+          if (userTypeFromMetadata === "global_admin") {
+            debugLog("GlobalAdminDashboardPage: User appears to be global_admin despite profile error");
+            setUserName(session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Administrador");
+            setLoading(false);
+            return;
+          }
+          
           toast({
             title: "Erro ao carregar perfil",
             description: "Não foi possível verificar suas credenciais.",

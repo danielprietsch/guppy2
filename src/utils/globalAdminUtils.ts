@@ -81,6 +81,33 @@ export const handleGlobalAdminRegistration = async (data: {
       return false;
     }
     
+    // Let's manually insert into the profiles table to ensure it gets created properly
+    if (signUpData && signUpData.user) {
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: signUpData.user.id,
+            name: data.name,
+            email: data.email,
+            user_type: 'global_admin',
+            avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
+          });
+          
+        if (profileError) {
+          debugError("Error creating global admin profile:", profileError);
+          toast({
+            title: "Aviso",
+            description: "Conta criada, mas houve um problema ao configurar o perfil como admin global."
+          });
+        } else {
+          debugLog("Global admin profile created successfully");
+        }
+      } catch (profileInsertError) {
+        debugError("Error inserting global admin profile:", profileInsertError);
+      }
+    }
+    
     debugLog("Global admin registered successfully");
     toast({
       title: "Admin Global registrado",
