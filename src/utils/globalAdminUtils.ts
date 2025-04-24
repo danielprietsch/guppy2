@@ -46,7 +46,7 @@ export const sendPasswordResetToGlobalAdmin = async () => {
 
 // Helper function to check if an email is the global admin email
 export const isGlobalAdminEmail = (email: string): boolean => {
-  return false;
+  return email === 'guppyadmin@nuvemtecnologia.com';
 };
 
 // Modified function to handle global admin registration
@@ -86,6 +86,17 @@ export const handleGlobalAdminRegistration = async (data: {
         return false;
       }
       
+      // Before inserting into profiles table, get the allowed user types
+      const { data: allowedUserTypes, error: typesError } = await supabase
+        .rpc('get_allowed_user_types');
+        
+      debugLog("Allowed user types:", allowedUserTypes);
+      
+      // Determine if global_admin is allowed, otherwise use admin
+      const userType = Array.isArray(allowedUserTypes) && 
+                       (allowedUserTypes as string[]).includes('global_admin') ? 
+                       'global_admin' : 'admin';
+      
       // Now try to update or insert the profile
       const { error: profileError } = await supabase
         .from('profiles')
@@ -93,7 +104,7 @@ export const handleGlobalAdminRegistration = async (data: {
           id: existingUser.user.id,
           name: data.name,
           email: data.email,
-          user_type: 'global_admin',
+          user_type: userType,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
         });
         
@@ -117,13 +128,25 @@ export const handleGlobalAdminRegistration = async (data: {
     }
     
     // If we get here, we need to create a new user
+    // First get the allowed user types from the database
+    const { data: allowedUserTypes, error: typesError } = await supabase
+      .rpc('get_allowed_user_types');
+      
+    debugLog("Allowed user types for new user:", allowedUserTypes);
+    
+    // Determine the user type to use based on what's allowed
+    const userTypeMetadata = Array.isArray(allowedUserTypes) && 
+                     (allowedUserTypes as string[]).includes('global_admin') ? 
+                     'global_admin' : 'admin';
+    
+    // Now create the user with appropriate metadata
     const { data: signUpData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         data: {
           name: data.name,
-          userType: 'global_admin',
+          userType: userTypeMetadata,
           avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
         }
       }
@@ -143,26 +166,19 @@ export const handleGlobalAdminRegistration = async (data: {
     if (signUpData && signUpData.user) {
       debugLog("Auth account created, now creating profile for global admin");
       
-      // First try to get the allowed user_type values from the profiles table
-      const { data: allowedUserTypes } = await supabase
-        .rpc('get_allowed_user_types');
-        
-      debugLog("Allowed user types:", allowedUserTypes);
-      
-      // Let's manually insert into the profiles table with a valid user_type
-      // If global_admin isn't a valid enum value, we'll use "admin" as a fallback
-      const userType = Array.isArray(allowedUserTypes) && 
+      // Determine the user type for the profile based on what's allowed
+      const profileUserType = Array.isArray(allowedUserTypes) && 
                        (allowedUserTypes as string[]).includes('global_admin') ? 
                        'global_admin' : 'admin';
       
       try {
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
+          .upsert({
             id: signUpData.user.id,
             name: data.name,
             email: data.email,
-            user_type: userType,
+            user_type: profileUserType,
             avatar_url: `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=random`
           });
           
