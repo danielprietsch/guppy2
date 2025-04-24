@@ -15,6 +15,7 @@ import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import ClientProfilePage from "@/pages/ClientProfilePage";
 import AdminDashboardPage from "@/pages/AdminDashboardPage";
+import GlobalAdminDashboardPage from "@/pages/GlobalAdminDashboardPage";
 
 const router = createBrowserRouter([
   {
@@ -77,6 +78,10 @@ const router = createBrowserRouter([
       {
         path: "/admin/dashboard",
         element: <AdminDashboardPage />,
+      },
+      {
+        path: "/admin/global",
+        element: <GlobalAdminDashboardPage />,
       },
     ],
   },

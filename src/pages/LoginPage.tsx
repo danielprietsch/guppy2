@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
+import { createGlobalAdmin } from "@/utils/globalAdminUtils";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -38,11 +39,15 @@ const LoginPage = () => {
     };
     
     checkCurrentSession();
+
+    // Create global admin user if it doesn't exist
+    createGlobalAdmin();
   }, [navigate]);
 
-  // Helper function to determine dashboard route based on user type
   const getDashboardRoute = (userType: string): string => {
     switch (userType) {
+      case "global_admin":
+        return "/admin/global";
       case "provider":
         return "/provider/dashboard";
       case "owner":

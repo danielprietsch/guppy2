@@ -28,7 +28,9 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
 
   // Determine dashboard and profile routes based on user type
   const dashboardRoute = 
-    currentUser.userType === "provider"
+    currentUser.userType === "global_admin"
+      ? "/admin/global"
+      : currentUser.userType === "provider"
       ? "/provider/dashboard"
       : currentUser.userType === "owner"
       ? "/owner/dashboard"
