@@ -89,17 +89,17 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
-        {userType === 'professional' ? (
+        {userType === 'professional' || userType === 'provider' ? (
           <Link to={`/book-cabin/${cabin.id}`} className="w-full">
             <Button size="sm" className="w-full">
-              Reservar
+              Reservar Cabine
             </Button>
           </Link>
-        ) : userType === 'client' ? (
+        ) : (
           <p className="text-sm text-muted-foreground text-center w-full">
             Apenas profissionais podem reservar cabines
           </p>
-        ) : null}
+        )}
       </CardFooter>
     </Card>
   );

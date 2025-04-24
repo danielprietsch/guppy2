@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,12 +34,10 @@ const ProfessionalProfilePage = () => {
           return;
         }
         
-        // Verificar se o usuário é um profissional usando os metadados primeiro
         const userType = session.user.user_metadata?.userType;
         debugLog("ProfessionalProfilePage: Tipo de usuário nos metadados:", userType);
         
         if (userType === 'professional' || userType === 'provider') {
-          // O usuário é um profissional segundo os metadados
           setProfile({
             id: session.user.id,
             name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
@@ -54,7 +51,6 @@ const ProfessionalProfilePage = () => {
           return;
         }
         
-        // Se não for confirmado pelos metadados, tentar buscar do perfil
         try {
           debugLog("ProfessionalProfilePage: Buscando perfil do usuário");
           const { data: userData, error } = await supabase
@@ -66,7 +62,6 @@ const ProfessionalProfilePage = () => {
           if (error) {
             debugError("ProfessionalProfilePage: Erro ao buscar perfil:", error);
             
-            // Verificar novamente os metadados como fallback
             if (userType === 'professional' || userType === 'provider') {
               setProfile({
                 id: session.user.id,
@@ -90,11 +85,9 @@ const ProfessionalProfilePage = () => {
             return;
           }
           
-          // Verificar se o perfil existe e é do tipo profissional
           if (!userData || (userData.user_type !== "professional" && userData.user_type !== "provider")) {
             debugError("ProfessionalProfilePage: Tipo de usuário inválido ou não encontrado");
             
-            // Se os metadados confirmarem o tipo de usuário, continuar
             if (userType === 'professional' || userType === 'provider') {
               setProfile({
                 id: session.user.id,
@@ -118,20 +111,18 @@ const ProfessionalProfilePage = () => {
             return;
           }
           
-          // Configurar o perfil do usuário a partir dos dados do banco
           setProfile({
             id: userData.id,
             name: userData.name || session.user.user_metadata?.name || session.user.email?.split('@')[0] || "Usuário",
             email: userData.email || session.user.email || "",
             userType: userData.user_type as "professional",
             avatarUrl: userData.avatar_url || session.user.user_metadata?.avatar_url,
-            specialties: [], // Adicionar especialidades se disponíveis
+            specialties: [],
             phoneNumber: userData.phone_number
           });
         } catch (error) {
           debugError("ProfessionalProfilePage: Erro ao verificar perfil:", error);
           
-          // Verificar novamente os metadados como fallback final
           if (userType === 'professional' || userType === 'provider') {
             setProfile({
               id: session.user.id,
@@ -171,7 +162,6 @@ const ProfessionalProfilePage = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Implementar a lógica para salvar o perfil profissional
     toast({
       title: "Perfil Atualizado",
       description: "Suas informações foram atualizadas com sucesso!",
@@ -246,6 +236,7 @@ const ProfessionalProfilePage = () => {
                   />
                 </div>
               </div>
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="phoneNumber">Telefone</Label>
@@ -253,6 +244,50 @@ const ProfessionalProfilePage = () => {
                     id="phoneNumber"
                     placeholder="(00) 00000-0000"
                     defaultValue={profile?.phoneNumber || ""}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cpf">CPF</Label>
+                  <Input
+                    id="cpf"
+                    placeholder="000.000.000-00"
+                    defaultValue={profile?.cpf || ""}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Endereço</Label>
+                <Input
+                  id="address"
+                  placeholder="Rua, número, complemento"
+                  defaultValue={profile?.address || ""}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">Cidade</Label>
+                  <Input
+                    id="city"
+                    placeholder="Sua cidade"
+                    defaultValue={profile?.city || ""}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="state">Estado</Label>
+                  <Input
+                    id="state"
+                    placeholder="UF"
+                    defaultValue={profile?.state || ""}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zipCode">CEP</Label>
+                  <Input
+                    id="zipCode"
+                    placeholder="00000-000"
+                    defaultValue={profile?.zip_code || ""}
                   />
                 </div>
               </div>

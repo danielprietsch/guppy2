@@ -1,4 +1,3 @@
-
 import { Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
@@ -72,9 +71,10 @@ export default function Index() {
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-            {/* Search Routes */}
+            {/* Cabin Routes */}
             <Route path="/search-cabins" element={<CabinSearchPage />} />
             <Route path="/cabin-search" element={<CabinSearchPage />} />
+            <Route path="/book-cabin/:id" element={<BookCabinPage />} />
 
             {/* Dashboard Routes */}
             <Route path="/client/dashboard" element={<ClientDashboardPage />} />
