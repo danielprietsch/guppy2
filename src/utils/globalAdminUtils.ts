@@ -62,10 +62,16 @@ export const recreateGlobalAdmin = async () => {
     }
     
     // Check if admin email exists in the returned users
-    // Use optional chaining and type guard to ensure users array exists
     const adminExists = data?.users && Array.isArray(data.users) && 
-      data.users.some(user => user && typeof user === 'object' && 'email' in user && 
-        user.email === 'guppyadmin@nuvemtecnologia.com');
+      data.users.some(user => {
+        // Type guard to ensure we can safely access user properties
+        if (!user || typeof user !== 'object') return false;
+        
+        // Check if email property exists and matches our target
+        return 'email' in user && 
+          typeof user.email === 'string' && 
+          user.email === 'guppyadmin@nuvemtecnologia.com';
+      });
     
     // If user exists, try password reset
     if (adminExists) {
