@@ -67,9 +67,12 @@ export const recreateGlobalAdmin = async () => {
         // Type guard to ensure we can safely access user properties
         if (!user || typeof user !== 'object') return false;
         
-        // Check if email property exists and matches our target
-        if ('email' in user && typeof user.email === 'string') {
-          return user.email === 'guppyadmin@nuvemtecnologia.com';
+        // Use type narrowing to safely check and access the email property
+        if ('email' in user) {
+          const userWithEmail = user as { email: unknown };
+          if (typeof userWithEmail.email === 'string') {
+            return userWithEmail.email === 'guppyadmin@nuvemtecnologia.com';
+          }
         }
         return false;
       });
