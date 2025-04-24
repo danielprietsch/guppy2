@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,18 @@ const userTypes = [
     desc: "Cabeleireiro, barbeiro, manicure etc.",
     icon: <Scissors className="w-8 h-8 text-pink-400" />,
   },
+  {
+    key: "owner",
+    label: "Dono de Espaço",
+    desc: "Administrar espaços para aluguel",
+    icon: <Store className="w-8 h-8 text-blue-400" />,
+  },
+  {
+    key: "global_admin",
+    label: "Administrador",
+    desc: "Acesso administrativo ao sistema",
+    icon: <Shield className="w-8 h-8 text-green-400" />,
+  }
 ];
 
 const AuthForm = ({ mode, onSubmit, isLoading }: AuthFormProps) => {
