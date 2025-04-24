@@ -40,7 +40,18 @@ const AdminDashboardPage = () => {
       return;
     }
 
-    setPendingLocations(locations || []);
+    // Transform the data to match our LocationApproval interface
+    const formattedLocations = locations?.map(location => ({
+      id: location.id,
+      name: location.name,
+      address: location.address,
+      city: location.city,
+      state: location.state,
+      status: location.admin_approvals.status,
+      created_at: location.admin_approvals.created_at
+    })) || [];
+
+    setPendingLocations(formattedLocations);
   };
 
   const handleApprove = async (locationId: string) => {
