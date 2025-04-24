@@ -82,9 +82,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           months: "w-full",
           month: "w-full",
           table: "w-full border-collapse",
-          head_cell: "text-muted-foreground font-normal",
+          head_cell: "text-muted-foreground font-normal w-full text-center px-2", // Added spacing and centering
           cell: "h-auto min-h-[240px] p-0 border border-border relative",
-          day: "h-full w-full p-0 font-normal text-2xl font-bold", // Increased text size and made bold
+          day: "h-full w-full p-0 font-normal text-2xl font-bold", // Kept previous day number styling
           day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
           day_today: "bg-accent text-accent-foreground",
           day_outside: "text-muted-foreground opacity-50",
