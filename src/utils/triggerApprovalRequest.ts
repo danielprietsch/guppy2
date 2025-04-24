@@ -62,7 +62,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
       return { success: false, message: "unauthorized" };
     }
     
-    // Step 2: Next check if there's an existing approval using the security definer function
+    // Step 2: Check if there's an existing approval using the security definer function
     const { data: approvalData, error: approvalError } = await supabase
       .rpc('get_location_approval_status', { loc_id: locationId });
     

@@ -1,4 +1,3 @@
-
 import {
   Card,
   CardContent,
@@ -46,10 +45,7 @@ export const LocationsOverview = ({
     try {
       debugLog("LocationsOverview: Fetching approval status for location", selectedLocation.id);
       const { data, error } = await supabase
-        .from('admin_approvals')
-        .select('status')
-        .eq('location_id', selectedLocation.id)
-        .maybeSingle();
+        .rpc('get_location_approval_status', { loc_id: selectedLocation.id });
         
       if (error) {
         debugError("LocationsOverview: Error fetching approval status:", error);
@@ -61,9 +57,9 @@ export const LocationsOverview = ({
         return;
       }
       
-      if (data) {
-        debugLog("LocationsOverview: Approval status found:", data.status);
-        setApprovalStatus(data.status);
+      if (data && data.length > 0) {
+        debugLog("LocationsOverview: Approval status found:", data[0].status);
+        setApprovalStatus(data[0].status);
       } else {
         debugLog("LocationsOverview: No approval status found");
         setApprovalStatus(null);
