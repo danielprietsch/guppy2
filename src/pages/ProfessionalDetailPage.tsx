@@ -2,24 +2,21 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { User, Service } from "@/lib/types";
-import { users, services, reviews } from "@/lib/mock-data";
+import { services, reviews } from "@/lib/mock-data";
 import ServiceCard from "@/components/ServiceCard";
 import { Button } from "@/components/ui/button";
 import { Calendar, Mail, Phone, ArrowLeft, Star } from "lucide-react";
+import { useUser } from "@/hooks/useUsers";
 
 const ProviderDetailPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [provider, setProvider] = useState<User | null>(null);
+  const { data: provider, isLoading } = useUser(id || '');
   const [providerServices, setProviderServices] = useState<Service[]>([]);
   const [averageRating, setAverageRating] = useState<number>(0);
   const [reviewCount, setReviewCount] = useState<number>(0);
 
   useEffect(() => {
     if (id) {
-      // Find the provider by id
-      const foundProvider = users.find(user => user.id === id);
-      setProvider(foundProvider || null);
-      
       // Filter services by providerId
       const foundServices = services.filter(service => service.providerId === id);
       setProviderServices(foundServices);
@@ -34,6 +31,14 @@ const ProviderDetailPage = () => {
       }
     }
   }, [id]);
+
+  if (isLoading) {
+    return (
+      <div className="container px-4 py-12 md:px-6 md:py-16 text-center">
+        <p>Carregando informações do profissional...</p>
+      </div>
+    );
+  }
 
   if (!provider) {
     return (
@@ -57,7 +62,7 @@ const ProviderDetailPage = () => {
         <div>
           <div className="overflow-hidden rounded-lg">
             <img
-              src={provider.avatarUrl}
+              src={provider.avatarUrl || provider.avatar_url}
               alt={provider.name}
               className="h-full w-full object-cover"
             />

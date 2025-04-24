@@ -42,7 +42,9 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
   const gender = detectGender(professional.name);
   const avatars = professionalAvatars[gender];
   const imageIndex = parseInt(professional.id.replace(/\D/g, ""), 10) % avatars.length;
-  const avatarUrl = avatars[imageIndex];
+  
+  // Use the user's real avatar if available, otherwise use the generated one
+  const avatarUrl = professional.avatarUrl || professional.avatar_url || avatars[imageIndex];
 
   const rating = 4.5;
 

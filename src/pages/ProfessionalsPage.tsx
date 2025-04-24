@@ -23,7 +23,27 @@ const ProfessionalsPage = () => {
         return [];
       }
       
-      return data as User[];
+      // Map the Supabase profile data to our User type
+      return data.map(profile => ({
+        id: profile.id,
+        name: profile.name || '',
+        email: profile.email || '',
+        user_type: profile.user_type,
+        userType: profile.user_type, // Map to both fields for compatibility
+        avatarUrl: profile.avatar_url,
+        avatar_url: profile.avatar_url,
+        phoneNumber: profile.phone_number,
+        phone_number: profile.phone_number,
+        cpf: profile.cpf,
+        address: profile.address,
+        city: profile.city,
+        state: profile.state,
+        zip_code: profile.zip_code,
+        // Add specialties as empty array if not present
+        specialties: [],
+        created_at: profile.created_at,
+        updated_at: profile.updated_at
+      })) as User[];
     }
   });
   

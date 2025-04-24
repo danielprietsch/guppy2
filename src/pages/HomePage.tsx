@@ -3,16 +3,17 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronRight, CalendarDays, MapPin, Users } from "lucide-react";
-import { locations, users } from "@/lib/mock-data";
+import { locations } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import LocationCard from "@/components/LocationCard";
+import { useProfessionals } from "@/hooks/useUsers";
 
 const HomePage = () => {
+  const { data: professionals = [], isLoading: loadingProfessionals } = useProfessionals();
+  
   // Filter featured professionals (3 for the home page)
-  const featuredProfessionals = users
-    .filter(user => user.userType === "professional")
-    .slice(0, 3);
+  const featuredProfessionals = professionals.slice(0, 3);
 
   // Filter featured locations (3 for the home page)
   const featuredLocations = locations.slice(0, 3);
@@ -142,9 +143,15 @@ const HomePage = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {featuredProfessionals.map((professional) => (
-              <ProfessionalCard key={professional.id} professional={professional} />
-            ))}
+            {loadingProfessionals ? (
+              <p className="col-span-full text-center py-4">Carregando profissionais...</p>
+            ) : featuredProfessionals.length > 0 ? (
+              featuredProfessionals.map((professional) => (
+                <ProfessionalCard key={professional.id} professional={professional} />
+              ))
+            ) : (
+              <p className="col-span-full text-center py-4">Nenhum profissional cadastrado no momento</p>
+            )}
           </div>
         </div>
       </section>

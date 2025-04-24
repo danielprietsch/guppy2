@@ -1,726 +1,344 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { User, Booking, Appointment, Service } from "@/lib/types";
-import { bookings, appointments, services, cabins, locations } from "@/lib/mock-data";
-import { Button } from "@/components/ui/button";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
-import { Calendar, Clock, DollarSign, Plus, Users, Search } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
-import CabinBookingModal from "@/components/CabinBookingModal";
-import { supabase } from "@/integrations/supabase/client";
-import { debugLog, debugError } from "@/utils/debugLogger";
-
-import { users } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Calendar,
+  Clock,
+  Users,
+  Scissors,
+  DollarSign,
+  Star,
+  PieChart,
+} from "lucide-react";
+import { services, bookings, appointments, reviews } from "@/lib/mock-data";
+import { useAuth } from "@/lib/auth";
 
 const ProfessionalDashboardPage = () => {
-  const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [professionalBookings, setProfessionalBookings] = useState<Booking[]>([]);
-  const [professionalAppointments, setProfessionalAppointments] = useState<Appointment[]>([]);
-  const [professionalServices, setProfessionalServices] = useState<Service[]>([]);
-  const [isAddingService, setIsAddingService] = useState(false);
-  const [newService, setNewService] = useState<Partial<Service>>({
-    name: "",
-    description: "",
-    duration: 30,
-    price: 0,
-    category: "",
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  
+  // Stats data
+  const [stats, setStats] = useState({
+    upcomingAppointments: 0,
+    totalClients: 0,
+    totalRevenue: 0,
+    averageRating: 0,
   });
-  const [modalReserveOpen, setModalReserveOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
+  
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        debugLog("ProfessionalDashboardPage: Checking session...");
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          debugLog("ProfessionalDashboardPage: No session found, redirecting to login");
-          toast({
-            title: "Acesso Negado",
-            description: "Você precisa estar logado para acessar esta página.",
-            variant: "destructive"
-          });
-          navigate("/login");
-          return;
+    if (user) {
+      // In a real app, this would fetch data from the API based on the current user
+      // Simulating loading behavior
+      setTimeout(() => {
+        // Filter the data for the current professional
+        const professionalAppointments = appointments.filter(
+          (app) => app.professionalId === user.id
+        );
+        const professionalBookings = bookings.filter(
+          (booking) => booking.professionalId === user.id
+        );
+        const professionalServices = services.filter(
+          (service) => service.professionalId === user.id
+        );
+        const professionalReviews = reviews.filter(
+          (review) => review.professionalId === user.id
+        );
+        
+        // Calculate relevant statistics
+        const uniqueClients = [...new Set(professionalAppointments.map((app) => app.clientId))];
+        const totalRevenue = professionalAppointments.reduce((sum, app) => sum + app.price, 0);
+        
+        let avgRating = 0;
+        if (professionalReviews.length > 0) {
+          avgRating = professionalReviews.reduce((sum, review) => sum + review.rating, 0) / 
+            professionalReviews.length;
         }
         
-        debugLog("ProfessionalDashboardPage: Session found, user:", session.user);
+        setStats({
+          upcomingAppointments: professionalAppointments.filter(
+            (app) => app.status === "confirmed"
+          ).length,
+          totalClients: uniqueClients.length,
+          totalRevenue: totalRevenue,
+          averageRating: avgRating,
+        });
         
-        let userType = session.user.user_metadata?.userType;
-        if (userType === 'provider') {
-          userType = 'professional';
-        }
-        
-        if (userType && userType === 'professional') {
-          debugLog("ProfessionalDashboardPage: User is professional according to metadata");
-          
-          setCurrentUser({
-            id: session.user.id,
-            name: session.user.user_metadata?.name || 'Profissional',
-            email: session.user.email || '',
-            userType: 'professional',
-            avatarUrl: session.user.user_metadata?.avatar_url,
-          });
-          
-          loadProfessionalData(session.user.id);
-          setIsLoading(false);
-          return;
-        }
-
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (error) {
-            debugError("ProfessionalDashboardPage: Error fetching profile:", error);
-            if (userType === 'professional') {
-              debugLog("ProfessionalDashboardPage: Falling back to metadata user type");
-              
-              setCurrentUser({
-                id: session.user.id,
-                name: session.user.user_metadata?.name || 'Profissional',
-                email: session.user.email || '',
-                userType: 'professional',
-                avatarUrl: session.user.user_metadata?.avatar_url,
-              });
-              
-              loadProfessionalData(session.user.id);
-              setIsLoading(false);
-              return;
-            }
-          }
-
-          debugLog("ProfessionalDashboardPage: Profile data:", profile);
-
-          if (!profile || profile.user_type !== 'professional') {
-            if (userType !== 'professional') {
-              debugLog("ProfessionalDashboardPage: User is not professional, redirecting");
-              toast({
-                title: "Acesso Negado",
-                description: "Você não tem permissão para acessar esta área.",
-                variant: "destructive"
-              });
-              navigate("/");
-              return;
-            } else {
-              setCurrentUser({
-                id: profile.id,
-                name: profile.name || session.user.user_metadata?.name || 'Profissional',
-                email: profile.email || session.user.email || '',
-                userType: 'professional',
-                avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
-                phoneNumber: profile.phone_number
-              });
-              
-              loadProfessionalData(session.user.id);
-            }
-          } else {
-            setCurrentUser({
-              id: profile.id,
-              name: profile.name || session.user.user_metadata?.name || 'Profissional',
-              email: profile.email || session.user.email || '',
-              userType: 'professional',
-              avatarUrl: profile.avatar_url || session.user.user_metadata?.avatar_url,
-              phoneNumber: profile.phone_number
-            });
-            
-            loadProfessionalData(session.user.id);
-          }
-        } catch (error) {
-          debugError("ProfessionalDashboardPage: Error in profile check:", error);
-          if (userType === 'professional') {
-            setCurrentUser({
-              id: session.user.id,
-              name: session.user.user_metadata?.name || 'Profissional',
-              email: session.user.email || '',
-              userType: 'professional',
-              avatarUrl: session.user.user_metadata?.avatar_url,
-            });
-            
-            loadProfessionalData(session.user.id);
-            setIsLoading(false);
-            return;
-          }
-          
-          navigate("/");
-        } finally {
-          setIsLoading(false);
-        }
-      } catch (error) {
-        debugError("ProfessionalDashboardPage: Error checking session:", error);
-        navigate("/login");
-        setIsLoading(false);
-      }
-    };
-
-    checkSession();
-  }, [navigate]);
-
-  const loadProfessionalData = (userId: string) => {
-    const userBookings = bookings.filter(
-      (booking) => booking.providerId === userId
-    );
-    setProfessionalBookings(userBookings);
-    
-    const userAppointments = appointments.filter(
-      (appointment) => appointment.providerId === userId
-    );
-    setProfessionalAppointments(userAppointments);
-    
-    const userServices = services.filter(
-      (service) => service.providerId === userId
-    );
-    setProfessionalServices(userServices);
-  };
-
-  const getCabinInfo = (cabinId: string) => {
-    const cabin = cabins.find((cabin) => cabin.id === cabinId);
-    if (!cabin) return { name: "Desconhecido", location: "Desconhecido" };
-    
-    const location = locations.find((loc) => loc.id === cabin.locationId);
-    return {
-      name: cabin.name,
-      location: location ? location.name : "Desconhecido",
-    };
-  };
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-    return new Date(dateString).toLocaleDateString("pt-BR", options);
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logout realizado",
-      description: "Você foi desconectado com sucesso.",
-    });
-    navigate("/login");
-  };
-
-  const handleAddService = () => {
-    if (!currentUser) return;
-    
-    if (!newService.name || !newService.price) {
-      toast({
-        title: "Erro",
-        description: "Preencha pelo menos o nome e o preço do serviço.",
-        variant: "destructive",
-      });
-      return;
+        setLoading(false);
+      }, 1000);
     }
-    
-    const service: Service = {
-      id: `${services.length + 1}`,
-      providerId: currentUser.id,
-      name: newService.name || "",
-      description: newService.description || "",
-      duration: newService.duration || 30,
-      price: newService.price || 0,
-      category: newService.category || "Outros",
-    };
-    
-    setProfessionalServices([...professionalServices, service]);
-    
-    toast({
-      title: "Serviço adicionado",
-      description: "O serviço foi adicionado com sucesso.",
-    });
-    
-    setNewService({
-      name: "",
-      description: "",
-      duration: 30,
-      price: 0,
-      category: "",
-    });
-    setIsAddingService(false);
-  };
-
-  const handleAddBookingsFromModal = (newBookings: Booking[]) => {
-    setProfessionalBookings((prev) => [...prev, ...newBookings]);
-  };
-
-  if (isLoading) {
+  }, [user]);
+  
+  if (loading) {
     return (
       <div className="container py-12 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Carregando...</h1>
-          <p className="text-muted-foreground">Buscando seus dados, por favor aguarde.</p>
-        </div>
+        <div>Carregando informações do dashboard...</div>
       </div>
     );
   }
-
-  if (!currentUser) {
-    return (
-      <div className="container py-12 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Acesso Negado</h1>
-          <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
-        </div>
-      </div>
-    );
-  }
-
+  
   return (
-    <div className="container px-4 py-12 md:px-6 md:py-16">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+    <div className="container py-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Olá, {currentUser?.name}</h1>
-          <p className="mt-1 text-gray-500">
-            Bem-vindo ao seu painel de controle de Profissional
+          <h1 className="text-3xl font-bold">Dashboard do Profissional</h1>
+          <p className="text-muted-foreground mt-1">
+            Gerencie seus agendamentos, serviços e aluguel de cabines
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="mt-4 md:mt-0"
-          onClick={() => handleLogout()}
-        >
-          Sair
+        <Button asChild>
+          <Link to="/services/new">Adicionar Novo Serviço</Link>
         </Button>
       </div>
       
-      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
-          <CardContent className="p-6 flex flex-col items-center">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Calendar className="h-6 w-6 text-primary" />
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Agendamentos
+                </p>
+                <h2 className="text-3xl font-bold">{stats.upcomingAppointments}</h2>
+              </div>
+              <Calendar className="h-8 w-8 text-primary opacity-80" />
             </div>
-            <h3 className="font-medium text-center">Reservas de Cabines</h3>
-            <div className="mt-2 text-3xl font-bold">{professionalBookings.length}</div>
           </CardContent>
         </Card>
+        
         <Card>
-          <CardContent className="p-6 flex flex-col items-center">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-primary" />
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Clientes
+                </p>
+                <h2 className="text-3xl font-bold">{stats.totalClients}</h2>
+              </div>
+              <Users className="h-8 w-8 text-primary opacity-80" />
             </div>
-            <h3 className="font-medium text-center">Agendamentos de Clientes</h3>
-            <div className="mt-2 text-3xl font-bold">{professionalAppointments.length}</div>
           </CardContent>
         </Card>
+        
         <Card>
-          <CardContent className="p-6 flex flex-col items-center">
-            <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <DollarSign className="h-6 w-6 text-primary" />
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Receita</p>
+                <h2 className="text-3xl font-bold">R$ {stats.totalRevenue}</h2>
+              </div>
+              <DollarSign className="h-8 w-8 text-primary opacity-80" />
             </div>
-            <h3 className="font-medium text-center">Faturamento do Mês</h3>
-            <div className="mt-2 text-3xl font-bold">
-              R$ {(
-                professionalAppointments.reduce(
-                  (sum, appointment) => sum + appointment.price,
-                  0
-                ) || 0
-              ).toFixed(2)}
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Avaliação
+                </p>
+                <h2 className="text-3xl font-bold flex items-center">
+                  {stats.averageRating.toFixed(1)}
+                  <Star className="h-5 w-5 ml-1 fill-yellow-400 text-yellow-400 inline" />
+                </h2>
+              </div>
+              <Star className="h-8 w-8 text-primary opacity-80" />
             </div>
           </CardContent>
         </Card>
       </div>
       
-      <div className="mt-8">
-        <Tabs defaultValue="bookings">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="bookings">Minhas Reservas</TabsTrigger>
-            <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
-            <TabsTrigger value="services">Meus Serviços</TabsTrigger>
-            <TabsTrigger value="profile">Meu Perfil</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="bookings">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Minhas Reservas de Cabines</CardTitle>
-                <Button
-                  onClick={() => navigate("/search-cabins")}
-                  variant="default"
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  Procurar Cabines
+      {/* Main Content */}
+      <Tabs defaultValue="appointments" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
+          <TabsTrigger value="services">Meus Serviços</TabsTrigger>
+          <TabsTrigger value="bookings">Reservas de Cabine</TabsTrigger>
+          <TabsTrigger value="reviews">Avaliações</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="appointments" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <span>Próximos Agendamentos</span>
+                <Button variant="outline" size="sm">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver Calendário
                 </Button>
-              </CardHeader>
-              <CardContent>
-                {modalReserveOpen && (
-                  <CabinBookingModal
-                    open={modalReserveOpen}
-                    onClose={() => setModalReserveOpen(false)}
-                    currentUser={currentUser}
-                    professionalBookings={professionalBookings}
-                    onSubmitBookings={handleAddBookingsFromModal}
-                  />
-                )}
-                {professionalBookings.length > 0 ? (
-                  <div className="space-y-4">
-                    {professionalBookings.map((booking) => {
-                      const cabinInfo = getCabinInfo(booking.cabinId);
-                      return (
-                        <div
-                          key={booking.id}
-                          className="rounded-lg border p-4 grid md:grid-cols-[1fr_auto]"
-                        >
-                          <div>
-                            <div className="font-medium">
-                              {cabinInfo.name} - {cabinInfo.location}
-                            </div>
-                            <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-                              <Calendar className="h-4 w-4" />
-                              <span>{formatDate(booking.date)}</span>
-                            </div>
-                            <div className="mt-0.5 text-sm text-gray-500">
-                              Turno: {booking.shift === "morning" ? "Manhã" : booking.shift === "afternoon" ? "Tarde" : "Noite"}
-                            </div>
-                            <div
-                              className={`mt-2 text-xs ${
-                                booking.status === "confirmed"
-                                  ? "text-green-600"
-                                  : booking.status === "pending"
-                                  ? "text-amber-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {booking.status === "confirmed"
-                                ? "Confirmado"
-                                : booking.status === "pending"
-                                ? "Pendente"
-                                : "Cancelado"}
-                            </div>
-                          </div>
-                          <div className="text-right md:flex md:flex-col md:justify-center">
-                            <div className="font-medium">
-                              R$ {booking.price.toFixed(2)}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <h3 className="font-medium">Nenhuma reserva encontrada</h3>
-                    <p className="mt-1 text-gray-500">
-                      Você ainda não fez nenhuma reserva de cabine.
-                    </p>
-                    <Button
-                      className="mt-4"
-                      onClick={() => navigate("/search-cabins")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {appointments
+                  .filter(
+                    (app) => app.professionalId === user?.id && app.status === "confirmed"
+                  )
+                  .slice(0, 3)
+                  .map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex justify-between items-center border-b pb-4"
                     >
-                      <Search className="h-4 w-4 mr-2" />
-                      Procurar Cabines
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="appointments">
-            <Card>
-              <CardHeader>
-                <CardTitle>Agendamentos de Clientes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {professionalAppointments.length > 0 ? (
-                  <div className="space-y-4">
-                    {professionalAppointments.map((appointment) => (
-                      <div
-                        key={appointment.id}
-                        className="rounded-lg border p-4 grid md:grid-cols-[1fr_auto]"
-                      >
-                        <div>
-                          <div className="font-medium">
-                            Cliente: {users.find((user) => user.id === appointment.clientId)?.name || "Desconhecido"}
-                          </div>
-                          <div className="mt-1 flex items-center gap-1 text-sm text-gray-500">
-                            <Calendar className="h-4 w-4" />
-                            <span>{formatDate(appointment.date)}</span>
-                          </div>
-                          <div className="mt-0.5 flex items-center gap-1 text-sm text-gray-500">
-                            <Clock className="h-4 w-4" />
-                            <span>{appointment.time}</span>
-                          </div>
-                          <div
-                            className={`mt-2 text-xs ${
-                              appointment.status === "confirmed"
-                                ? "text-green-600"
-                                : appointment.status === "pending"
-                                ? "text-amber-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {appointment.status === "confirmed"
-                              ? "Confirmado"
-                              : appointment.status === "pending"
-                              ? "Pendente"
-                              : "Cancelado"}
-                          </div>
-                        </div>
-                        <div className="text-right md:flex md:flex-col md:justify-center">
-                          <div className="font-medium">
-                            R$ {appointment.price.toFixed(2)}
-                          </div>
-                          <div className="mt-2 flex gap-2 justify-end">
-                            <Button size="sm" variant="outline">
-                              Reagendar
-                            </Button>
-                            <Button size="sm" variant="destructive">
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <h3 className="font-medium">Nenhum agendamento encontrado</h3>
-                    <p className="mt-1 text-gray-500">
-                      Você ainda não possui nenhum agendamento de clientes.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="services">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Meus Serviços</CardTitle>
-                <Button onClick={() => setIsAddingService(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Adicionar Serviço
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {isAddingService ? (
-                  <div className="rounded-lg border p-4">
-                    <h3 className="font-medium mb-4">Novo Serviço</h3>
-                    <div className="space-y-4">
                       <div>
-                        <label className="text-sm font-medium">Nome do Serviço *</label>
-                        <input
-                          type="text"
-                          className="mt-1 block w-full rounded-md border p-2"
-                          value={newService.name}
-                          onChange={(e) => setNewService({ ...newService, name: e.target.value })}
-                          required
-                        />
+                        <p className="font-medium">Cliente #{appointment.clientId}</p>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {appointment.date}
+                          <Clock className="h-3 w-3 ml-2 mr-1" />
+                          {appointment.time}
+                        </div>
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Descrição</label>
-                        <textarea
-                          className="mt-1 block w-full rounded-md border p-2"
-                          value={newService.description}
-                          onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Categoria</label>
-                          <select
-                            className="mt-1 block w-full rounded-md border p-2"
-                            value={newService.category}
-                            onChange={(e) => setNewService({ ...newService, category: e.target.value })}
-                          >
-                            <option value="">Selecione</option>
-                            <option value="Cabelo">Cabelo</option>
-                            <option value="Barba">Barba</option>
-                            <option value="Unhas">Unhas</option>
-                            <option value="Maquiagem">Maquiagem</option>
-                            <option value="Depilação">Depilação</option>
-                            <option value="Outros">Outros</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Duração (min) *</label>
-                          <input
-                            type="number"
-                            className="mt-1 block w-full rounded-md border p-2"
-                            value={newService.duration}
-                            onChange={(e) => setNewService({ ...newService, duration: Number(e.target.value) })}
-                            required
-                            min="15"
-                            step="15"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Preço (R$) *</label>
-                          <input
-                            type="number"
-                            className="mt-1 block w-full rounded-md border p-2"
-                            value={newService.price}
-                            onChange={(e) => setNewService({ ...newService, price: Number(e.target.value) })}
-                            required
-                            min="0"
-                            step="0.01"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => setIsAddingService(false)}>
-                          Cancelar
-                        </Button>
-                        <Button onClick={handleAddService}>
-                          Salvar Serviço
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    {professionalServices.length > 0 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {professionalServices.map((service) => (
-                          <div
-                            key={service.id}
-                            className="rounded-lg border p-4"
-                          >
-                            <div className="flex justify-between">
-                              <div className="font-medium">{service.name}</div>
-                              <div className="font-medium">R$ {service.price.toFixed(2)}</div>
-                            </div>
-                            <div className="mt-1 text-sm text-gray-500">
-                              {service.description}
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="flex items-center gap-1 text-sm text-gray-500">
-                                <Clock className="h-4 w-4" />
-                                <span>{service.duration} minutos</span>
-                              </div>
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                                {service.category}
-                              </span>
-                            </div>
-                            <div className="mt-4 flex justify-end gap-2">
-                              <Button size="sm" variant="outline">
-                                Editar
-                              </Button>
-                              <Button size="sm" variant="destructive">
-                                Remover
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <h3 className="font-medium">Nenhum serviço cadastrado</h3>
-                        <p className="mt-1 text-gray-500">
-                          Adicione seus serviços para que os clientes possam agendar.
+                        <p className="font-semibold">R$ {appointment.price}</p>
+                        <p className="text-sm text-right text-muted-foreground">
+                          Serviço #{appointment.serviceId}
                         </p>
-                        <Button
-                          className="mt-4"
-                          onClick={() => setIsAddingService(true)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Adicionar Serviço
-                        </Button>
                       </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Meu Perfil Profissional</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col md:flex-row gap-8">
-                  <div className="md:w-1/3">
-                    <div className="aspect-square overflow-hidden rounded-lg">
-                      {currentUser.avatarUrl ? (
-                        <img
-                          src={currentUser.avatarUrl}
-                          alt={currentUser.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full bg-primary/10 flex items-center justify-center text-4xl text-primary">
-                          {currentUser.name.charAt(0)}
-                        </div>
-                      )}
                     </div>
-                    <Button className="mt-4 w-full">Alterar Foto</Button>
-                    
-                    <div className="mt-6">
-                      <h3 className="font-medium mb-2">Especialidades</h3>
-                      <div className="flex flex-wrap gap-2">
-                        {currentUser.specialties?.map((specialty, index) => (
-                          <div
-                            key={index}
-                            className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary"
-                          >
-                            {specialty}
-                          </div>
-                        ))}
-                      </div>
-                      <Button size="sm" className="mt-4 w-full">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Adicionar Especialidade
+                  ))}
+                
+                {appointments.filter(
+                  (app) => app.professionalId === user?.id && app.status === "confirmed"
+                ).length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    Você não tem agendamentos confirmados
+                  </div>
+                )}
+              </div>
+              
+              {appointments.filter(
+                (app) => app.professionalId === user?.id && app.status === "confirmed"
+              ).length > 0 && (
+                <Button variant="ghost" className="w-full mt-4">
+                  Ver todos os agendamentos
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="services" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Meus Serviços</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {services.filter((service) => service.professionalId === user?.id).map((service) => (
+                  <div key={service.id} className="border rounded-md p-4">
+                    <h3 className="font-semibold">{service.name}</h3>
+                    <p className="text-sm text-muted-foreground">{service.description}</p>
+                    <div className="mt-2 flex justify-between items-center">
+                      <span>R$ {service.price}</span>
+                      <Button variant="outline" size="sm">
+                        Editar
                       </Button>
                     </div>
                   </div>
-                  
-                  <div className="md:w-2/3 space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Nome Profissional</label>
-                      <input
-                        type="text"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.name}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <input
-                        type="email"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.email}
-                        readOnly
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Telefone</label>
-                      <input
-                        type="tel"
-                        className="mt-1 block w-full rounded-md border p-2"
-                        value={currentUser.phoneNumber || ""}
-                        placeholder="Adicionar telefone"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Biografia Profissional</label>
-                      <textarea
-                        className="mt-1 block w-full rounded-md border p-2"
-                        rows={4}
-                        placeholder="Conte um pouco sobre sua experiência e habilidades..."
-                      />
-                    </div>
-                    <div className="pt-4">
-                      <Button>Salvar Alterações</Button>
-                    </div>
+                ))}
+                
+                {services.filter((service) => service.professionalId === user?.id).length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground col-span-full">
+                    Você ainda não cadastrou nenhum serviço.
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          <Button asChild>
+            <Link to="/services/new">Adicionar Novo Serviço</Link>
+          </Button>
+        </TabsContent>
+        
+        <TabsContent value="bookings" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Reservas de Cabine</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {bookings
+                  .filter((booking) => booking.professionalId === user?.id)
+                  .map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex justify-between items-center border-b pb-4"
+                    >
+                      <div>
+                        <p className="font-medium">Cabine #{booking.cabinId}</p>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {booking.date}
+                          <Clock className="h-3 w-3 ml-2 mr-1" />
+                          {booking.shift}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-semibold">R$ {booking.price}</p>
+                        <p className="text-sm text-right text-muted-foreground">
+                          Status: {booking.status}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                
+                {bookings.filter((booking) => booking.professionalId === user?.id).length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    Você não tem reservas de cabine.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="reviews" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Avaliações</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {reviews
+                  .filter((review) => review.professionalId === user?.id)
+                  .map((review) => (
+                    <div key={review.id} className="border rounded-md p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                          {Array.from({ length: 5 }).map((_, index) => (
+                            <Star
+                              key={index}
+                              className={`h-4 w-4 ${
+                                index < review.rating
+                                  ? "text-yellow-500 fill-yellow-500"
+                                  : "text-gray-300"
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {review.date}
+                        </span>
+                      </div>
+                      <p>{review.comment}</p>
+                    </div>
+                  ))}
+                
+                {reviews.filter((review) => review.professionalId === user?.id).length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    Você não tem avaliações.
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  userType: "professional" | "client" | "owner" | "global_admin";
+  user_type: "professional" | "client" | "owner" | "global_admin";
   avatarUrl?: string;
   phoneNumber?: string;
   specialties?: string[];
@@ -15,6 +15,10 @@ export interface User {
   city?: string;
   state?: string;
   zip_code?: string;
+  avatar_url?: string;
+  phone_number?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Location {
