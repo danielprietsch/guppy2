@@ -32,13 +32,15 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         return { success: false, message: "not-authenticated" };
       }
 
-      // Use the security definer function to check approvals
+      // Instead of using the previous approach that was causing recursion,
+      // directly query the admin_approvals table with RLS bypassing functions
+      
+      // First, check if there's an existing approval
       const { data: approvalData, error: approvalError } = await supabase
         .rpc('get_location_approval_status', { loc_id: locationId })
-        .maybeSingle();
 
       if (approvalError) {
-        debugLog("triggerApprovalRequest: Error checking approval status, verifying ownership");
+        debugLog("triggerApprovalRequest: Error checking approval status:", approvalError);
         
         // Verify location ownership using the security definer function
         const { data: isOwner, error: ownershipError } = await supabase
@@ -47,7 +49,17 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
             user_id: sessionData.session.user.id 
           });
           
-        if (ownershipError || !isOwner) {
+        if (ownershipError) {
+          debugError("triggerApprovalRequest: Error checking ownership:", ownershipError);
+          toast({
+            title: "Erro",
+            description: "Não foi possível verificar a propriedade do local.",
+            variant: "destructive",
+          });
+          return { success: false, message: "check-error", error: ownershipError };
+        }
+          
+        if (!isOwner) {
           debugError("triggerApprovalRequest: User does not own this location");
           toast({
             title: "Erro",
@@ -58,9 +70,11 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
         }
       }
 
-      // If we have approval data, check its status
-      if (approvalData) {
-        if (approvalData.status === "APROVADO") {
+      // Process approvalData if exists (it's now an array due to our RPC function)
+      if (approvalData && approvalData.length > 0) {
+        const approval = approvalData[0];
+        
+        if (approval.status === "APROVADO") {
           debugLog("triggerApprovalRequest: Location already approved");
           toast({
             title: "Aviso",
@@ -69,7 +83,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
           return { success: false, message: "already-approved" };
         }
 
-        if (approvalData.status === "PENDENTE") {
+        if (approval.status === "PENDENTE") {
           debugLog("triggerApprovalRequest: Approval already pending");
           toast({
             title: "Aviso",
@@ -85,7 +99,7 @@ export const triggerApprovalRequest = async (locationId: string, cabinsCount: nu
             status: "PENDENTE",
             updated_at: new Date().toISOString()
           })
-          .eq('id', approvalData.id);
+          .eq('id', approval.id);
 
         if (updateError) {
           debugError("triggerApprovalRequest: Error updating approval request:", updateError);
