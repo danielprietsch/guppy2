@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import type { Booking, Location, Cabin } from "@/lib/types";
+import type { Booking } from "@/lib/types";
 
 const ClientReservationsPage = () => {
   const navigate = useNavigate();

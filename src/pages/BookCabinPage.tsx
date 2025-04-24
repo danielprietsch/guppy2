@@ -264,8 +264,8 @@ const BookCabinPage = () => {
         return;
       }
 
-      // Fix: Use a type assertion to call the function regardless of TypeScript's type checking
-      const { data: bookingId, error } = await supabase.functions.invoke('create-booking', {
+      // Here is the correct way to call the edge function
+      const { data, error } = await supabase.functions.invoke('create-booking', {
         body: {
           cabinId: cabin.id,
           professionalId: session.user.id,
