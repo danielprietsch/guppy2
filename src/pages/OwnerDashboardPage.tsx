@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -87,14 +88,20 @@ const OwnerDashboardPage = () => {
             let openingHours = { open: "09:00", close: "18:00" };
             
             if (location.opening_hours) {
-              const hoursData = typeof location.opening_hours === 'string' 
-                ? JSON.parse(location.opening_hours)
-                : location.opening_hours;
+              try {
+                const hoursData = typeof location.opening_hours === 'string' 
+                  ? JSON.parse(location.opening_hours)
+                  : location.opening_hours;
                 
-              openingHours = {
-                open: hoursData.open || "09:00",
-                close: hoursData.close || "18:00"
-              };
+                if (typeof hoursData === 'object' && hoursData !== null) {
+                  openingHours = {
+                    open: typeof hoursData.open === 'string' ? hoursData.open : "09:00",
+                    close: typeof hoursData.close === 'string' ? hoursData.close : "18:00"
+                  };
+                }
+              } catch (e) {
+                console.error("Error parsing opening hours:", e);
+              }
             }
             
             return {
@@ -152,19 +159,31 @@ const OwnerDashboardPage = () => {
       }
       
       const transformedCabins: Cabin[] = data.map(cabin => {
-        let cabinPricing = {
+        // Initialize default structures
+        const defaultPricing = {
           defaultPricing: {},
           specificDates: {}
         };
+        
+        const defaultAvailability = {
+          morning: true,
+          afternoon: true, 
+          evening: true
+        };
+        
+        // Process pricing data
+        let cabinPricing = defaultPricing;
         
         try {
           if (cabin.pricing) {
             if (typeof cabin.pricing === 'string') {
               cabinPricing = JSON.parse(cabin.pricing);
-            } else if (typeof cabin.pricing === 'object') {
+            } else if (typeof cabin.pricing === 'object' && cabin.pricing !== null) {
+              // Check if the object has the expected structure
+              const pricingObj = cabin.pricing as Record<string, unknown>;
               cabinPricing = {
-                defaultPricing: cabin.pricing.defaultPricing || {},
-                specificDates: cabin.pricing.specificDates || {}
+                defaultPricing: pricingObj.defaultPricing !== undefined ? pricingObj.defaultPricing : {},
+                specificDates: pricingObj.specificDates !== undefined ? pricingObj.specificDates : {}
               };
             }
           }
@@ -172,21 +191,20 @@ const OwnerDashboardPage = () => {
           console.error("Error parsing pricing data:", e);
         }
         
-        let cabinAvailability = {
-          morning: true,
-          afternoon: true, 
-          evening: true
-        };
+        // Process availability data
+        let cabinAvailability = defaultAvailability;
         
         try {
           if (cabin.availability) {
             if (typeof cabin.availability === 'string') {
               cabinAvailability = JSON.parse(cabin.availability);
-            } else if (typeof cabin.availability === 'object') {
+            } else if (typeof cabin.availability === 'object' && cabin.availability !== null) {
+              // Check if the object has the expected structure
+              const availObj = cabin.availability as Record<string, unknown>;
               cabinAvailability = {
-                morning: cabin.availability.morning !== false,
-                afternoon: cabin.availability.afternoon !== false,
-                evening: cabin.availability.evening !== false
+                morning: availObj.morning !== false,
+                afternoon: availObj.afternoon !== false,
+                evening: availObj.evening !== false
               };
             }
           }
@@ -203,7 +221,7 @@ const OwnerDashboardPage = () => {
           imageUrl: cabin.image_url || "",
           price: 0,
           availability: cabinAvailability,
-          pricing: cabinPricing
+          pricing: cabinPricing as Cabin['pricing']
         };
       });
       
