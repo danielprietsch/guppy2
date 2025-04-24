@@ -409,6 +409,10 @@ export type Database = {
         Args: { loc_id: string; user_id: string }
         Returns: boolean
       }
+      check_owner_status: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       create_booking: {
         Args: {
           cabin_id: string

@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import { Json } from "@/integrations/supabase/types";
 import { Scissors } from "lucide-react";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80";
 
@@ -64,20 +66,37 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setIsSubmitting(true);
+      debugLog("OwnerAddLocationModal: Starting location creation");
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!user) {
+      if (!session || !session.user) {
         toast.error("Usuário não autenticado");
+        debugError("OwnerAddLocationModal: No authenticated user found");
         return;
       }
-
+      
+      const userId = session.user.id;
+      
+      // Using check_owner_status function to verify user is an owner and get their profile
+      // This avoids the RLS recursion issue
+      const { data: ownerData, error: ownerError } = await supabase
+        .rpc('check_owner_status', { user_id: userId });
+        
+      if (ownerError || !ownerData || ownerData.length === 0) {
+        toast.error("Você não tem permissão para cadastrar locais");
+        debugError("OwnerAddLocationModal: User is not an owner or check failed:", ownerError);
+        return;
+      }
+      
+      debugLog("OwnerAddLocationModal: User confirmed as owner, creating location");
+      
       const openingHours = { open: "08:00", close: "20:00" };
       
       const { data, error } = await supabase
         .from('locations')
         .insert({
-          owner_id: user.id,
+          owner_id: userId,
           name: values.nome,
           address: values.endereco,
           city: values.cidade,
@@ -93,7 +112,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         .single();
 
       if (error) {
-        console.error("Erro ao cadastrar local:", error);
+        debugError("OwnerAddLocationModal: Error creating location:", error);
         toast.error("Erro ao cadastrar local: " + error.message);
         return;
       }
@@ -112,6 +131,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
         description: data.description || ""
       };
 
+      debugLog("OwnerAddLocationModal: Location created successfully:", novoLocation.id);
       toast.success("Local cadastrado com sucesso!");
       
       if (onLocationCreated) {
@@ -122,7 +142,7 @@ export const OwnerAddLocationModal: React.FC<Props> = ({
       form.reset();
       setPreviewImage(null);
     } catch (error: any) {
-      console.error("Erro ao processar cadastro:", error);
+      debugError("OwnerAddLocationModal: Error processing location creation:", error);
       toast.error("Erro ao cadastrar local: " + error.message);
     } finally {
       setIsSubmitting(false);
