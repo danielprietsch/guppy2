@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -14,8 +13,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
+import { BatchPriceEditor } from "@/components/owner/pricing/BatchPriceEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-// Define interface for pricing structure
 interface CabinPricing {
   defaultPricing: {
     price?: number;
@@ -39,7 +39,6 @@ export const AvailabilitySettings = ({
   selectedLocation, 
   locationCabins 
 }: AvailabilitySettingsProps) => {
-  // Initialize state for each cabin
   const [selectedDates, setSelectedDates] = useState<{ [cabinId: string]: string[] }>({});
   const [daysBooked, setDaysBooked] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: boolean } } }>({});
   const [manuallyClosedDates, setManuallyClosedDates] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: boolean } } }>({});
@@ -52,14 +51,21 @@ export const AvailabilitySettings = ({
   });
   const [slotPrices, setSlotPrices] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: number } } }>({});
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const [selectedCabin, setSelectedCabin] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("calendar");
 
-  // Load booking data from database
   useEffect(() => {
     if (selectedLocation) {
       loadBookingData();
       loadCabinPrices();
     }
   }, [selectedLocation]);
+
+  useEffect(() => {
+    if (locationCabins.length > 0 && !selectedCabin) {
+      setSelectedCabin(locationCabins[0].id);
+    }
+  }, [locationCabins, selectedCabin]);
 
   const loadBookingData = async () => {
     try {
@@ -110,9 +116,7 @@ export const AvailabilitySettings = ({
     }
   };
 
-  // Helper function to safely parse pricing data from JSON
   const parsePricingData = (pricingJson: Json | null): CabinPricing => {
-    // Default pricing structure if nothing is available
     const defaultPricing: CabinPricing = {
       defaultPricing: { price: 100 },
       specificDates: {}
@@ -121,16 +125,13 @@ export const AvailabilitySettings = ({
     if (!pricingJson) return defaultPricing;
 
     try {
-      // Check if it's an object type of Json
       if (
         typeof pricingJson === 'object' && 
         pricingJson !== null && 
         !Array.isArray(pricingJson)
       ) {
-        // Cast to Record<string, any> to access properties safely
         const pricingObj = pricingJson as Record<string, any>;
         
-        // Verify if the expected structure exists
         if (pricingObj.defaultPricing && pricingObj.specificDates) {
           return {
             defaultPricing: pricingObj.defaultPricing,
@@ -139,7 +140,6 @@ export const AvailabilitySettings = ({
         }
       }
       
-      // If not valid structure, return default
       return defaultPricing;
     } catch (e) {
       console.error("Error parsing pricing data:", e);
@@ -151,7 +151,6 @@ export const AvailabilitySettings = ({
     try {
       if (!selectedLocation) return;
 
-      // Load cabin pricing data from the database
       const { data: cabinsData, error } = await supabase
         .from('cabins')
         .select('id, pricing')
@@ -165,14 +164,11 @@ export const AvailabilitySettings = ({
         const manuallyClosedData: { [cabinId: string]: { [date: string]: { [turn: string]: boolean } } } = {};
 
         cabinsData.forEach(cabin => {
-          // Parse the pricing data safely using our helper function
           const pricingData = parsePricingData(cabin.pricing);
           
-          // Set default cabin price
           const defaultPrice = pricingData?.defaultPricing?.price || 100;
           prices[cabin.id] = defaultPrice;
           
-          // Set slot-specific prices and availability if available
           if (pricingData && pricingData.specificDates) {
             slotPricingData[cabin.id] = {};
             manuallyClosedData[cabin.id] = {};
@@ -188,10 +184,8 @@ export const AvailabilitySettings = ({
               }
               
               Object.entries(dateData).forEach(([turn, turnData]) => {
-                // Set price
                 slotPricingData[cabin.id][date][turn] = turnData.price || defaultPrice;
                 
-                // Set availability status (if false, it's manually closed)
                 if (turnData.available === false) {
                   manuallyClosedData[cabin.id][date][turn] = true;
                 }
@@ -216,7 +210,6 @@ export const AvailabilitySettings = ({
 
   const handleStatusChange = async (cabinId: string, date: string, turn: string, isManualClose: boolean) => {
     try {
-      // Update local state immediately for better UX response
       setManuallyClosedDates(prev => {
         const updated = { ...prev };
         if (!updated[cabinId]) {
@@ -235,7 +228,6 @@ export const AvailabilitySettings = ({
 
       setIsUpdating(true);
 
-      // Update cabin availability in the database
       const { data: cabinData, error: fetchError } = await supabase
         .from('cabins')
         .select('pricing')
@@ -245,37 +237,30 @@ export const AvailabilitySettings = ({
       if (fetchError) throw fetchError;
 
       if (cabinData) {
-        // Parse the pricing data safely
         const pricingData = parsePricingData(cabinData.pricing);
         
-        // Make sure structures exist
         if (!pricingData.specificDates) {
           pricingData.specificDates = {};
         }
         
-        // Initialize the date entry if it doesn't exist
         if (!pricingData.specificDates[date]) {
           pricingData.specificDates[date] = {};
         }
         
-        // Initialize the turn entry if it doesn't exist
         if (!pricingData.specificDates[date][turn]) {
           pricingData.specificDates[date][turn] = {
             price: slotPrices[cabinId]?.[date]?.[turn] || cabinPrices[cabinId] || 100,
             available: !isManualClose
           };
         } else {
-          // Update the availability
           pricingData.specificDates[date][turn].available = !isManualClose;
         }
         
-        // Convert CabinPricing back to Json for database update
         const pricingJson = {
           defaultPricing: pricingData.defaultPricing,
           specificDates: pricingData.specificDates
         };
 
-        // Update the database
         const { error: updateError } = await supabase
           .from('cabins')
           .update({ pricing: pricingJson as Json })
@@ -293,11 +278,10 @@ export const AvailabilitySettings = ({
     } catch (error) {
       console.error("Error updating status:", error);
       
-      // Revert the optimistic update if error
       setManuallyClosedDates(prev => {
         const updated = { ...prev };
         if (updated[cabinId] && updated[cabinId][date]) {
-          updated[cabinId][date][turn] = !isManualClose; // Revert
+          updated[cabinId][date][turn] = !isManualClose;
         }
         return updated;
       });
@@ -314,7 +298,6 @@ export const AvailabilitySettings = ({
 
   const handlePriceUpdate = async (cabinId: string, date: string, turn: string, price: number) => {
     try {
-      // Update local state immediately for better UX response
       setSlotPrices(prev => {
         const updated = { ...prev };
         if (!updated[cabinId]) {
@@ -333,7 +316,6 @@ export const AvailabilitySettings = ({
       
       setIsUpdating(true);
       
-      // Update the database
       const { data: cabinData, error: fetchError } = await supabase
         .from('cabins')
         .select('pricing')
@@ -343,37 +325,30 @@ export const AvailabilitySettings = ({
       if (fetchError) throw fetchError;
 
       if (cabinData) {
-        // Parse the pricing data safely
         const pricingData = parsePricingData(cabinData.pricing);
         
-        // Make sure specificDates exists
         if (!pricingData.specificDates) {
           pricingData.specificDates = {};
         }
         
-        // Initialize the date entry if it doesn't exist
         if (!pricingData.specificDates[date]) {
           pricingData.specificDates[date] = {};
         }
         
-        // Initialize the turn entry if it doesn't exist
         if (!pricingData.specificDates[date][turn]) {
           pricingData.specificDates[date][turn] = {
             price: price,
             available: !manuallyClosedDates[cabinId]?.[date]?.[turn]
           };
         } else {
-          // Update the price
           pricingData.specificDates[date][turn].price = price;
         }
         
-        // Convert CabinPricing back to Json for database update
         const pricingJson = {
           defaultPricing: pricingData.defaultPricing,
           specificDates: pricingData.specificDates
         };
         
-        // Update the database
         const { error: updateError } = await supabase
           .from('cabins')
           .update({ pricing: pricingJson as Json })
@@ -391,12 +366,11 @@ export const AvailabilitySettings = ({
     } catch (error) {
       console.error("Error updating price:", error);
       
-      // Revert the optimistic update if error
       const originalPrice = cabinPrices[cabinId] || 100;
       setSlotPrices(prev => {
         const updated = { ...prev };
         if (updated[cabinId] && updated[cabinId][date]) {
-          updated[cabinId][date][turn] = originalPrice; // Revert to default price
+          updated[cabinId][date][turn] = originalPrice;
         }
         return updated;
       });
@@ -404,6 +378,87 @@ export const AvailabilitySettings = ({
       toast({
         title: "Erro",
         description: "Não foi possível atualizar o preço.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleBatchPriceUpdate = async (cabinId: string, dates: string[], turns: string[], price: number) => {
+    try {
+      setIsUpdating(true);
+      
+      const { data: cabinData, error: fetchError } = await supabase
+        .from('cabins')
+        .select('pricing')
+        .eq('id', cabinId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (cabinData) {
+        const pricingData = parsePricingData(cabinData.pricing);
+        
+        dates.forEach(date => {
+          if (!pricingData.specificDates) {
+            pricingData.specificDates = {};
+          }
+          
+          if (!pricingData.specificDates[date]) {
+            pricingData.specificDates[date] = {};
+          }
+          
+          turns.forEach(turn => {
+            if (!pricingData.specificDates[date][turn]) {
+              pricingData.specificDates[date][turn] = {
+                price: price,
+                available: !manuallyClosedDates[cabinId]?.[date]?.[turn]
+              };
+            } else {
+              pricingData.specificDates[date][turn].price = price;
+            }
+            
+            setSlotPrices(prev => {
+              const updated = { ...prev };
+              if (!updated[cabinId]) {
+                updated[cabinId] = {};
+              }
+              if (!updated[cabinId][date]) {
+                updated[cabinId][date] = {
+                  morning: cabinPrices[cabinId] || 100,
+                  afternoon: cabinPrices[cabinId] || 100,
+                  evening: cabinPrices[cabinId] || 100
+                };
+              }
+              updated[cabinId][date][turn] = price;
+              return updated;
+            });
+          });
+        });
+        
+        const pricingJson = {
+          defaultPricing: pricingData.defaultPricing,
+          specificDates: pricingData.specificDates
+        };
+        
+        const { error: updateError } = await supabase
+          .from('cabins')
+          .update({ pricing: pricingJson as Json })
+          .eq('id', cabinId);
+          
+        if (updateError) throw updateError;
+      }
+      
+      toast({
+        title: "Preços atualizados em massa",
+        description: `Os preços foram atualizados para ${dates.length} dia(s).`,
+      });
+    } catch (error) {
+      console.error("Error updating batch prices:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar os preços em massa.",
         variant: "destructive"
       });
     } finally {
@@ -420,35 +475,62 @@ export const AvailabilitySettings = ({
             Configure a disponibilidade das cabines por períodos e dias
           </CardDescription>
         </CardHeader>
-      </Card>
-
-      <div className="space-y-8">
-        {locationCabins.map((cabin) => (
-          <Card key={cabin.id} className="w-full">
-            <CardHeader>
-              <CardTitle>Cabine: {cabin.name}</CardTitle>
-              <CardDescription>
-                Gerencie a disponibilidade e preços desta cabine
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="w-full overflow-x-auto">
-                <CabinAvailabilityCalendar
-                  selectedTurn="morning"
-                  daysBooked={daysBooked[cabin.id] || {}}
-                  onSelectDates={(dates) => setSelectedDates({ ...selectedDates, [cabin.id]: dates })}
-                  selectedDates={selectedDates[cabin.id] || []}
-                  pricePerDay={cabinPrices[cabin.id] || cabin.price || 100}
-                  onPriceChange={(date, turn, price) => handlePriceUpdate(cabin.id, date, turn, price)}
-                  onStatusChange={(date, turn, isManualClose) => handleStatusChange(cabin.id, date, turn, isManualClose)}
-                  manuallyClosedDates={manuallyClosedDates[cabin.id] || {}}
-                  slotPrices={slotPrices[cabin.id]}
-                />
+        <CardContent>
+          {locationCabins.length > 0 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                {locationCabins.map((cabin) => (
+                  <button
+                    key={cabin.id}
+                    onClick={() => setSelectedCabin(cabin.id)}
+                    className={`p-2 rounded text-sm ${
+                      selectedCabin === cabin.id
+                        ? "bg-primary text-white"
+                        : "bg-secondary hover:bg-secondary/80"
+                    }`}
+                  >
+                    {cabin.name}
+                  </button>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+
+              {selectedCabin && (
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger value="calendar">Calendário</TabsTrigger>
+                    <TabsTrigger value="batch">Edição em Massa</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="calendar" className="mt-4">
+                    <div className="w-full overflow-x-auto">
+                      <CabinAvailabilityCalendar
+                        selectedTurn="morning"
+                        daysBooked={daysBooked[selectedCabin] || {}}
+                        onSelectDates={(dates) => setSelectedDates({ ...selectedDates, [selectedCabin]: dates })}
+                        selectedDates={selectedDates[selectedCabin] || []}
+                        pricePerDay={cabinPrices[selectedCabin] || 100}
+                        onPriceChange={(date, turn, price) => handlePriceUpdate(selectedCabin, date, turn, price)}
+                        onStatusChange={(date, turn, isManualClose) => handleStatusChange(selectedCabin, date, turn, isManualClose)}
+                        manuallyClosedDates={manuallyClosedDates[selectedCabin] || {}}
+                        slotPrices={slotPrices[selectedCabin]}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="batch" className="mt-4">
+                    <BatchPriceEditor 
+                      defaultPrice={cabinPrices[selectedCabin] || 100}
+                      onPriceChange={(dates, turns, price) => 
+                        handleBatchPriceUpdate(selectedCabin, dates, turns, price)
+                      }
+                    />
+                  </TabsContent>
+                </Tabs>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };
