@@ -105,6 +105,9 @@ const Index = () => {
             // Continue with user metadata even if profile fails
           }
           
+          // Get user type either from profile or from metadata
+          const currentUserType = profile?.user_type || authUser?.user_metadata?.userType || "client";
+          
           // If profile exists, use it
           if (profile) {
             debugLog("Index: Profile loaded successfully:", profile);
@@ -126,13 +129,11 @@ const Index = () => {
           else {
             debugLog("Index: No profile found, using auth metadata");
             
-            const userType = authUser?.user_metadata?.userType || "client";
-            
             const userData: User = {
               id: userId,
               name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
               email: authUser?.email || "",
-              userType: userType as "client" | "provider" | "owner" | "global_admin",
+              userType: currentUserType as "client" | "provider" | "owner" | "global_admin",
               avatarUrl: authUser?.user_metadata?.avatar_url,
               phoneNumber: null,
               roles: userRolesList
@@ -143,7 +144,7 @@ const Index = () => {
           }
           
           // Redirect from admin page if user isn't admin
-          if (location.pathname.includes('/admin') && !userRolesList.includes('admin') && userType !== 'global_admin') {
+          if (location.pathname.includes('/admin') && !userRolesList.includes('admin') && currentUserType !== 'global_admin') {
             debugLog("Index: Unauthorized admin page access attempt");
             toast({
               title: "Acesso restrito",
@@ -157,13 +158,13 @@ const Index = () => {
           debugError("Index: Error in profile section:", profileError);
           
           // Fallback to auth metadata if profile query fails completely
-          const userType = authUser?.user_metadata?.userType || "client";
+          const currentUserType = authUser?.user_metadata?.userType || "client";
           
           const userData: User = {
             id: userId,
             name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
             email: authUser?.email || "",
-            userType: userType as "client" | "provider" | "owner" | "global_admin",
+            userType: currentUserType as "client" | "provider" | "owner" | "global_admin",
             avatarUrl: authUser?.user_metadata?.avatar_url,
             phoneNumber: null,
             roles: userRolesList
