@@ -6,15 +6,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
-interface OwnerProfileResult {
-  id: string;
-  name: string | null;
-  email: string | null;
-  user_type: string | null;
-  phone_number: string | null;
-  avatar_url: string | null;
-}
-
 export const useOwnerProfile = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -65,10 +56,8 @@ export const useOwnerProfile = () => {
         }
         
         // If metadata doesn't confirm owner status, try a direct auth verification approach
-        // This avoids using the profiles table which might be causing the recursion
         debugLog("useOwnerProfile: Not confirmed as owner by metadata, checking other sources");
         
-        // Using RPC call instead of direct table query to avoid RLS recursion
         try {
           // Try to use a direct auth approach to confirm ownership
           // Option 1: Check if user has any locations (only owners have locations)
@@ -97,50 +86,16 @@ export const useOwnerProfile = () => {
           
           debugLog("useOwnerProfile: Could not verify as owner via locations, trying direct auth check");
           
-          // Option 2: As a last resort, try a simplified profile query with minimal fields
-          // TypeScript doesn't know about our custom function, so we have to cast the result
-          const { data: ownerProfile, error } = await supabase.rpc(
-            'check_owner_status', 
-            { user_id: session.user.id }
-          ) as { data: OwnerProfileResult | null, error: any };
+          // Option 2: As a last resort, try using a direct profile check with typecast
+          // Get user type directly with a very minimal query that avoids RLS recursion
+          const { data: userType, error: userTypeError } = await supabase
+            .rpc('get_profile_user_type', { user_id: session.user.id });
             
-          // If the RPC call fails, we might need to fall back to a very basic query
-          if (error) {
-            debugError("useOwnerProfile: Error with RPC:", error);
+          if (userTypeError) {
+            debugError("useOwnerProfile: Error checking user type:", userTypeError);
             
-            // Fallback - simple query with minimal fields to avoid recursion
-            const { data: basicProfile, error: basicError } = await supabase
-              .from('profiles')
-              .select('user_type')
-              .eq('id', session.user.id)
-              .maybeSingle();
-              
-            if (basicError) {
-              debugError("useOwnerProfile: Error with basic profile query:", basicError);
-              
-              // If user metadata exists but doesn't indicate owner, redirect
-              if (userTypeFromMetadata && userTypeFromMetadata !== 'owner') {
-                toast({
-                  title: "Acesso restrito",
-                  description: "Você não tem permissão para acessar esta página.",
-                  variant: "destructive",
-                });
-                navigate("/");
-                return;
-              }
-              
-              // If we can't determine user type at all, default to assume they're not an owner
-              toast({
-                title: "Acesso restrito",
-                description: "Não foi possível verificar suas permissões.",
-                variant: "destructive",
-              });
-              navigate("/");
-              return;
-            }
-            
-            // Check if basic profile confirms owner status
-            if (basicProfile?.user_type !== "owner") {
+            // If user metadata exists but doesn't indicate owner, redirect
+            if (userTypeFromMetadata && userTypeFromMetadata !== 'owner') {
               toast({
                 title: "Acesso restrito",
                 description: "Você não tem permissão para acessar esta página.",
@@ -150,39 +105,40 @@ export const useOwnerProfile = () => {
               return;
             }
             
-            // Profile confirms owner status
-            const userData: User = {
-              id: session.user.id,
-              name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-              email: session.user.email || "",
-              userType: "owner",
-              avatarUrl: userMetadata?.avatar_url,
-              phoneNumber: null
-            };
-            
-            setCurrentUser(userData);
-          } else if (ownerProfile) {
-            // RPC call succeeded
-            const userData: User = {
-              id: session.user.id,
-              name: ownerProfile.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-              email: ownerProfile.email || session.user.email || "",
-              userType: "owner",
-              avatarUrl: ownerProfile.avatar_url || userMetadata?.avatar_url,
-              phoneNumber: ownerProfile.phone_number || null
-            };
-            
-            setCurrentUser(userData);
-          } else {
-            // No profile found and RPC returned null
+            // If we can't determine user type at all, default to assume they're not an owner
             toast({
               title: "Acesso restrito",
-              description: "Perfil de usuário não encontrado.",
+              description: "Não foi possível verificar suas permissões.",
               variant: "destructive",
             });
             navigate("/");
             return;
           }
+          
+          // Check if user type confirms owner status
+          if (userType !== "owner") {
+            toast({
+              title: "Acesso restrito",
+              description: "Você não tem permissão para acessar esta página.",
+              variant: "destructive",
+            });
+            navigate("/");
+            return;
+          }
+          
+          // User type confirms owner status, create basic user data
+          const userData: User = {
+            id: session.user.id,
+            name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+            email: session.user.email || "",
+            userType: "owner",
+            avatarUrl: userMetadata?.avatar_url,
+            phoneNumber: null
+          };
+          
+          setCurrentUser(userData);
+          setIsLoading(false);
+          
         } catch (error) {
           debugError("useOwnerProfile: Error in profile verification:", error);
           toast({
