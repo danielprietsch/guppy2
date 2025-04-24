@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import LocationCard from "@/components/LocationCard";
 import { Input } from "@/components/ui/input";
@@ -26,20 +25,51 @@ const LocationsPage = () => {
           return;
         }
 
-        const transformedLocations: Location[] = data.map(location => ({
-          id: location.id,
-          name: location.name,
-          address: location.address,
-          city: location.city,
-          state: location.state,
-          zipCode: location.zip_code,
-          cabinsCount: location.cabins_count || 0,
-          openingHours: location.opening_hours || { open: "09:00", close: "18:00" },
-          amenities: location.amenities || [],
-          imageUrl: location.image_url || "",
-          description: location.description || "",
-          active: location.active
-        }));
+        const transformedLocations: Location[] = data.map(location => {
+          // Parse opening_hours safely
+          let openingHours = { open: "09:00", close: "18:00" };
+          
+          if (location.opening_hours) {
+            try {
+              // Handle cases where opening_hours could be a string or object
+              if (typeof location.opening_hours === 'string') {
+                const parsed = JSON.parse(location.opening_hours);
+                if (parsed && typeof parsed === 'object' && 'open' in parsed && 'close' in parsed) {
+                  openingHours = {
+                    open: String(parsed.open),
+                    close: String(parsed.close)
+                  };
+                }
+              } else if (typeof location.opening_hours === 'object' && location.opening_hours !== null) {
+                const hours = location.opening_hours as any;
+                if ('open' in hours && 'close' in hours) {
+                  openingHours = {
+                    open: String(hours.open),
+                    close: String(hours.close)
+                  };
+                }
+              }
+            } catch (e) {
+              debugError("LocationsPage: Error parsing opening hours:", e);
+              // Keep default values if parsing fails
+            }
+          }
+
+          return {
+            id: location.id,
+            name: location.name,
+            address: location.address,
+            city: location.city,
+            state: location.state,
+            zipCode: location.zip_code,
+            cabinsCount: location.cabins_count || 0,
+            openingHours: openingHours,
+            amenities: location.amenities || [],
+            imageUrl: location.image_url || "",
+            description: location.description || "",
+            active: location.active
+          };
+        });
 
         setLocations(transformedLocations);
       } catch (error) {
