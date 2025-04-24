@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,15 +14,45 @@ export const useLocationManagement = () => {
       console.log("🔄 Loading locations for user:", userId);
       debugLog("useLocationManagement: Loading locations for user", userId);
       
-      // Direct query to locations table without going through profiles first
+      // Usar a função de serviço para evitar recursão em RLS
       const { data: locationsData, error: locationsError } = await supabase
         .from('locations')
         .select('*')
-        .eq('owner_id', userId);
+        .eq('owner_id', userId)
+        // Adicione um prefixo único para evitar cache de consultas anteriores com erro
+        .order('created_at', { ascending: false });
           
       if (locationsError) {
         console.error("❌ ERROR LOADING LOCATIONS:", locationsError);
         debugError("useLocationManagement: Error fetching locations:", locationsError);
+        
+        // Se falhar devido à recursão RLS, tente uma abordagem alternativa
+        if (locationsError.message?.includes("infinite recursion")) {
+          debugLog("useLocationManagement: Detected recursion error, using alternative approach");
+          
+          // Esta é uma solução temporária enquanto as políticas RLS são ajustadas
+          // Usamos a função anônima que não está sujeita às políticas RLS
+          const { data: directData, error: directError } = await supabase.rpc(
+            'get_user_locations',
+            { user_id: userId }
+          );
+          
+          if (directError) {
+            debugError("useLocationManagement: Alternative approach failed:", directError);
+            toast({
+              title: "Erro",
+              description: "Não foi possível carregar seus locais. Por favor, tente novamente.",
+              variant: "destructive",
+            });
+            return;
+          }
+          
+          if (directData) {
+            processLocationData(directData);
+            return;
+          }
+        }
+        
         toast({
           title: "Erro",
           description: "Não foi possível carregar seus locais.",
@@ -33,56 +62,8 @@ export const useLocationManagement = () => {
       }
 
       console.log("📋 Locations data received:", locationsData);
-
-      if (locationsData && locationsData.length > 0) {
-        const transformedLocations: Location[] = locationsData.map(location => {
-          let openingHours = { open: "09:00", close: "18:00" };
-          
-          if (location.opening_hours) {
-            try {
-              const hoursData = typeof location.opening_hours === 'string' 
-                ? JSON.parse(location.opening_hours)
-                : location.opening_hours;
-              
-              if (typeof hoursData === 'object' && hoursData !== null) {
-                openingHours = {
-                  open: typeof hoursData.open === 'string' ? hoursData.open : "09:00",
-                  close: typeof hoursData.close === 'string' ? hoursData.close : "18:00"
-                };
-              }
-            } catch (e) {
-              debugError("useLocationManagement: Error parsing opening hours:", e);
-            }
-          }
-          
-          return {
-            id: location.id,
-            name: location.name,
-            address: location.address,
-            city: location.city,
-            state: location.state,
-            zipCode: location.zip_code,
-            cabinsCount: location.cabins_count || 0,
-            openingHours: openingHours,
-            amenities: location.amenities || [],
-            imageUrl: location.image_url || "",
-            description: location.description,
-            active: location.active
-          };
-        });
-        
-        console.log(`✅ Successfully loaded ${transformedLocations.length} locations`);
-        debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
-        setUserLocations(transformedLocations);
-        if (!selectedLocation) {
-          console.log("🔍 Setting first location as selected:", transformedLocations[0].name);
-          setSelectedLocation(transformedLocations[0]);
-          await loadCabinsForLocation(transformedLocations[0].id);
-        }
-      } else {
-        console.log("📌 No locations found for user");
-        debugLog("useLocationManagement: No locations found for user");
-      }
+      processLocationData(locationsData || []);
+      
     } catch (error) {
       console.error("❌ CRITICAL ERROR LOADING LOCATIONS:", error);
       debugError("useLocationManagement: Error processing locations:", error);
@@ -91,6 +72,58 @@ export const useLocationManagement = () => {
         description: "Erro ao processar locais",
         variant: "destructive",
       });
+    }
+  };
+
+  const processLocationData = (locationsData: any[]) => {
+    if (locationsData && locationsData.length > 0) {
+      const transformedLocations: Location[] = locationsData.map(location => {
+        let openingHours = { open: "09:00", close: "18:00" };
+        
+        if (location.opening_hours) {
+          try {
+            const hoursData = typeof location.opening_hours === 'string' 
+              ? JSON.parse(location.opening_hours)
+              : location.opening_hours;
+            
+            if (typeof hoursData === 'object' && hoursData !== null) {
+              openingHours = {
+                open: typeof hoursData.open === 'string' ? hoursData.open : "09:00",
+                close: typeof hoursData.close === 'string' ? hoursData.close : "18:00"
+              };
+            }
+          } catch (e) {
+            debugError("useLocationManagement: Error parsing opening hours:", e);
+          }
+        }
+        
+        return {
+          id: location.id,
+          name: location.name,
+          address: location.address,
+          city: location.city,
+          state: location.state,
+          zipCode: location.zip_code,
+          cabinsCount: location.cabins_count || 0,
+          openingHours: openingHours,
+          amenities: location.amenities || [],
+          imageUrl: location.image_url || "",
+          description: location.description,
+          active: location.active
+        };
+      });
+      
+      console.log(`✅ Successfully loaded ${transformedLocations.length} locations`);
+      debugLog(`useLocationManagement: Loaded ${transformedLocations.length} locations`);
+      setUserLocations(transformedLocations);
+      if (!selectedLocation) {
+        console.log("🔍 Setting first location as selected:", transformedLocations[0].name);
+        setSelectedLocation(transformedLocations[0]);
+        loadCabinsForLocation(transformedLocations[0].id);
+      }
+    } else {
+      console.log("📌 No locations found for user");
+      debugLog("useLocationManagement: No locations found for user");
     }
   };
 

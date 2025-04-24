@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
@@ -50,67 +49,24 @@ const OwnerDashboardPage = () => {
         
         debugLog("OwnerDashboardPage: Session found, user:", session.user);
         
-        // Verificar tipo de usuário diretamente nos metadados - mais confiável
+        // Verificar se o usuário é um franqueado diretamente nos metadados
         const userType = session.user.user_metadata?.userType;
-        if (userType === 'owner') {
-          debugLog("OwnerDashboardPage: User is owner according to metadata");
+        
+        // Permitir tanto 'owner' quanto 'global_admin'
+        if (userType === 'owner' || userType === 'global_admin') {
+          debugLog("OwnerDashboardPage: User is authorized according to metadata");
           setAuthChecked(true);
-          return; // Usuário é franqueado, permitir acesso
+          return;
         }
 
-        // Se não encontrarmos o tipo nos metadados, verificar no perfil como fallback
-        try {
-          // Tentar buscar o tipo no perfil como fonte secundária
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          if (error) {
-            // Se houver erro na consulta de perfil, mas os metadados indicam franqueado, permitir acesso
-            if (userType === 'owner') {
-              debugLog("OwnerDashboardPage: Error fetching profile, falling back to metadata");
-              setAuthChecked(true);
-              return;
-            }
-            
-            throw error; // Re-lançar para tratamento externo
-          }
-
-          if (profile?.user_type === 'owner') {
-            debugLog("OwnerDashboardPage: User is owner according to profile");
-            setAuthChecked(true);
-            return;
-          }
-          
-          // Se chegou aqui, não é franqueado, redirecionar
-          debugLog("OwnerDashboardPage: User is not owner, redirecting");
-          toast({
-            title: "Acesso Negado",
-            description: "Você não tem permissão para acessar o dashboard de franqueado.",
-            variant: "destructive"
-          });
-          navigate("/");
-          
-        } catch (error) {
-          debugError("OwnerDashboardPage: Error in profile check:", error);
-          
-          // Se não podemos determinar com o perfil, mas os metadados dizem que é franqueado, permitir
-          if (userType === 'owner') {
-            debugLog("OwnerDashboardPage: Using metadata as fallback");
-            setAuthChecked(true);
-            return;
-          }
-          
-          // Caso não possamos confirmar que é franqueado, redirecionar para segurança
-          toast({
-            title: "Erro",
-            description: "Não foi possível verificar suas permissões.",
-            variant: "destructive"
-          });
-          navigate("/");
-        }
+        // Se não for um tipo de usuário válido nos metadados, redirecionar
+        debugLog("OwnerDashboardPage: User is not authorized, redirecting");
+        toast({
+          title: "Acesso Negado",
+          description: "Você não tem permissão para acessar o dashboard de franqueado.",
+          variant: "destructive"
+        });
+        navigate("/");
       } catch (error) {
         debugError("OwnerDashboardPage: Error checking session:", error);
         toast({
