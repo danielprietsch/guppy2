@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 const Index = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -29,12 +30,14 @@ const Index = () => {
           }, 0);
         } else {
           setCurrentUser(null);
+          setUserRoles([]);
           setIsLoading(false);
           
           // Only redirect to login if on a protected page
           const currentPath = location.pathname;
           if (currentPath.includes('/dashboard') || 
-              currentPath.includes('/profile')) {
+              currentPath.includes('/profile') ||
+              currentPath.includes('/admin')) {
             navigate('/login', { replace: true });
           }
         }
@@ -57,7 +60,8 @@ const Index = () => {
         // Only redirect to login if on a protected page
         const currentPath = location.pathname;
         if (currentPath.includes('/dashboard') || 
-            currentPath.includes('/profile')) {
+            currentPath.includes('/profile') ||
+            currentPath.includes('/admin')) {
           navigate('/login', { replace: true });
         }
       }
@@ -78,6 +82,20 @@ const Index = () => {
           return;
         }
         
+        // Carregar as roles do usuário
+        const { data: roles, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId);
+          
+        if (rolesError) {
+          console.error("Index: Error loading user roles:", rolesError);
+        } else {
+          const userRolesList = roles?.map(r => r.role) || [];
+          console.log("Index: User roles loaded:", userRolesList);
+          setUserRoles(userRolesList);
+        }
+        
         if (profile) {
           console.log("Index: Profile loaded successfully:", profile);
           const { data: { user } } = await supabase.auth.getUser();
@@ -88,11 +106,22 @@ const Index = () => {
             email: profile.email || user?.email || "",
             userType: profile.user_type as "client" | "provider" | "owner",
             avatarUrl: profile.avatar_url,
-            phoneNumber: profile.phone_number
+            phoneNumber: profile.phone_number,
+            roles: userRolesList
           };
           
           setCurrentUser(userData);
           console.log("Index: User data set:", userData);
+          
+          // Redirect from admin page if user isn't admin
+          if (location.pathname.includes('/admin') && !userRolesList.includes('admin')) {
+            toast({
+              title: "Acesso restrito",
+              description: "Você não tem permissão para acessar esta página.",
+              variant: "destructive",
+            });
+            navigate('/', { replace: true });
+          }
         } else {
           console.log("Index: No profile found, trying to create one");
           
@@ -116,7 +145,8 @@ const Index = () => {
               email: newProfile.email || "",
               userType: newProfile.user_type as "client" | "provider" | "owner",
               avatarUrl: newProfile.avatar_url,
-              phoneNumber: null
+              phoneNumber: null,
+              roles: userRolesList
             };
             
             setCurrentUser(userData);
@@ -145,6 +175,7 @@ const Index = () => {
     console.log("Index: Logging out user");
     await supabase.auth.signOut();
     setCurrentUser(null);
+    setUserRoles([]);
     
     toast({
       title: "Logout realizado com sucesso",
@@ -156,7 +187,8 @@ const Index = () => {
 
   // Determine if we're on a page that needs authentication
   const isAuthRequired = location.pathname.includes('/dashboard') || 
-                         location.pathname.includes('/profile');
+                         location.pathname.includes('/profile') ||
+                         location.pathname.includes('/admin');
 
   // Only show loading indicator for pages that require authentication
   const showLoading = isLoading && isAuthRequired;
@@ -176,7 +208,7 @@ const Index = () => {
           <Outlet />
         )}
       </main>
-      <Footer />
+      <Footer userRoles={userRoles} />
     </div>
   );
 };
