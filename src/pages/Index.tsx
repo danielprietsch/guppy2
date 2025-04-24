@@ -14,7 +14,7 @@ import ContactPage from "./ContactPage";
 import LocationsPage from "./LocationsPage";
 import LocationDetailPage from "./LocationDetailPage";
 import BookCabinPage from "./BookCabinPage";
-import ProvidersPage from "./ProvidersPage";
+import ProfessionalsPage from "./ProfessionalsPage";
 import ProfessionalDetailPage from "./ProfessionalDetailPage";
 
 // Auth Pages
@@ -63,7 +63,7 @@ export default function Index() {
             <Route path="/locations" element={<LocationsPage />} />
             <Route path="/location/:id" element={<LocationDetailPage />} />
             <Route path="/book/:cabinId" element={<BookCabinPage />} />
-            <Route path="/providers" element={<ProvidersPage />} />
+            <Route path="/professionals" element={<ProfessionalsPage />} />
             <Route path="/professional/:id" element={<ProfessionalDetailPage />} />
 
             {/* Auth Routes */}
