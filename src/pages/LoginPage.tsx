@@ -19,16 +19,30 @@ const LoginPage = () => {
         console.log("LoginPage: Checking current session:", session);
         if (session) {
           console.log("LoginPage: Session found, user is authenticated:", session.user);
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (profile) {
-            const dashboardRoute = getDashboardRoute(profile.user_type);
-            navigate(dashboardRoute, { replace: true });
+          
+          // Get user type from metadata first as a fallback
+          const userType = session.user.user_metadata?.userType || "client";
+          
+          // Try to get from profile if possible
+          try {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('user_type')
+              .eq('id', session.user.id)
+              .maybeSingle();
+              
+            if (profile) {
+              const dashboardRoute = getDashboardRoute(profile.user_type);
+              navigate(dashboardRoute, { replace: true });
+              return;
+            }
+          } catch (error) {
+            console.error("Error fetching profile:", error);
           }
+          
+          // Fallback to metadata
+          const dashboardRoute = getDashboardRoute(userType);
+          navigate(dashboardRoute, { replace: true });
         } else {
           console.log("LoginPage: No active session found");
         }
@@ -83,19 +97,32 @@ const LoginPage = () => {
       
       if (authData.user) {
         try {
+          // First try to get user type from profile
           const { data: profile } = await supabase
             .from('profiles')
             .select('user_type')
             .eq('id', authData.user.id)
-            .single();
+            .maybeSingle();
             
           if (profile) {
             const dashboardRoute = getDashboardRoute(profile.user_type);
-            console.log(`Redirecting to ${dashboardRoute}`);
+            console.log(`Redirecting to ${dashboardRoute} (from profile)`);
+            navigate(dashboardRoute, { replace: true });
+          } else {
+            // Fallback to metadata
+            const userType = authData.user.user_metadata?.userType || "client";
+            const dashboardRoute = getDashboardRoute(userType);
+            console.log(`Redirecting to ${dashboardRoute} (from metadata)`);
             navigate(dashboardRoute, { replace: true });
           }
         } catch (profileError) {
           console.error("Error fetching profile:", profileError);
+          
+          // Fallback to metadata if profile fetch fails
+          const userType = authData.user.user_metadata?.userType || "client";
+          const dashboardRoute = getDashboardRoute(userType);
+          console.log(`Redirecting to ${dashboardRoute} (fallback)`);
+          navigate(dashboardRoute, { replace: true });
         }
       }
       

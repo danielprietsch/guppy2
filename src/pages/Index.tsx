@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import NavBar from "@/components/NavBar";
@@ -24,9 +25,9 @@ const Index = () => {
         
         // For syncing auth state without redirects
         if (session?.user) {
-          // Use setTimeout to avoid race conditions
+          // Use setTimeout to avoid race conditions with auth state changes
           setTimeout(() => {
-            loadUserProfile(session.user.id);
+            loadUserProfile(session.user.id, session.user);
           }, 0);
         } else {
           debugLog("Index: No active session, resetting user state");
@@ -54,7 +55,7 @@ const Index = () => {
       
       if (session?.user) {
         debugLog("Index: Found existing session, loading profile");
-        loadUserProfile(session.user.id);
+        loadUserProfile(session.user.id, session.user);
       } else {
         debugLog("Index: No active session found");
         setIsLoading(false);
@@ -70,54 +71,79 @@ const Index = () => {
       }
     };
     
-    const loadUserProfile = async (userId: string) => {
+    const loadUserProfile = async (userId: string, authUser: any) => {
       try {
         debugLog("Index: Loading profile for user:", userId);
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', userId)
-          .maybeSingle();
         
-        if (error) {
-          debugError("Index: Error loading profile:", error);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Carregar as roles do usuário
-        const { data: roles, error: rolesError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', userId);
-          
-        if (rolesError) {
+        // First attempt to load user roles
+        let userRolesList: string[] = [];
+        try {
+          const { data: roles, error: rolesError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', userId);
+            
+          if (!rolesError && roles) {
+            userRolesList = roles.map(r => r.role) || [];
+            debugLog("Index: User roles loaded:", userRolesList);
+            setUserRoles(userRolesList);
+          }
+        } catch (rolesError) {
           debugError("Index: Error loading user roles:", rolesError);
-        } else {
-          const userRolesList = roles?.map(r => r.role) || [];
-          debugLog("Index: User roles loaded:", userRolesList);
-          setUserRoles(userRolesList);
         }
         
-        if (profile) {
-          debugLog("Index: Profile loaded successfully:", profile);
-          const { data: { user } } = await supabase.auth.getUser();
+        // Now attempt to load profile
+        try {
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .maybeSingle();
           
-          const userData: User = {
-            id: profile.id,
-            name: profile.name || user?.user_metadata?.name || profile.email?.split('@')[0] || "Usuário",
-            email: profile.email || user?.email || "",
-            userType: profile.user_type as "client" | "provider" | "owner",
-            avatarUrl: profile.avatar_url,
-            phoneNumber: profile.phone_number,
-            roles: userRoles
-          };
+          if (error) {
+            debugError("Index: Error loading profile:", error);
+            // Continue with user metadata even if profile fails
+          }
           
-          setCurrentUser(userData);
-          debugLog("Index: User data set:", userData);
+          // If profile exists, use it
+          if (profile) {
+            debugLog("Index: Profile loaded successfully:", profile);
+            
+            const userData: User = {
+              id: profile.id,
+              name: profile.name || authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
+              email: profile.email || authUser?.email || "",
+              userType: profile.user_type as "client" | "provider" | "owner" | "global_admin",
+              avatarUrl: profile.avatar_url || authUser?.user_metadata?.avatar_url,
+              phoneNumber: profile.phone_number,
+              roles: userRolesList
+            };
+            
+            debugLog("Index: User data set:", userData);
+            setCurrentUser(userData);
+          } 
+          // If no profile found, use auth metadata
+          else {
+            debugLog("Index: No profile found, using auth metadata");
+            
+            const userType = authUser?.user_metadata?.userType || "client";
+            
+            const userData: User = {
+              id: userId,
+              name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
+              email: authUser?.email || "",
+              userType: userType as "client" | "provider" | "owner" | "global_admin",
+              avatarUrl: authUser?.user_metadata?.avatar_url,
+              phoneNumber: null,
+              roles: userRolesList
+            };
+            
+            debugLog("Index: User data set from metadata:", userData);
+            setCurrentUser(userData);
+          }
           
           // Redirect from admin page if user isn't admin
-          if (location.pathname.includes('/admin') && !userRoles.includes('admin')) {
+          if (location.pathname.includes('/admin') && !userRolesList.includes('admin') && userType !== 'global_admin') {
             debugLog("Index: Unauthorized admin page access attempt");
             toast({
               title: "Acesso restrito",
@@ -126,42 +152,42 @@ const Index = () => {
             });
             navigate('/', { replace: true });
           }
-        } else {
-          debugLog("Index: No profile found, trying to create one");
           
-          // Try to create profile from user metadata
-          const { data: { user } } = await supabase.auth.getUser();
+        } catch (profileError) {
+          debugError("Index: Error in profile section:", profileError);
           
-          if (user && user.user_metadata) {
-            const newProfile = {
-              id: userId,
-              name: user.user_metadata.name || user.email?.split('@')[0] || "Usuário",
-              email: user.email,
-              user_type: user.user_metadata.userType || "client",
-              avatar_url: user.user_metadata.avatar_url
-            };
-            
-            await supabase.from('profiles').insert(newProfile);
-            
-            const userData: User = {
-              id: userId,
-              name: newProfile.name,
-              email: newProfile.email || "",
-              userType: newProfile.user_type as "client" | "provider" | "owner",
-              avatarUrl: newProfile.avatar_url,
-              phoneNumber: null,
-              roles: userRoles
-            };
-            
-            setCurrentUser(userData);
-          } else {
-            debugError("Index: No user metadata available to create profile");
-            setCurrentUser(null);
-          }
+          // Fallback to auth metadata if profile query fails completely
+          const userType = authUser?.user_metadata?.userType || "client";
+          
+          const userData: User = {
+            id: userId,
+            name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
+            email: authUser?.email || "",
+            userType: userType as "client" | "provider" | "owner" | "global_admin",
+            avatarUrl: authUser?.user_metadata?.avatar_url,
+            phoneNumber: null,
+            roles: userRolesList
+          };
+          
+          debugLog("Index: Fallback - User data set from metadata:", userData);
+          setCurrentUser(userData);
         }
+        
       } catch (error) {
         debugError("Index: Error in loadUserProfile:", error);
-        setCurrentUser(null);
+        
+        // Ultimate fallback if everything fails
+        const userData: User = {
+          id: userId,
+          name: authUser?.user_metadata?.name || authUser?.email?.split('@')[0] || "Usuário",
+          email: authUser?.email || "",
+          userType: (authUser?.user_metadata?.userType || "client") as "client" | "provider" | "owner" | "global_admin",
+          avatarUrl: authUser?.user_metadata?.avatar_url,
+          phoneNumber: null,
+          roles: []
+        };
+        
+        setCurrentUser(userData);
       } finally {
         setIsLoading(false);
       }

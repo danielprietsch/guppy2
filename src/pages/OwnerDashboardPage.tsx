@@ -32,25 +32,54 @@ const OwnerDashboardPage = () => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      try {
+        console.log("OwnerDashboardPage: Checking session...");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log("OwnerDashboardPage: No session found, redirecting to login");
+          toast({
+            title: "Acesso Negado",
+            description: "Você precisa estar logado para acessar esta página.",
+            variant: "destructive"
+          });
+          navigate("/login");
+          return;
+        }
+        
+        console.log("OwnerDashboardPage: Session found, user:", session.user);
+        
+        // First check user metadata
+        const userType = session.user.user_metadata?.userType;
+        if (userType && userType === 'owner') {
+          console.log("OwnerDashboardPage: User is owner according to metadata");
+          return; // User is owner, allow access
+        }
+
+        // Then check profile if needed
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('user_type')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("OwnerDashboardPage: Error fetching profile:", error);
+        }
+
+        console.log("OwnerDashboardPage: Profile data:", profile);
+
+        if (!profile || profile.user_type !== 'owner') {
+          console.log("OwnerDashboardPage: User is not owner, redirecting");
+          toast({
+            title: "Acesso Negado",
+            description: "Você não tem permissão para acessar esta área.",
+            variant: "destructive"
+          });
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("OwnerDashboardPage: Error checking session:", error);
         navigate("/login");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile || profile.user_type !== 'owner') {
-        toast({
-          title: "Acesso Negado",
-          description: "Você não tem permissão para acessar esta área.",
-          variant: "destructive"
-        });
-        navigate("/");
       }
     };
 
@@ -60,6 +89,7 @@ const OwnerDashboardPage = () => {
   // Load locations when user is available
   useEffect(() => {
     if (currentUser?.id) {
+      console.log("OwnerDashboardPage: Loading locations for user:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
   }, [currentUser, loadUserLocations]);
@@ -76,7 +106,14 @@ const OwnerDashboardPage = () => {
   }
 
   if (!currentUser) {
-    return null;
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Acesso Negado</h1>
+          <p className="text-muted-foreground">Você não tem permissão para acessar esta página.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
