@@ -1,18 +1,15 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Button } from "@/components/ui/button";
-import { addAdminRole } from "@/utils/adminUtils";
 
 const ClientDashboardPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -30,8 +27,6 @@ const ClientDashboardPage = () => {
           navigate("/login");
           return;
         }
-
-        setUserId(session.user.id);
 
         const { data: profile, error } = await supabase
           .from('profiles')
@@ -64,8 +59,6 @@ const ClientDashboardPage = () => {
         debugLog(`ClientDashboardPage: Setting username to ${name}`);
         setUserName(name);
 
-        // Check for admin role
-        await checkAdminRole(session.user.id);
       } catch (error) {
         debugError("ClientDashboardPage: Authentication verification error:", error);
         toast({
@@ -81,36 +74,6 @@ const ClientDashboardPage = () => {
     
     checkAuth();
   }, [navigate]);
-
-  const checkAdminRole = async (userId: string) => {
-    try {
-      debugLog("ClientDashboardPage: Checking admin role for user", userId);
-      
-      // First, try to make the user an admin if they aren't already
-      if (userId) {
-        debugLog("ClientDashboardPage: Ensuring user has admin role");
-        const adminResult = await addAdminRole(userId);
-        debugLog("ClientDashboardPage: Admin role addition result:", adminResult);
-      }
-      
-      // Now check for admin role
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      
-      if (rolesError) {
-        debugError("ClientDashboardPage: Error fetching roles:", rolesError);
-        return;
-      }
-
-      const hasAdminRole = roles && roles.some(r => r.role === 'admin') || false;
-      debugLog(`ClientDashboardPage: User is admin: ${hasAdminRole}`);
-      setIsAdmin(hasAdminRole);
-    } catch (error) {
-      debugError("ClientDashboardPage: Error checking admin role:", error);
-    }
-  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -154,18 +117,6 @@ const ClientDashboardPage = () => {
         <p className="text-muted-foreground mb-6">
           Esta é uma página de exemplo para o painel do cliente.
         </p>
-        
-        {isAdmin && (
-          <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg">
-            <h3 className="font-medium text-lg mb-2 text-purple-800">Acesso Administrativo</h3>
-            <p className="text-gray-600 mb-4">Você possui privilégios administrativos nesta plataforma.</p>
-            <Link to="/admin/dashboard">
-              <Button variant="secondary" className="bg-purple-600 text-white hover:bg-purple-700">
-                Ver Dashboard Admin
-              </Button>
-            </Link>
-          </div>
-        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <div className="bg-white shadow rounded-lg p-6">

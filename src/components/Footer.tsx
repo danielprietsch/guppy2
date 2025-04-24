@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 
 interface FooterProps {
@@ -7,6 +6,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({ userRoles = [] }) => {
   const isAdmin = userRoles.includes('admin');
+  const isGlobalAdmin = userRoles.includes('global_admin');
 
   return (
     <footer className="bg-gradient-to-br from-[#D6BCFA]/10 to-[#9b87f5]/10 border-t">
@@ -67,6 +67,16 @@ const Footer: React.FC<FooterProps> = ({ userRoles = [] }) => {
                     className="text-sm text-gray-600 hover:text-gray-900"
                   >
                     Dashboard Admin
+                  </Link>
+                </li>
+              )}
+              {isGlobalAdmin && (
+                <li>
+                  <Link 
+                    to="/admin/global" 
+                    className="text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    Dashboard Global Admin
                   </Link>
                 </li>
               )}
