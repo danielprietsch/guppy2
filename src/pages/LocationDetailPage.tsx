@@ -157,6 +157,27 @@ const LocationDetailPage = () => {
               debugError("LocationDetailPage: Error parsing cabin pricing:", e);
             }
             
+            // Extract price from pricing data or set a default value
+            let cabinPrice = 0;
+            
+            try {
+              // Try to get price from defaultPricing.weekday if it exists
+              if (pricingObject.defaultPricing && 
+                  typeof pricingObject.defaultPricing === 'object' && 
+                  pricingObject.defaultPricing !== null) {
+                    
+                const defaultPricing = pricingObject.defaultPricing as any;
+                
+                if (defaultPricing.weekday && typeof defaultPricing.weekday === 'number') {
+                  cabinPrice = defaultPricing.weekday;
+                } else if (defaultPricing.weekend && typeof defaultPricing.weekend === 'number') {
+                  cabinPrice = defaultPricing.weekend;
+                }
+              }
+            } catch (e) {
+              debugError("LocationDetailPage: Error extracting cabin price:", e);
+            }
+            
             return {
               id: cabin.id,
               locationId: cabin.location_id,
@@ -165,7 +186,7 @@ const LocationDetailPage = () => {
               equipment: cabin.equipment || [],
               imageUrl: cabin.image_url || "",
               availability: availability,
-              price: cabin.price || 0,
+              price: cabinPrice,
               pricing: pricingObject
             };
           });
