@@ -11,7 +11,7 @@ import { debugLog } from "@/utils/debugLogger";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
-  const { currentUser, isLoading, isAuthChecked } = useOwnerProfile();
+  const { currentUser, isLoading, isAuthChecked, error } = useOwnerProfile();
   const {
     userLocations,
     selectedLocation,
@@ -29,14 +29,15 @@ const OwnerDashboardPage = () => {
   const [addLocationModalOpen, setAddLocationModalOpen] = useState(false);
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
 
-  // Carregar locais quando o usuário estiver disponível e autenticado
+  // Load locations only when user is authenticated and we've verified their status
   useEffect(() => {
     if (currentUser?.id && isAuthChecked) {
       debugLog("OwnerDashboardPage: Loading locations for user:", currentUser.id);
       loadUserLocations(currentUser.id);
     }
-  }, [currentUser, loadUserLocations, isAuthChecked]);
+  }, [currentUser, isAuthChecked, loadUserLocations]);
 
+  // Show loading state
   if (isLoading) {
     return (
       <div className="container py-12 flex items-center justify-center">
@@ -48,6 +49,19 @@ const OwnerDashboardPage = () => {
     );
   }
 
+  // Show error state
+  if (error) {
+    return (
+      <div className="container py-12 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Erro</h1>
+          <p className="text-muted-foreground">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied state
   if (!currentUser) {
     return (
       <div className="container py-12 flex items-center justify-center">

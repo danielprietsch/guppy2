@@ -79,22 +79,28 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Convert the user_type string to a valid type for our User interface
-        const userTypeFromProfile = profileData.user_type as string;
+        // Safely handle the user type
+        const userTypeStr = typeof profileData.user_type === 'string' ? profileData.user_type : '';
         let validUserType: "owner" | "professional" | "client" | "global_admin";
         
-        // Safely determine the user type with proper type checking
-        if (userTypeFromProfile === "owner") {
-          validUserType = "owner";
-        } else if (userTypeFromProfile === "global_admin") {
-          validUserType = "global_admin";
-        } else if (userTypeFromProfile === "professional") {
-          validUserType = "professional";
-        } else if (userTypeFromProfile === "client") {
-          validUserType = "client";
-        } else {
-          // Default fallback for owner dashboard
-          validUserType = "owner";
+        // Use a simple switch statement to safely assign the user type
+        switch (userTypeStr) {
+          case "owner":
+            validUserType = "owner";
+            break;
+          case "global_admin":
+            validUserType = "global_admin";
+            break;
+          case "professional":
+            validUserType = "professional";
+            break;
+          case "client":
+            validUserType = "client";
+            break;
+          default:
+            // Default to owner for the owner dashboard
+            validUserType = "owner";
+            break;
         }
         
         // User is confirmed as owner or global_admin
