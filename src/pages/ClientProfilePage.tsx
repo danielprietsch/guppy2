@@ -1,3 +1,4 @@
+
 import { useClientProfile } from "@/hooks/useClientProfile";
 import { ClientProfileForm } from "@/components/client/ClientProfileForm";
 import { Button } from "@/components/ui/button";
@@ -7,16 +8,47 @@ import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const ClientProfilePage = () => {
   const navigate = useNavigate();
-  const { currentUser, isLoading, error, updateProfile } = useClientProfile();
+  const { currentUser, isLoading, error, updateProfile, refreshProfile } = useClientProfile();
   
   debugAreaLog("CLIENT_PROFILE", "ClientProfilePage rendered", { 
     isLoading, 
     hasUser: !!currentUser,
     error
   });
+
+  // Subscribe to realtime updates for the profile
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    
+    debugAreaLog("CLIENT_PROFILE", "Setting up realtime subscription for profile updates");
+    
+    const channel = supabase
+      .channel('profile-updates-page')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${currentUser.id}`,
+        },
+        () => {
+          debugAreaLog("CLIENT_PROFILE", "Received profile update, refreshing data");
+          refreshProfile();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      debugAreaLog("CLIENT_PROFILE", "Cleaning up realtime subscription for profile page");
+      supabase.removeChannel(channel);
+    };
+  }, [currentUser?.id, refreshProfile]);
 
   const handleUpdateProfile = async (data: any) => {
     debugAreaLog("CLIENT_PROFILE", "Handling profile update with data:", data);
@@ -55,6 +87,9 @@ const ClientProfilePage = () => {
           title: "Foto atualizada",
           description: "Sua foto de perfil foi atualizada com sucesso."
         });
+        
+        // Force a refresh of the profile data
+        refreshProfile();
       }
     } catch (error: any) {
       debugAreaCritical("CLIENT_PROFILE", "Error updating avatar:", error);

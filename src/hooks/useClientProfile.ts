@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
 import { toast } from "@/hooks/use-toast";
@@ -11,108 +12,132 @@ export const useClientProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    debugAreaLog("CLIENT_PROFILE", "Initializing useClientProfile hook");
-    
-    const checkAuthStatus = async () => {
-      setIsLoading(true);
+  const fetchUserProfile = useCallback(async () => {
+    try {
       setError(undefined);
       
-      try {
-        debugAreaLog("CLIENT_PROFILE", "Checking auth status");
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        debugAreaCritical("CLIENT_PROFILE", "Session error:", sessionError);
+        throw new Error(`Erro ao buscar sessão: ${sessionError.message}`);
+      }
+      
+      if (!session) {
+        debugAreaCritical("CLIENT_PROFILE", "No session found");
+        setError("Você precisa fazer login para acessar esta página.");
+        navigate("/login");
+        return;
+      }
+      
+      debugAreaLog("CLIENT_PROFILE", "Session found, fetching user details");
+      
+      // First try to get user type from metadata
+      const userMetadata = session.user.user_metadata;
+      const userTypeFromMetadata = userMetadata?.userType;
+      
+      debugAreaLog("CLIENT_PROFILE", "User metadata:", userMetadata);
+      
+      // If metadata indicates this is a client user, use that data
+      if (userTypeFromMetadata === 'client') {
+        debugAreaLog("CLIENT_PROFILE", "User is client according to metadata");
         
-        if (sessionError) {
-          debugAreaCritical("CLIENT_PROFILE", "Session error:", sessionError);
-          throw new Error(`Erro ao buscar sessão: ${sessionError.message}`);
-        }
-        
-        if (!session) {
-          debugAreaCritical("CLIENT_PROFILE", "No session found");
-          setError("Você precisa fazer login para acessar esta página.");
-          navigate("/login");
-          return;
-        }
-        
-        debugAreaLog("CLIENT_PROFILE", "Session found, fetching user details");
-        
-        // First try to get user type from metadata
-        const userMetadata = session.user.user_metadata;
-        const userTypeFromMetadata = userMetadata?.userType;
-        
-        debugAreaLog("CLIENT_PROFILE", "User metadata:", userMetadata);
-        
-        // If metadata indicates this is a client user, use that data
-        if (userTypeFromMetadata === 'client') {
-          debugAreaLog("CLIENT_PROFILE", "User is client according to metadata");
-          
-          const userData: User = {
-            id: session.user.id,
-            name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-            email: session.user.email || "",
-            user_type: 'client',
-            avatarUrl: userMetadata?.avatar_url,
-            phoneNumber: userMetadata?.phone_number || null
-          };
-          
-          debugAreaLog("CLIENT_PROFILE", "Setting currentUser from metadata:", userData);
-          setCurrentUser(userData);
-          setIsLoading(false);
-          return;
-        }
-        
-        // If metadata doesn't confirm status, check the profiles table
-        debugAreaLog("CLIENT_PROFILE", "Fetching profile from database");
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-          
-        if (profileError) {
-          debugAreaCritical("CLIENT_PROFILE", "Profile fetch error:", profileError);
-          throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
-        }
-        
-        if (!profile) {
-          debugAreaCritical("CLIENT_PROFILE", "Profile not found in database");
-          throw new Error("Perfil não encontrado no banco de dados.");
-        }
-        
-        debugAreaLog("CLIENT_PROFILE", "Profile data retrieved:", profile);
-        
-        // Verify this is a client user
-        if (profile.user_type !== 'client') {
-          debugAreaCritical("CLIENT_PROFILE", "User is not a client:", profile.user_type);
-          setError("Você não tem permissão para acessar esta página de perfil de cliente.");
-          navigate("/");
-          return;
-        }
-        
-        // Build user data from profile
         const userData: User = {
           id: session.user.id,
-          name: profile.name || session.user.email?.split('@')[0] || "Usuário",
-          email: profile.email || session.user.email || "",
+          name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+          email: session.user.email || "",
           user_type: 'client',
-          avatarUrl: profile.avatar_url,
-          phoneNumber: profile.phone_number
+          avatarUrl: userMetadata?.avatar_url,
+          phoneNumber: userMetadata?.phone_number || null
         };
         
-        debugAreaLog("CLIENT_PROFILE", "Setting currentUser from database:", userData);
+        // Fetch most up-to-date profile data from the database to ensure we have the latest info
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+            
+          if (profileError) {
+            console.warn("Could not fetch profile from database, using metadata only", profileError);
+          } else if (profile) {
+            // Use database data if available (more authoritative)
+            userData.avatarUrl = profile.avatar_url || userData.avatarUrl;
+            userData.name = profile.name || userData.name;
+            userData.phoneNumber = profile.phone_number || userData.phoneNumber;
+          }
+        } catch (err) {
+          console.warn("Error fetching profile from database:", err);
+        }
+        
+        debugAreaLog("CLIENT_PROFILE", "Setting currentUser:", userData);
         setCurrentUser(userData);
-      } catch (error: any) {
-        debugAreaCritical("CLIENT_PROFILE", "Error in checkAuthStatus:", error);
-        setError(error.message || "Ocorreu um erro ao verificar suas credenciais.");
-        toast({
-          title: "Erro",
-          description: error.message || "Ocorreu um erro ao verificar suas credenciais.",
-          variant: "destructive",
-        });
-      } finally {
         setIsLoading(false);
+        return;
       }
-    };
+      
+      // If metadata doesn't confirm status, check the profiles table
+      debugAreaLog("CLIENT_PROFILE", "Fetching profile from database");
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+        
+      if (profileError) {
+        debugAreaCritical("CLIENT_PROFILE", "Profile fetch error:", profileError);
+        throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+      }
+      
+      if (!profile) {
+        debugAreaCritical("CLIENT_PROFILE", "Profile not found in database");
+        throw new Error("Perfil não encontrado no banco de dados.");
+      }
+      
+      debugAreaLog("CLIENT_PROFILE", "Profile data retrieved:", profile);
+      
+      // Verify this is a client user
+      if (profile.user_type !== 'client') {
+        debugAreaCritical("CLIENT_PROFILE", "User is not a client:", profile.user_type);
+        setError("Você não tem permissão para acessar esta página de perfil de cliente.");
+        navigate("/");
+        return;
+      }
+      
+      // Build user data from profile
+      const userData: User = {
+        id: session.user.id,
+        name: profile.name || session.user.email?.split('@')[0] || "Usuário",
+        email: profile.email || session.user.email || "",
+        user_type: 'client',
+        avatarUrl: profile.avatar_url,
+        phoneNumber: profile.phone_number
+      };
+      
+      debugAreaLog("CLIENT_PROFILE", "Setting currentUser from database:", userData);
+      setCurrentUser(userData);
+    } catch (error: any) {
+      debugAreaCritical("CLIENT_PROFILE", "Error in fetchUserProfile:", error);
+      setError(error.message || "Ocorreu um erro ao verificar suas credenciais.");
+      toast({
+        title: "Erro",
+        description: error.message || "Ocorreu um erro ao verificar suas credenciais.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate]);
+  
+  // Function to manually refresh profile data
+  const refreshProfile = useCallback(async () => {
+    debugAreaLog("CLIENT_PROFILE", "Manually refreshing profile data");
+    await fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    debugAreaLog("CLIENT_PROFILE", "Initializing useClientProfile hook");
     
     // Set up listener for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -126,18 +151,18 @@ export const useClientProfile = () => {
         debugAreaLog("CLIENT_PROFILE", "User signed in, checking profile");
         // Using setTimeout to avoid deadlocks with Supabase auth state changes
         setTimeout(() => {
-          checkAuthStatus();
+          fetchUserProfile();
         }, 0);
       }
     });
     
-    checkAuthStatus();
+    fetchUserProfile();
     
     return () => {
       debugAreaLog("CLIENT_PROFILE", "Cleaning up useClientProfile");
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, fetchUserProfile]);
 
   const updateProfile = async (data: Partial<User>) => {
     try {
@@ -178,6 +203,17 @@ export const useClientProfile = () => {
           setCurrentUser(prev => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
           
           debugAreaLog("CLIENT_PROFILE", "Avatar updated successfully via RPC function");
+          
+          // Also update user metadata directly to ensure it's updated everywhere
+          const { error: metadataError } = await supabase.auth.updateUser({
+            data: { avatar_url: data.avatarUrl }
+          });
+          
+          if (metadataError) {
+            console.error("Error updating user metadata:", metadataError);
+          } else {
+            console.log("User metadata updated successfully with new avatar");
+          }
           
           return { success: true };
         } else {
@@ -235,5 +271,5 @@ export const useClientProfile = () => {
     }
   };
 
-  return { currentUser, isLoading, error, updateProfile };
+  return { currentUser, isLoading, error, updateProfile, refreshProfile };
 };

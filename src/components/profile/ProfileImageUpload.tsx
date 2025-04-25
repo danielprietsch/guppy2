@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Camera } from "lucide-react";
@@ -62,6 +63,7 @@ export function ProfileImageUpload({
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
+      // Use the security definer function to update both profile and auth metadata
       const { data: updateResult, error: updateError } = await supabase.rpc(
         'update_avatar_everywhere',
         { user_id: userId, avatar_url: publicUrl }
@@ -74,8 +76,28 @@ export function ProfileImageUpload({
 
       console.log("Avatar updated successfully via RPC function, result:", updateResult);
 
+      // Update user metadata directly to ensure it's updated
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+      
+      if (metadataError) {
+        console.error("Error updating user metadata:", metadataError);
+      } else {
+        console.log("User metadata updated successfully with new avatar");
+      }
+
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);
+
+      // Force refresh of profile data in other components by publishing to realtime
+      try {
+        await supabase.rpc('force_refresh_profile', { profile_id: userId });
+        console.log("Forced profile refresh signal sent");
+      } catch (refreshError) {
+        console.error("Error sending refresh signal:", refreshError);
+      }
+      
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);
       toast({

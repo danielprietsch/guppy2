@@ -30,6 +30,13 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     if (currentUser?.avatarUrl) {
       console.log("UserMenu: Setting avatar URL from currentUser:", currentUser.avatarUrl);
       setAvatarUrl(currentUser.avatarUrl);
+      
+      // Add a cache-busting parameter to force refresh
+      if (currentUser.avatarUrl.includes('?')) {
+        setAvatarUrl(`${currentUser.avatarUrl}&t=${new Date().getTime()}`);
+      } else {
+        setAvatarUrl(`${currentUser.avatarUrl}?t=${new Date().getTime()}`);
+      }
     }
   }, [currentUser]);
   
@@ -40,7 +47,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
       
       // Listen for both profile updates and auth metadata updates
       const channel = supabase
-        .channel('avatar-updates')
+        .channel('avatar-updates-menu')
         .on(
           'postgres_changes',
           {
@@ -53,11 +60,45 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
             console.log("UserMenu received profile update:", payload);
             if (payload.new && payload.new.avatar_url) {
               console.log("UserMenu: Updating avatar from realtime event to", payload.new.avatar_url);
-              setAvatarUrl(payload.new.avatar_url);
+              
+              // Add a cache-busting parameter
+              const newUrl = payload.new.avatar_url;
+              if (newUrl.includes('?')) {
+                setAvatarUrl(`${newUrl}&t=${new Date().getTime()}`);
+              } else {
+                setAvatarUrl(`${newUrl}?t=${new Date().getTime()}`);
+              }
             }
           }
         )
         .subscribe();
+
+      // Also fetch the latest profile data to ensure we have the most recent avatar
+      const fetchLatestProfile = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('avatar_url')
+            .eq('id', currentUser.id)
+            .single();
+            
+          if (error) throw error;
+          
+          if (data && data.avatar_url) {
+            console.log("UserMenu: Fetched latest avatar from DB:", data.avatar_url);
+            // Add a cache-busting parameter
+            if (data.avatar_url.includes('?')) {
+              setAvatarUrl(`${data.avatar_url}&t=${new Date().getTime()}`);
+            } else {
+              setAvatarUrl(`${data.avatar_url}?t=${new Date().getTime()}`);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching latest profile:", error);
+        }
+      };
+      
+      fetchLatestProfile();
 
       return () => {
         console.log("UserMenu: Cleaning up realtime subscription");
