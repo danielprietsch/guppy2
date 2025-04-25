@@ -50,6 +50,13 @@ const WeeklyView = ({
     }
   };
 
+  // Format day name as a short version to prevent wrapping
+  const formatDayName = (date: Date) => {
+    const fullName = format(date, 'EEEE', { locale: ptBR });
+    // Use abbreviated day names or first 3 letters
+    return format(date, 'EEE', { locale: ptBR });
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 bg-background sticky top-0 z-10 border-b">
@@ -80,8 +87,8 @@ const WeeklyView = ({
             {weekDays.map((date) => (
               <div key={date.toString()} className="space-y-2">
                 <Card className="text-center p-2 bg-background">
-                  <div className="font-semibold">
-                    {format(date, 'EEEE', { locale: ptBR })}
+                  <div className="font-semibold capitalize">
+                    {formatDayName(date)}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {format(date, 'd MMM', { locale: ptBR })}
