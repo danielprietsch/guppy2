@@ -1,4 +1,3 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -136,7 +135,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
             </Button>
           </Link>
         ) : isProfessional ? (
-          <Link to={`/book-cabin/${cabin.id}`} className="w-full">
+          <Link to={`/professional/calendar?cabin=${cabin.id}`} className="w-full">
             <Button size="sm" className="w-full">
               Reservar Cabine
             </Button>
