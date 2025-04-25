@@ -1,6 +1,8 @@
 
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useState } from "react";
+import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
 
 interface ShiftAvailability {
   totalCabins: number;
@@ -16,9 +18,12 @@ interface DailyAvailabilityCellProps {
     afternoon: ShiftAvailability;
     evening: ShiftAvailability;
   };
+  cabinId?: string;
 }
 
-export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellProps) => {
+export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabilityCellProps) => {
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+
   const getStatusColor = (shift: ShiftAvailability) => {
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "bg-yellow-500";
@@ -31,6 +36,12 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
       return "Fechado";
     }
     return shift.availableCabins > 0 ? `${shift.availableCabins} livre${shift.availableCabins > 1 ? 's' : ''}` : "Reservado";
+  };
+
+  const handleShiftClick = (shift: ShiftAvailability) => {
+    if (shift.availableCabins > 0 && cabinId) {
+      setShowBookingDialog(true);
+    }
   };
 
   const formatPrice = (price?: number) => {
@@ -58,7 +69,10 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
               {formatPrice(shifts.morning.price)}
             </div>
           )}
-          <div className={`${getStatusColor(shifts.morning)} text-white text-xs p-1 rounded-sm shadow-sm`}>
+          <div 
+            className={`${getStatusColor(shifts.morning)} text-white text-xs p-1 rounded-sm shadow-sm cursor-pointer`}
+            onClick={() => handleShiftClick(shifts.morning)}
+          >
             {getStatusText(shifts.morning)}
           </div>
         </div>
@@ -69,7 +83,10 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
               {formatPrice(shifts.afternoon.price)}
             </div>
           )}
-          <div className={`${getStatusColor(shifts.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm`}>
+          <div 
+            className={`${getStatusColor(shifts.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm cursor-pointer`}
+            onClick={() => handleShiftClick(shifts.afternoon)}
+          >
             {getStatusText(shifts.afternoon)}
           </div>
         </div>
@@ -80,11 +97,22 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
               {formatPrice(shifts.evening.price)}
             </div>
           )}
-          <div className={`${getStatusColor(shifts.evening)} text-white text-xs p-1 rounded-sm shadow-sm`}>
+          <div 
+            className={`${getStatusColor(shifts.evening)} text-white text-xs p-1 rounded-sm shadow-sm cursor-pointer`}
+            onClick={() => handleShiftClick(shifts.evening)}
+          >
             {getStatusText(shifts.evening)}
           </div>
         </div>
       </div>
+
+      {cabinId && (
+        <BookingConfirmationDialog
+          isOpen={showBookingDialog}
+          onClose={() => setShowBookingDialog(false)}
+          cabinId={cabinId}
+        />
+      )}
     </div>
   );
 };

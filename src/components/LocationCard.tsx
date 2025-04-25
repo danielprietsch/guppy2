@@ -258,6 +258,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
                           afternoon: { totalCabins: 0, availableCabins: 0, manuallyClosedCount: 0 },
                           evening: { totalCabins: 0, availableCabins: 0, manuallyClosedCount: 0 }
                         }}
+                        cabinId={location.id}
                       />
                     );
                   })}
