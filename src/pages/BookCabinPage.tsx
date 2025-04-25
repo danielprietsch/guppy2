@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import BookingCalendar from "@/components/booking/BookingCalendar";
+import { TermsOfUseModal } from "@/components/booking/TermsOfUseModal";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ const BookCabinPage = () => {
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
   const [selectedTurns, setSelectedTurns] = useState<{ [date: string]: string[] }>({});
@@ -359,7 +361,14 @@ const BookCabinPage = () => {
                     onChange={(e) => setAcceptTerms(e.target.checked)}
                   />
                   <label htmlFor="terms" className="text-sm">
-                    Li e aceito os termos de uso
+                    Li e aceito os{" "}
+                    <button
+                      type="button"
+                      className="text-primary hover:underline font-medium"
+                      onClick={() => setIsTermsModalOpen(true)}
+                    >
+                      termos de uso
+                    </button>
                   </label>
                 </div>
               </div>
