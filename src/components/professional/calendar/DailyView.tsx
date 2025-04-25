@@ -1,22 +1,41 @@
 
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { format } from "date-fns";
+import { format, addDays, subDays } from "date-fns";
 import { ptBR } from 'date-fns/locale';
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface DailyViewProps {
   selectedDate: Date;
   appointments: any[];
+  onDateChange: (date: Date) => void;
 }
 
-const DailyView = ({ selectedDate, appointments }: DailyViewProps) => {
+const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const handlePreviousDay = () => {
+    onDateChange(subDays(selectedDate, 1));
+  };
+
+  const handleNextDay = () => {
+    onDateChange(addDays(selectedDate, 1));
+  };
 
   return (
     <Card className="mb-6">
       <CardContent className="p-4">
-        <div className="text-lg font-semibold mb-4">
-          {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={handlePreviousDay}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-lg font-semibold">
+            {format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR })}
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleNextDay}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
         <div className="space-y-2">
           {hours.map((hour) => (

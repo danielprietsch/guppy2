@@ -139,6 +139,10 @@ const AvailabilityCalendar = () => {
     return className;
   };
 
+  const handleDateChange = (newDate: Date) => {
+    setSelectedDate(newDate);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -159,12 +163,14 @@ const AvailabilityCalendar = () => {
               <DailyView 
                 selectedDate={selectedDate || today}
                 appointments={appointments || []}
+                onDateChange={handleDateChange}
               />
             </TabsContent>
             <TabsContent value="week">
               <WeeklyView 
                 selectedDate={selectedDate || today}
                 appointments={appointments || []}
+                onDateChange={handleDateChange}
               />
             </TabsContent>
             <TabsContent value="month">

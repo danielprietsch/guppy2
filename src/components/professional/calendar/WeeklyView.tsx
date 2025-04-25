@@ -1,22 +1,43 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
 import { ptBR } from 'date-fns/locale';
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface WeeklyViewProps {
   selectedDate: Date;
   appointments: any[];
+  onDateChange: (date: Date) => void;
 }
 
-const WeeklyView = ({ selectedDate, appointments }: WeeklyViewProps) => {
+const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProps) => {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
+  const handlePreviousWeek = () => {
+    onDateChange(subWeeks(selectedDate, 1));
+  };
+
+  const handleNextWeek = () => {
+    onDateChange(addWeeks(selectedDate, 1));
+  };
+
   return (
     <Card className="mb-6 overflow-x-auto">
       <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={handlePreviousWeek}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-lg font-semibold">
+            {format(weekStart, "MMMM yyyy", { locale: ptBR })}
+          </div>
+          <Button variant="ghost" size="sm" onClick={handleNextWeek}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
         <div className="grid grid-cols-8 gap-2 min-w-[800px]">
           {/* Time column */}
           <div className="space-y-2">
