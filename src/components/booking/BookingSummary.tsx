@@ -1,4 +1,3 @@
-
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { Cabin, Location } from "@/lib/types";
@@ -146,7 +145,7 @@ export const BookingSummary = ({
         <Button 
           className="w-full mt-4" 
           onClick={() => {
-            debugBooking("Reserve Space button clicked");
+            debugBooking("Reserve Space button clicked with cabin ID:", cabin?.id);
             onBookCabin();
           }}
           disabled={!acceptTerms || Object.keys(selectedTurns).length === 0 || bookingInProgress}

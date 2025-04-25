@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -11,6 +12,7 @@ import { TermsOfUseModal } from "@/components/booking/TermsOfUseModal";
 import { CabinSearchSection } from "@/components/booking/CabinSearchSection";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { useBookingManagement } from "@/hooks/useBookingManagement";
+import { debugBooking, debugBookingError } from "@/utils/debugLogger";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +25,9 @@ const BookCabinPage = () => {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
+  // Ensure we pass a valid cabin ID to useBookingManagement
+  const cabinId = id || cabin?.id || "";
+  
   const {
     selectedTurns,
     total,
@@ -37,7 +42,7 @@ const BookCabinPage = () => {
     setSubtotalTurns,
     setServiceFee,
     bookingErrors
-  } = useBookingManagement(id || "", () => setIsTermsModalOpen(false));
+  } = useBookingManagement(cabinId, () => setIsTermsModalOpen(false));
 
   useEffect(() => {
     const loadCabinData = async () => {
