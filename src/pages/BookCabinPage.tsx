@@ -1,35 +1,41 @@
+
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCabinSearch } from "@/hooks/useCabinSearch";
 import { supabase } from "@/integrations/supabase/client";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import BookingCalendar from "@/components/booking/BookingCalendar";
 import { TermsOfUseModal } from "@/components/booking/TermsOfUseModal";
-import { debugLog } from "@/utils/debugLogger";
+import { CabinSearchSection } from "@/components/booking/CabinSearchSection";
+import { BookingSummary } from "@/components/booking/BookingSummary";
+import { useBookingManagement } from "@/hooks/useBookingManagement";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const location = useLocation();
   const { cabinDetails, locationDetails } = location.state || {};
   const [cabin, setCabin] = useState<Cabin | null>(cabinDetails || null);
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
-  const [selectedTurns, setSelectedTurns] = useState<{ [date: string]: string[] }>({});
-  const [total, setTotal] = useState(0);
-  const [subtotalTurns, setSubtotalTurns] = useState(0);
-  const [serviceFee, setServiceFee] = useState(0);
-  const [bookingInProgress, setBookingInProgress] = useState(false);
+  const {
+    selectedTurns,
+    total,
+    subtotalTurns,
+    serviceFee,
+    bookingInProgress,
+    acceptTerms,
+    setAcceptTerms,
+    handleTurnSelection,
+    handleBookCabin,
+    setTotal,
+    setSubtotalTurns,
+    setServiceFee
+  } = useBookingManagement(id || "", () => setIsTermsModalOpen(false));
 
   useEffect(() => {
     const loadCabinData = async () => {
@@ -123,6 +129,11 @@ const BookCabinPage = () => {
         }
       } catch (error) {
         console.error("Error loading cabin data:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar os dados do espaço.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
@@ -130,26 +141,6 @@ const BookCabinPage = () => {
 
     loadCabinData();
   }, [id, cabinDetails]);
-
-  const handleTurnSelection = (date: string, turn: string) => {
-    setSelectedTurns(prev => {
-      const newTurns = { ...prev };
-      
-      if (newTurns[date]?.includes(turn)) {
-        newTurns[date] = newTurns[date].filter(t => t !== turn);
-        if (newTurns[date].length === 0) {
-          delete newTurns[date];
-        }
-      } else {
-        if (!newTurns[date]) {
-          newTurns[date] = [];
-        }
-        newTurns[date] = [...newTurns[date], turn];
-      }
-      
-      return newTurns;
-    });
-  };
 
   useEffect(() => {
     if (!cabin) return;
@@ -166,112 +157,7 @@ const BookCabinPage = () => {
     const calculatedServiceFee = Object.keys(selectedTurns).length > 0 ? calculatedSubtotal * 0.1 : 0;
     setServiceFee(calculatedServiceFee);
     setTotal(calculatedSubtotal + calculatedServiceFee);
-  }, [selectedTurns, cabin]);
-
-  const createBooking = async (date: string, turn: string, price: number) => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        throw new Error("Usuário não autenticado");
-      }
-
-      debugLog("Creating booking with professional_id:", data.session.user.id);
-
-      const { error } = await supabase.rpc(
-        'create_booking',
-        { 
-          cabin_id: cabin?.id,
-          professional_id: data.session.user.id,
-          date, 
-          shift: turn, 
-          price,
-          status: 'payment_pending'
-        }
-      );
-
-      if (error) {
-        console.error("Erro ao criar reserva:", error);
-        throw error;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Erro ao criar reserva:", error);
-      return false;
-    }
-  };
-
-  const handleBookCabin = async () => {
-    if (!cabin || Object.keys(selectedTurns).length === 0 || !acceptTerms) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione pelo menos um turno e aceite os termos",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
-      toast({
-        title: "Login necessário",
-        description: "Você precisa estar logado para reservar um espaço.",
-        variant: "destructive",
-      });
-      navigate("/login", { state: { returnTo: `/book-cabin/${id}` } });
-      return;
-    }
-
-    const userType = data.session.user.user_metadata?.userType;
-    if (userType !== 'professional' && userType !== 'provider') {
-      toast({
-        title: "Acesso restrito",
-        description: "Apenas profissionais podem reservar espaços.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setBookingInProgress(true);
-    
-    try {
-      let allBookingsSuccessful = true;
-      const bookingPromises = [];
-      
-      for (const [date, turns] of Object.entries(selectedTurns)) {
-        for (const turn of turns) {
-          const turnPrice = cabin.pricing?.defaultPricing?.[turn] || cabin.price || 50;
-          bookingPromises.push(createBooking(date, turn, turnPrice));
-        }
-      }
-      
-      const results = await Promise.all(bookingPromises);
-      allBookingsSuccessful = results.every(result => result === true);
-      
-      if (allBookingsSuccessful) {
-        toast({
-          title: "Reserva realizada com sucesso",
-          description: "Sua reserva foi enviada e está aguardando pagamento.",
-        });
-        navigate("/professional-dashboard");
-      } else {
-        toast({
-          title: "Erro parcial",
-          description: "Algumas reservas não puderam ser realizadas. Verifique seu painel.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Erro ao realizar reservas:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível completar sua reserva. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setBookingInProgress(false);
-    }
-  };
+  }, [selectedTurns, cabin, setSubtotalTurns, setServiceFee, setTotal]);
 
   if (loading) {
     return (
@@ -297,61 +183,13 @@ const BookCabinPage = () => {
   return (
     <div className="container py-6">
       <div className="space-y-8 max-w-[1200px] mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h1 className="text-2xl font-bold">
-            {cabin ? `Reservar ${cabin.name}` : 'Reservar Espaço de Trabalho'}
-          </h1>
-          
-          <div className="relative w-full sm:max-w-xs">
-            <Input
-              type="text"
-              placeholder="Buscar espaços..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          </div>
-        </div>
-
-        {cabins.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Espaços Disponíveis</h2>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-              {isLoading ? (
-                <p>Carregando espaços...</p>
-              ) : (
-                cabins.map((cabin) => (
-                  <Card key={cabin.id} className="overflow-hidden h-auto">
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold text-lg mb-2">{cabin.name}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2 mb-2">{cabin.description}</p>
-                      {cabin.equipment && cabin.equipment.length > 0 && (
-                        <ul className="mt-2 space-y-1">
-                          {cabin.equipment.slice(0, 3).map((item, index) => (
-                            <li key={index} className="text-xs flex items-center gap-1">
-                              <span>•</span> {item}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </CardContent>
-                    <CardFooter className="p-4 pt-0">
-                      <Button 
-                        className="w-full"
-                        onClick={() => navigate(`/book-cabin/${cabin.id}`, {
-                          state: { cabinDetails: cabin, locationDetails: locationData }
-                        })}
-                      >
-                        Selecionar Espaço
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))
-              )}
-            </div>
-          </div>
-        )}
+        <CabinSearchSection
+          cabins={cabins}
+          locationDetails={locationData}
+          isLoading={isLoading}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+        />
 
         {cabin && (
           <div className="space-y-8">
@@ -379,98 +217,19 @@ const BookCabinPage = () => {
                 <CardTitle>Resumo da reserva</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  {cabin && (
-                    <div className="flex flex-col space-y-2">
-                      <span className="font-medium">{cabin.name}</span>
-                      {locationData && <span>{locationData.name}</span>}
-                    </div>
-                  )}
-                  
-                  <div className="space-y-4 md:col-span-2">
-                    <div>
-                      <h3 className="font-medium mb-2">Turnos selecionados:</h3>
-                      {Object.keys(selectedTurns).length > 0 ? (
-                        Object.entries(selectedTurns).map(([date, turns]) => (
-                          <div key={date} className="mb-2">
-                            <p className="text-sm text-gray-600">{date}:</p>
-                            <div className="flex flex-wrap gap-2">
-                              {turns.map(turn => (
-                                <span key={turn} className="text-sm bg-secondary px-2 py-1 rounded">
-                                  {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Nenhum turno selecionado</p>
-                      )}
-                    </div>
-                    
-                    <Separator />
-                    
-                    {cabin && cabin.equipment && cabin.equipment.length > 0 && (
-                      <>
-                        <div>
-                          <h3 className="font-medium mb-2">O que está incluso:</h3>
-                          <ul className="grid gap-1 text-sm">
-                            {cabin.equipment.map((item, index) => (
-                              <li key={index} className="flex items-center gap-2">
-                                <span>•</span> {item}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <Separator />
-                      </>
-                    )}
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span>Valor total dos turnos</span>
-                        <span>R$ {subtotalTurns.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Taxa de serviço (10%)</span>
-                        <span>R$ {serviceFee.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                      <Separator className="my-2" />
-                      <div className="flex items-center justify-between font-bold">
-                        <span>Total</span>
-                        <span>R$ {total.toFixed(2).replace('.', ',')}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 mt-4">
-                      <input 
-                        type="checkbox" 
-                        id="terms" 
-                        className="h-4 w-4" 
-                        checked={acceptTerms}
-                        onChange={(e) => setAcceptTerms(e.target.checked)}
-                      />
-                      <label htmlFor="terms" className="text-sm">
-                        Li e aceito os{" "}
-                        <button
-                          type="button"
-                          className="text-primary hover:underline font-medium"
-                          onClick={() => setIsTermsModalOpen(true)}
-                        >
-                          termos de uso
-                        </button>
-                      </label>
-                    </div>
-
-                    <Button 
-                      className="w-full mt-4" 
-                      onClick={handleBookCabin}
-                      disabled={!acceptTerms || Object.keys(selectedTurns).length === 0 || bookingInProgress}
-                    >
-                      {bookingInProgress ? "Processando..." : "Reservar Espaço"}
-                    </Button>
-                  </div>
-                </div>
+                <BookingSummary
+                  cabin={cabin}
+                  locationData={locationData}
+                  selectedTurns={selectedTurns}
+                  subtotalTurns={subtotalTurns}
+                  serviceFee={serviceFee}
+                  total={total}
+                  acceptTerms={acceptTerms}
+                  setAcceptTerms={setAcceptTerms}
+                  onOpenTerms={() => setIsTermsModalOpen(true)}
+                  bookingInProgress={bookingInProgress}
+                  onBookCabin={handleBookCabin}
+                />
               </CardContent>
             </Card>
           </div>
