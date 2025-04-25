@@ -30,7 +30,7 @@ export const BookingConfirmationDialog = ({
     setIsChecking(true);
     
     try {
-      // Check if user is logged in first
+      // First check session without fetching profile data
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -45,42 +45,25 @@ export const BookingConfirmationDialog = ({
         return;
       }
 
-      // Direct check using metadata to avoid recursion entirely
+      // RADICAL SOLUTION: Use ONLY user metadata from the session
+      // This completely bypasses any profiles table queries that could cause recursion
       const userType = session.user.user_metadata?.userType;
       
       if (userType === 'professional' || userType === 'provider') {
+        // Skip all other checks - proceed directly to booking page
         onClose();
         navigate(`/book-cabin/${cabinId}`);
         return;
       }
       
-      // Fallback: Use direct query instead of any RPC function to avoid recursion
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (profileError) {
-        console.error("Error checking user type:", profileError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível verificar seu tipo de usuário. Tente novamente.",
-          variant: "destructive",
-        });
-        onClose();
-        return;
-      }
-      
-      if (profileData.user_type === 'professional' || profileData.user_type === 'provider') {
-        navigate(`/book-cabin/${cabinId}`);
-      } else {
-        toast({
-          title: "Acesso restrito",
-          description: "Apenas profissionais podem reservar espaços.",
-          variant: "destructive",
-        });
-      }
+      // If metadata doesn't confirm professional status, don't even try to check profiles
+      // Just show access denied message
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas profissionais podem reservar espaços. Verifique seu cadastro.",
+        variant: "destructive",
+      });
+      onClose();
       
     } catch (error) {
       console.error("Error during confirmation:", error);
@@ -89,9 +72,9 @@ export const BookingConfirmationDialog = ({
         description: "Ocorreu um erro ao processar sua solicitação. Tente novamente.",
         variant: "destructive",
       });
+      onClose();
     } finally {
       setIsChecking(false);
-      onClose();
     }
   };
 
