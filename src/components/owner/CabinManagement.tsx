@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Cabin, Location } from "@/lib/types";
 import { AddCabinModal } from "./AddCabinModal";
 import { EditCabinModal } from "./EditCabinModal";
 import { DeleteConfirmationDialog } from "@/components/DeleteConfirmationDialog";
+import { CabinAvailabilityCard } from "./cabin/CabinAvailabilityCard";
 
 interface CabinManagementProps {
   selectedLocation: Location | null;
@@ -127,6 +127,10 @@ export const CabinManagement = ({
                         </div>
                       )}
                     </div>
+                    <CabinAvailabilityCard 
+                      cabinId={cabin.id}
+                      pricing={cabin.pricing}
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -134,7 +138,6 @@ export const CabinManagement = ({
           </div>
         )}
 
-        {/* Modals */}
         <AddCabinModal 
           open={addModalOpen} 
           onOpenChange={setAddModalOpen} 
