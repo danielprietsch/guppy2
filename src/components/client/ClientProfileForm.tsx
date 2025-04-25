@@ -17,7 +17,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
-import { ProfileImageUpload } from "../profile/ProfileImageUpload";
+// Remove any redundant imports related to photo upload
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -87,15 +87,7 @@ export function ClientProfileForm({ currentUser, onSave, isLoading = false }: Cl
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <ProfileImageUpload
-          userId={currentUser.id}
-          currentAvatarUrl={currentUser.avatarUrl}
-          onImageUploaded={(url) => {
-            // Não usamos form.setValue aqui, pois avatarUrl não faz parte do schema do formulário
-            // Trataremos a atualização da imagem separadamente
-          }}
-          className="mb-6"
-        />
+        {/* Removing the duplicate ProfileImageUpload component */}
         
         <FormField
           control={form.control}
