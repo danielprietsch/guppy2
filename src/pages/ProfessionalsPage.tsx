@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -16,12 +15,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { addDays, format } from "date-fns";
+import { addDays, format, startOfMonth, endOfMonth } from "date-fns";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateMode, setDateMode] = useState<'day' | 'month'>('day');
   
   console.log("ProfessionalsPage: Rendering with date", selectedDate);
 
@@ -39,7 +39,7 @@ const ProfessionalsPage = () => {
   } = useProfessionals({ 
     withSpecialties: true,
     withAvailability: true,
-    date: selectedDate
+    date: dateMode === 'day' ? selectedDate : null
   });
 
   console.log("ProfessionalsPage: Received professionals data", professionals.length);
@@ -73,6 +73,14 @@ const ProfessionalsPage = () => {
   const changeDate = (daysToAdd: number) => {
     const newDate = addDays(selectedDate, daysToAdd);
     setSelectedDate(newDate);
+    setDateMode('day');
+  };
+
+  // Function to set this month
+  const setThisMonth = () => {
+    const now = new Date();
+    setSelectedDate(now);
+    setDateMode('month');
   };
 
   return (
@@ -97,7 +105,10 @@ const ProfessionalsPage = () => {
         <div className="flex items-center px-4 py-2 border rounded-md bg-background">
           <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
           <span className="font-medium">
-            {format(selectedDate, "dd/MM/yyyy")}
+            {dateMode === 'day' 
+              ? format(selectedDate, "dd/MM/yyyy") 
+              : `Mês de ${format(selectedDate, "MMMM yyyy")}`
+            }
           </span>
         </div>
         <Button 
@@ -105,6 +116,12 @@ const ProfessionalsPage = () => {
           onClick={() => changeDate(1)}
         >
           Próximo dia
+        </Button>
+        <Button 
+          variant={dateMode === 'month' ? 'default' : 'outline'} 
+          onClick={setThisMonth}
+        >
+          Este mês
         </Button>
       </div>
       
@@ -211,7 +228,10 @@ const ProfessionalsPage = () => {
                 Nenhum profissional encontrado
               </h3>
               <p className="text-gray-500 max-w-md mx-auto">
-                Não foram encontrados profissionais disponíveis com os filtros selecionados na data {format(selectedDate, "dd/MM/yyyy")}.
+                {dateMode === 'day'
+                  ? `Não foram encontrados profissionais disponíveis na data ${format(selectedDate, "dd/MM/yyyy")}.`
+                  : `Não foram encontrados profissionais disponíveis no mês de ${format(selectedDate, "MMMM yyyy")}.`
+                }
               </p>
               <Button 
                 onClick={() => refetch()}
