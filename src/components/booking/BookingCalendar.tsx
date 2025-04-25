@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -138,8 +139,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const renderDayContent = (day: Date) => {
     return (
       <div className="flex flex-col p-1 h-full">
-        <div className="text-sm font-medium text-center">{format(day, "d")}</div>
-        <div className="grid gap-1 mt-1">
+        <div className="text-xs font-medium text-center text-muted-foreground mb-1">
+          {format(day, "EEE", { locale: ptBR })}
+        </div>
+        <div className="text-sm font-medium text-center mb-1">{format(day, "d")}</div>
+        <div className="grid gap-1">
           {["morning", "afternoon", "evening"].map((turn) => (
             renderTurnButton(day, turn, pricePerTurn[turn] || 50)
           ))}
@@ -154,6 +158,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       month={viewMonth}
       onMonthChange={setViewMonth}
       locale={ptBR}
+      weekStartsOn={1} // Start week on Monday (1) instead of Sunday (0)
       disabled={(date) => {
         if (isBefore(startOfDay(date), today)) return true;
         if (workspaceCreatedAt) {
@@ -169,7 +174,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         table: "w-full border-collapse",
         head_cell: "text-muted-foreground font-normal w-full text-center px-2",
         cell: "h-auto min-h-[160px] p-0 border border-border relative",
-        day: "h-full w-full p-0 font-normal text-lg font-bold",
+        day: "h-full w-full p-0 font-normal text-lg",
         day_today: "bg-accent text-accent-foreground",
         day_outside: "text-muted-foreground opacity-50",
         day_disabled: "text-muted-foreground opacity-50",
