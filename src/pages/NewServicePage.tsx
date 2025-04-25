@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -10,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,11 +22,22 @@ const serviceSchema = z.object({
   duration: z.coerce.number().min(5, "Duração mínima de 5 minutos").max(480, "Duração máxima de 8 horas (480 minutos)"),
   price: z.coerce.number().min(1, "Preço deve ser maior que zero"),
   category: z.string().min(1, "Selecione uma categoria"),
+  specialties: z.array(z.string()).min(1, "Selecione pelo menos uma especialidade"),
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
 
-// Service categories
+const specialties = [
+  { id: "cabeleireiro", label: "Cabeleireiro" },
+  { id: "barbeiro", label: "Barbeiro" },
+  { id: "manicure", label: "Manicure" },
+  { id: "pedicure", label: "Pedicure" },
+  { id: "esteticista", label: "Esteticista" },
+  { id: "maquiador", label: "Maquiador(a)" },
+  { id: "massagista", label: "Massagista" },
+  { id: "depilador", label: "Depilador(a)" },
+];
+
 const serviceCategories = [
   "Cabelo", 
   "Barba",
@@ -53,6 +64,7 @@ const NewServicePage = () => {
       duration: 30,
       price: 50,
       category: "",
+      specialties: [],
     },
   });
 
@@ -69,7 +81,6 @@ const NewServicePage = () => {
     try {
       setIsSubmitting(true);
 
-      // Insert new service into the database
       const { data: serviceData, error } = await supabase
         .from("services")
         .insert({
@@ -79,6 +90,7 @@ const NewServicePage = () => {
           price: values.price,
           category: values.category,
           professional_id: user.id,
+          specialties: values.specialties,
         })
         .select();
 
@@ -89,7 +101,6 @@ const NewServicePage = () => {
         description: "Seu novo serviço foi criado com sucesso",
       });
 
-      // Navigate back to professional dashboard
       navigate("/professional/dashboard");
     } catch (error: any) {
       console.error("Error creating service:", error);
@@ -223,6 +234,57 @@ const NewServicePage = () => {
                     <FormDescription>
                       Categoria em que seu serviço se encaixa.
                     </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="specialties"
+                render={() => (
+                  <FormItem>
+                    <div className="mb-4">
+                      <FormLabel>Especialidades</FormLabel>
+                      <FormDescription>
+                        Selecione suas especialidades para este serviço
+                      </FormDescription>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {specialties.map((item) => (
+                        <FormField
+                          key={item.id}
+                          control={form.control}
+                          name="specialties"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={item.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(item.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...field.value, item.id])
+                                        : field.onChange(
+                                            field.value?.filter(
+                                              (value) => value !== item.id
+                                            )
+                                          )
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {item.label}
+                                </FormLabel>
+                              </FormItem>
+                            )
+                          }}
+                        />
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
