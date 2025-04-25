@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import {
   Card,
@@ -26,25 +25,18 @@ export const AvailabilitySettings = ({
   const [slotPrices, setSlotPrices] = useState<{ [date: string]: { [turn: string]: number } }>({});
   const [bookedDates, setBookedDates] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
   
-  // Initialize the selected cabin when cabins are loaded
   useEffect(() => {
     if (locationCabins.length > 0 && !selectedCabin) {
       setSelectedCabin(locationCabins[0].id);
     }
   }, [locationCabins, selectedCabin]);
   
-  // Load cabin-specific data when a cabin is selected
   useEffect(() => {
     if (selectedCabin) {
       const selectedCabinData = locationCabins.find(c => c.id === selectedCabin);
       if (selectedCabinData) {
-        // Initialize slot prices from cabin data if available
         const initialPrices: { [date: string]: { [turn: string]: number } } = {};
-        
-        // Initialize manually closed dates from cabin data if available
         const initialClosedDates: { [date: string]: { [turn: string]: boolean } } = {};
-        
-        // TODO: Load booked dates from backend
         const initialBookedDates: { [date: string]: { [turn: string]: boolean } } = {};
         
         setSlotPrices(initialPrices);
@@ -66,14 +58,11 @@ export const AvailabilitySettings = ({
       
       newState[date][turn] = isManualClose;
       
-      // Here you would save this to your backend
-      // saveAvailabilityToBackend(selectedCabin, date, turn, isManualClose);
-      
       return newState;
     });
   }, []);
 
-  const handlePriceChange = useCallback((date: string, turn: string, price: number) => {
+  const handlePriceChange = useCallback((date: string, turn: string, price: string) => {
     debugAreaLog('PRICE_EDIT', `Price change for ${date} ${turn} to ${price}`);
     
     setSlotPrices(prevState => {
@@ -83,10 +72,7 @@ export const AvailabilitySettings = ({
         newState[date] = {};
       }
       
-      newState[date][turn] = price;
-      
-      // Here you would save this to your backend
-      // savePriceToBackend(selectedCabin, date, turn, price);
+      newState[date][turn] = parseFloat(price);
       
       return newState;
     });
@@ -99,7 +85,6 @@ export const AvailabilitySettings = ({
       return 100; // Valor padrão
     }
     
-    // Pega o preço padrão da segunda-feira (índice 1) para o turno da manhã
     return cabin.pricing.defaultPricing[1]?.morning || 100;
   };
 
@@ -169,4 +154,3 @@ export const AvailabilitySettings = ({
     </div>
   );
 };
-

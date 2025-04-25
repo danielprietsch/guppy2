@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -14,7 +13,7 @@ interface CabinAvailabilityCalendarProps {
   onSelectDates: (dates: string[]) => void;
   selectedDates: string[];
   pricePerDay: number;
-  onPriceChange?: (date: string, turn: string, price: number) => void;
+  onPriceChange?: (date: string, turn: string, price: string) => void;
   onStatusChange?: (date: string, turn: string, isManualClose: boolean) => void;
   manuallyClosedDates?: { [date: string]: { [turn: string]: boolean } };
   slotPrices?: { [date: string]: { [turn: string]: number } };
@@ -93,7 +92,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     }
   }, [onStatusChange, today]);
 
-  const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: number) => {
+  const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: string) => {
     const dateObj = new Date(date);
     if (isBefore(dateObj, today)) {
       debugAreaLog('PRICE_EDIT', 'Não é possível alterar preço de datas passadas');
@@ -112,7 +111,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         onPriceChange(date, turno, newPrice);
         toast({
           title: "Preço atualizado",
-          description: `Preço do turno ${getTurnoLabel(turno)} atualizado para R$ ${newPrice.toFixed(2)}`,
+          description: `Preço do turno ${getTurnoLabel(turno)} atualizado para R$ ${parseFloat(newPrice).toFixed(2)}`,
         });
         debugAreaLog('PRICE_EDIT', 'Price change callback executed successfully');
       } catch (error) {
