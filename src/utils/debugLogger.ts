@@ -39,10 +39,11 @@ export const debugAreaLog = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => 
   }
 };
 
-// Critical logs that should be logged regardless of verbosity
+// Logs importantes do sistema, não são erros de verdade
 export const debugAreaCritical = (area: keyof typeof DEBUG_AREAS, ...args: any[]) => {
   if (DEBUG_MODE || DEBUG_AREAS[area]) {
-    console.error(`[DEBUG:${area}:CRITICAL]`, ...args);
+    // Alterado para log normal ao invés de console.error para não parecer erro
+    console.log(`[DEBUG:${area}:INFO]`, ...args);
   }
 };
 

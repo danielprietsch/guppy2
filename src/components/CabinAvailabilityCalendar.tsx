@@ -4,7 +4,7 @@ import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
 import { useNavigate } from "react-router-dom";
-import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
+import { debugAreaLog } from "@/utils/debugLogger";
 import { toast } from "@/hooks/use-toast";
 
 interface CabinAvailabilityCalendarProps {
@@ -55,7 +55,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
     const dateObj = new Date(date);
     if (isBefore(dateObj, today)) {
-      debugAreaCritical('AVAILABILITY', 'Cannot change status of past dates');
+      debugAreaLog('AVAILABILITY', 'Não é possível alterar status de datas passadas');
       toast({
         title: "Operação não permitida",
         description: "Não é possível alterar status de datas passadas.",
@@ -64,7 +64,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       return;
     }
 
-    debugAreaCritical('AVAILABILITY', 'Status change request:', { date, turno, isManualClose });
+    debugAreaLog('AVAILABILITY', 'Solicitação de alteração de status:', { date, turno, isManualClose });
     
     if (onStatusChange) {
       try {
@@ -73,9 +73,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
           title: isManualClose ? "Turno fechado" : "Turno liberado",
           description: `${isManualClose ? "Fechado" : "Liberado"} o turno ${getTurnoLabel(turno)} para a data ${format(dateObj, "dd/MM/yyyy")}`,
         });
-        debugAreaCritical('AVAILABILITY', 'Status change callback executed successfully');
+        debugAreaLog('AVAILABILITY', 'Callback de alteração de status executado com sucesso');
       } catch (error) {
-        debugAreaCritical('AVAILABILITY', 'Error in status change callback:', error);
+        debugAreaLog('AVAILABILITY', 'Erro no callback de alteração de status:', error);
         toast({
           title: "Erro",
           description: "Não foi possível alterar o status do turno.",
@@ -83,7 +83,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         });
       }
     } else {
-      debugAreaCritical('AVAILABILITY', 'No status change callback provided');
+      debugAreaLog('AVAILABILITY', 'Nenhum callback de alteração de status fornecido');
       toast({
         title: "Erro de configuração",
         description: "Função de alteração de status não encontrada.",
@@ -95,7 +95,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: number) => {
     const dateObj = new Date(date);
     if (isBefore(dateObj, today)) {
-      debugAreaLog('PRICE_EDIT', 'Cannot edit price of past dates');
+      debugAreaLog('PRICE_EDIT', 'Não é possível alterar preço de datas passadas');
       toast({
         title: "Operação não permitida",
         description: "Não é possível alterar preço de datas passadas.",
@@ -115,7 +115,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         });
         debugAreaLog('PRICE_EDIT', 'Price change callback executed successfully');
       } catch (error) {
-        debugAreaCritical('PRICE_EDIT', 'Error in price change callback:', error);
+        debugAreaLog('PRICE_EDIT', 'Erro no callback de alteração de preço:', error);
         toast({
           title: "Erro",
           description: "Não foi possível atualizar o preço do turno.",
@@ -123,7 +123,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         });
       }
     } else {
-      debugAreaLog('PRICE_EDIT', 'No price change callback provided');
+      debugAreaLog('PRICE_EDIT', 'Nenhum callback de alteração de preço fornecido');
       toast({
         title: "Erro de configuração",
         description: "Função de alteração de preço não encontrada.",
