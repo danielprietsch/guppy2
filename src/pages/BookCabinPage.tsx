@@ -205,7 +205,6 @@ const BookCabinPage = () => {
   return (
     <div className="container h-screen max-h-screen overflow-hidden">
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 h-full p-4">
-        {/* Left Column */}
         <div className="space-y-4 overflow-y-auto">
           <h1 className="text-2xl font-bold mb-2">
             {cabin ? `Reservar ${cabin.name}` : 'Reserva de Cabine'}
@@ -280,7 +279,6 @@ const BookCabinPage = () => {
           )}
         </div>
 
-        {/* Right Column - Reservation Summary */}
         <div className="flex flex-col space-y-4">
           <Card className="sticky top-4">
             <CardContent className="p-6">
@@ -376,6 +374,11 @@ const BookCabinPage = () => {
           </Card>
         </div>
       </div>
+
+      <TermsOfUseModal 
+        isOpen={isTermsModalOpen} 
+        onClose={() => setIsTermsModalOpen(false)} 
+      />
     </div>
   );
 };
