@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Upload, Loader2, Camera } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -108,7 +107,10 @@ export function ProfileImageUpload({
 
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <div className="relative cursor-pointer group">
+      <label 
+        className="relative cursor-pointer group block"
+        title="Alterar foto de perfil"
+      >
         <Avatar className="h-32 w-32 border-2 border-primary/20">
           <AvatarImage 
             src={previewUrl || undefined}
@@ -119,29 +121,30 @@ export function ProfileImageUpload({
             {firstLetter}
           </AvatarFallback>
         </Avatar>
-        
-        <label 
-          className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
-          title="Alterar foto de perfil"
-        >
-          {isUploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Camera className="h-5 w-5" />
-          )}
-          <input
-            type="file"
-            onChange={handleFileChange}
-            accept="image/*"
-            className="hidden"
-            disabled={isUploading}
-          />
-        </label>
 
-        <div className="absolute inset-0 bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-          <span className="text-sm">Alterar foto</span>
+        {/* Overlay with text */}
+        <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+          <div className="text-white flex flex-col items-center gap-2">
+            <Camera className="h-6 w-6" />
+            <span className="text-sm">Alterar foto</span>
+          </div>
         </div>
-      </div>
+
+        {/* Loading overlay */}
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+            <Loader2 className="h-6 w-6 text-white animate-spin" />
+          </div>
+        )}
+        
+        <input
+          type="file"
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+          disabled={isUploading}
+        />
+      </label>
     </div>
   );
 }
