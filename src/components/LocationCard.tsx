@@ -1,11 +1,12 @@
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addDays } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { DailyAvailabilityCell } from "./location/DailyAvailabilityCell";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "lucide-react";
 
 const beautySalonImages = [
   "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
@@ -57,6 +58,7 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
     const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     return new Date(today.setDate(today.getDate() - daysToSubtract));
   });
+  const [ownerData, setOwnerData] = useState<{ name: string; avatarUrl: string | null } | null>(null);
 
   const displayImage = location.imageUrl || (() => {
     const imageIndex = parseInt(location.id.replace(/\D/g, ""), 10) % beautySalonImages.length;
@@ -72,9 +74,7 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
       const availabilityMap: ShiftAvailabilityMap = {};
 
       try {
-        // Skip API call for mock data with numeric IDs (non-UUID format)
         if (/^\d+$/.test(location.id)) {
-          // Generate mock availability data for samples
           for (let i = 0; i < 7; i++) {
             const date = addDays(startDate, i);
             const dateStr = format(date, "yyyy-MM-dd");
@@ -104,7 +104,6 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
           return;
         }
 
-        // Only run this query for real UUIDs
         const { data: cabins, error: cabinsError } = await supabase
           .from('cabins')
           .select('id, availability, pricing')
@@ -207,12 +206,33 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
     fetchAvailabilityData();
   }, [location.id, location.cabinsCount, currentDate]);
 
+  useEffect(() => {
+    const fetchOwnerData = async () => {
+      if (location.ownerId) {
+        const { data: ownerProfile, error } = await supabase
+          .from('profiles')
+          .select('name, avatar_url')
+          .eq('id', location.ownerId)
+          .single();
+
+        if (!error && ownerProfile) {
+          setOwnerData({
+            name: ownerProfile.name || 'Proprietário',
+            avatarUrl: ownerProfile.avatar_url
+          });
+        }
+      }
+    };
+
+    fetchOwnerData();
+  }, [location.ownerId]);
+
   const nextDays = Array.from({ length: 7 }, (_, i) => addDays(currentDate, i));
 
   if (displayLayout === 'compact') {
     return (
       <Link to={`/locations/${location.id}`} className="block hover:no-underline">
-        <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200 h-full">
+        <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200">
           <CardContent className="p-0">
             <div className="relative h-48 overflow-hidden">
               <img 
@@ -267,6 +287,21 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
               <div className="col-span-1">
                 <h3 className="font-semibold text-2xl text-gray-800 mb-3">{location.name}</h3>
                 <p className="text-lg text-gray-600 mb-4">{location.address}, {location.city}</p>
+                
+                {ownerData && (
+                  <div className="flex items-center space-x-3 mb-4 p-3 bg-slate-50 rounded-lg">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={ownerData.avatarUrl || undefined} alt={ownerData.name} />
+                      <AvatarFallback>
+                        <User className="h-5 w-5 text-slate-400" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm text-slate-600">Proprietário</p>
+                      <p className="font-medium text-slate-900">{ownerData.name}</p>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="space-y-2 text-base">
                   <div className="flex items-center text-gray-700">
