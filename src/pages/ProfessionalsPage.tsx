@@ -11,7 +11,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useProfessionals } from "@/hooks/useProfessionals";
-import { useServices } from "@/hooks/useServices";
+import { serviceData } from "@/utils/serviceData";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,8 +22,13 @@ const ProfessionalsPage = () => {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const today = new Date();
   const nextWeek = addDays(today, 7);
+
+  // Get all unique categories from serviceData
+  const allServices = Object.values(serviceData)
+    .map(service => service.category)
+    .filter((value, index, self) => self.indexOf(value) === index)
+    .sort();
   
-  const { services } = useServices();
   const { 
     data: professionals = [], 
     isLoading,
@@ -34,16 +39,12 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
 
-  console.log("Professional count:", professionals?.length || 0);
-
   const filteredProfessionals = professionals?.filter(professional => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesService = selectedServices.length === 0 || 
       professional.specialties?.some(specialty => selectedServices.includes(specialty));
     return matchesSearch && matchesService;
   }) || [];
-  
-  const uniqueCategories = Array.from(new Set(services.map(service => service.category)));
   
   const toggleService = (category: string) => {
     setSelectedServices(current => 
@@ -57,24 +58,18 @@ const ProfessionalsPage = () => {
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
         <h1 className="text-3xl font-bold tracking-tight">
-          Profissionais de Qualidade
+          Profissionais Qualificados
         </h1>
         <p className="mt-4 text-gray-500">
-          Encontre os melhores profissionais de beleza e estética
+          Encontre os melhores profissionais para o seu serviço
         </p>
       </div>
       
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-6">
-          Profissionais disponíveis nos próximos 7 dias:
-        </h2>
-      </div>
-      
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="flex items-center gap-2 border rounded-lg p-2">
           <Search className="h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome..."
+            placeholder="Buscar por nome do profissional..."
             className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -91,7 +86,7 @@ const ProfessionalsPage = () => {
                   : `${selectedServices.length} serviço(s) selecionado(s)`
                 }
               </span>
-              <div className="ml-auto flex gap-1">
+              <div className="ml-auto flex gap-1 overflow-hidden">
                 {selectedServices.length > 0 && selectedServices.slice(0, 2).map((service) => (
                   <Badge key={service} variant="secondary" className="max-w-[100px] truncate">
                     {service}
@@ -103,25 +98,25 @@ const ProfessionalsPage = () => {
               </div>
             </button>
           </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <ScrollArea className="h-80">
-              <div className="space-y-4 p-2">
-                <h4 className="font-medium">Serviços disponíveis</h4>
-                <div className="space-y-2">
-                  {uniqueCategories.map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
+          <PopoverContent className="w-80" align="start">
+            <ScrollArea className="h-[300px] pr-4">
+              <div className="space-y-4">
+                <h4 className="font-medium text-sm">Serviços Disponíveis</h4>
+                <div className="grid grid-cols-1 gap-3">
+                  {allServices.map((service) => (
+                    <label
+                      key={service}
+                      className="flex items-center space-x-3 hover:bg-accent rounded-lg p-2 cursor-pointer transition-colors"
+                    >
                       <Checkbox
-                        id={category}
-                        checked={selectedServices.includes(category)}
-                        onCheckedChange={() => toggleService(category)}
+                        id={service}
+                        checked={selectedServices.includes(service)}
+                        onCheckedChange={() => toggleService(service)}
                       />
-                      <label
-                        htmlFor={category}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {category}
-                      </label>
-                    </div>
+                      <span className="text-sm font-medium leading-none">
+                        {service}
+                      </span>
+                    </label>
                   ))}
                 </div>
               </div>
@@ -129,7 +124,7 @@ const ProfessionalsPage = () => {
           </PopoverContent>
         </Popover>
       </div>
-      
+
       {isError && (
         <Alert variant="destructive" className="mt-8">
           <AlertCircle className="h-4 w-4" />
@@ -170,10 +165,10 @@ const ProfessionalsPage = () => {
           ) : (
             <div className="mt-12 text-center py-16 border rounded-lg bg-gray-50">
               <h3 className="text-xl font-medium text-gray-700 mb-2">
-                Não foram encontrados profissionais disponíveis
+                Nenhum profissional encontrado
               </h3>
               <p className="text-gray-500 max-w-md mx-auto">
-                Não foram encontrados profissionais disponíveis com cabines reservadas na data solicitada
+                Não foram encontrados profissionais disponíveis com os filtros selecionados. Tente ajustar sua busca.
               </p>
             </div>
           )}
