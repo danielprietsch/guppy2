@@ -67,7 +67,12 @@ const NewServicePage = () => {
     },
   });
 
-  const onSubmit = async (values: ServiceFormValues) => {
+  // Update form values when selected services change
+  useEffect(() => {
+    form.setValue('services', selectedServices);
+  }, [selectedServices, form]);
+
+  const onSubmit = async () => {
     if (!user) {
       toast({
         title: "Erro",
@@ -77,8 +82,18 @@ const NewServicePage = () => {
       return;
     }
 
+    if (selectedServices.length === 0) {
+      toast({
+        title: "Erro",
+        description: "Selecione pelo menos um serviço para cadastrar",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
+      console.log("Salvando serviços:", selectedServices);
 
       // Insert each service as a separate row
       for (const service of selectedServices) {
@@ -93,7 +108,10 @@ const NewServicePage = () => {
             category: getServiceCategory(service.id)
           });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error saving service:", error);
+          throw error;
+        }
       }
 
       toast({
@@ -175,7 +193,7 @@ const NewServicePage = () => {
       {/* Sticky Save button at top of page for better visibility */}
       <div className="sticky top-4 z-10 flex justify-end mb-6">
         <Button 
-          onClick={form.handleSubmit(onSubmit)}
+          onClick={onSubmit}
           disabled={isSubmitting || selectedServices.length === 0}
           className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold px-8 py-6 text-lg shadow-lg"
           size="lg"
@@ -200,7 +218,7 @@ const NewServicePage = () => {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {availableServices.map((service) => {
                   const selectedService = selectedServices.find(s => s.id === service.id);
@@ -224,7 +242,7 @@ const NewServicePage = () => {
               {/* Large, prominent save button at bottom of page as well */}
               <div className="flex justify-center pt-8">
                 <Button 
-                  type="submit"
+                  onClick={onSubmit}
                   disabled={isSubmitting || selectedServices.length === 0}
                   className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold px-10 py-6 text-lg shadow-lg w-full md:w-1/2"
                   size="lg"
