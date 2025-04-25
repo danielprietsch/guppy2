@@ -15,7 +15,6 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
-// Form schema validation
 const serviceSchema = z.object({
   name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
   description: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
@@ -28,14 +27,23 @@ const serviceSchema = z.object({
 type ServiceFormValues = z.infer<typeof serviceSchema>;
 
 const specialties = [
-  { id: "cabeleireiro", label: "Cabeleireiro" },
-  { id: "barbeiro", label: "Barbeiro" },
-  { id: "manicure", label: "Manicure" },
-  { id: "pedicure", label: "Pedicure" },
-  { id: "esteticista", label: "Esteticista" },
-  { id: "maquiador", label: "Maquiador(a)" },
-  { id: "massagista", label: "Massagista" },
-  { id: "depilador", label: "Depilador(a)" },
+  { id: "corte_cabelo", label: "Corte de Cabelo" },
+  { id: "coloracao", label: "Coloração" },
+  { id: "luzes", label: "Luzes/Mechas" },
+  { id: "escova", label: "Escova/Brushing" },
+  { id: "hidratacao", label: "Hidratação Capilar" },
+  { id: "manicure_comum", label: "Manicure Tradicional" },
+  { id: "manicure_gel", label: "Unha em Gel" },
+  { id: "pedicure_comum", label: "Pedicure Tradicional" },
+  { id: "pedicure_spa", label: "Pedicure com SPA" },
+  { id: "maquiagem_social", label: "Maquiagem Social" },
+  { id: "maquiagem_noiva", label: "Maquiagem para Noiva" },
+  { id: "design_sobrancelhas", label: "Design de Sobrancelhas" },
+  { id: "barba", label: "Barba" },
+  { id: "depilacao_cera", label: "Depilação com Cera" },
+  { id: "depilacao_laser", label: "Depilação a Laser" },
+  { id: "massagem_relaxante", label: "Massagem Relaxante" },
+  { id: "limpeza_pele", label: "Limpeza de Pele" },
 ];
 
 const serviceCategories = [
