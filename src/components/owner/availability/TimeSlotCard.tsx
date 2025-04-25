@@ -83,7 +83,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const adjustPrice = (increment: boolean) => {
-    const currentPrice = parseFloat(priceValue);
+    // Parse the current price value, defaulting to 0 if not a valid number
+    const currentPrice = parseFloat(priceValue) || 0;
     debugAreaLog('PRICE_EDIT', 'Adjusting price:', { currentPrice, increment });
     
     if (!isNaN(currentPrice)) {
@@ -92,9 +93,13 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
-        // Fix: Convert the number to string before setting it to state
+        
+        // Ensure newPrice is converted to a string for setPriceValue
         setPriceValue(newPrice.toString());
+        
+        // Call onPriceEdit with the numeric value
         onPriceEdit(newPrice);
+        
         setAnimatePrice(true);
         setTimeout(() => setAnimatePrice(false), 700);
       }
