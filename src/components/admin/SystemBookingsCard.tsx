@@ -42,12 +42,22 @@ export function SystemBookingsCard() {
 
         if (error) throw error;
         
-        // Transform the data to properly handle types
+        // Transform the data to properly handle types and error cases
         const formattedData = (data || []).map(item => {
+          // Check if professional is an error object (has error property) or is null
+          const professionalData = item.professional && !('error' in item.professional) 
+            ? item.professional 
+            : null;
+            
+          // Check if cabin is an error object or is null
+          const cabinData = item.cabin && !('error' in item.cabin) 
+            ? item.cabin 
+            : null;
+            
           return {
             ...item,
-            professional: item.professional || null,
-            cabin: item.cabin || null
+            professional: professionalData,
+            cabin: cabinData
           } as Booking;
         });
         
