@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
@@ -206,9 +207,12 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
     fetchAvailabilityData();
   }, [location.id, location.cabinsCount, currentDate]);
 
+  // Make sure this effect runs properly to fetch owner data
   useEffect(() => {
     const fetchOwnerData = async () => {
       if (location.ownerId) {
+        console.log("Fetching owner data for:", location.ownerId);
+        
         const { data: ownerProfile, error } = await supabase
           .from('profiles')
           .select('name, avatar_url')
@@ -216,11 +220,16 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
           .single();
 
         if (!error && ownerProfile) {
+          console.log("Owner profile found:", ownerProfile);
           setOwnerData({
             name: ownerProfile.name || 'Proprietário',
             avatarUrl: ownerProfile.avatar_url
           });
+        } else {
+          console.error("Error fetching owner profile:", error);
         }
+      } else {
+        console.log("No owner ID provided for location:", location.id);
       }
     };
 
