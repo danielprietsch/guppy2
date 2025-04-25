@@ -178,7 +178,7 @@ const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardPro
   return (
     <div
       className={cn(
-        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer hover:bg-accent min-h-[210px] w-full",
+        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer hover:bg-accent min-h-[250px] w-full",
         checked ? "border-primary bg-accent" : "border-input"
       )}
       onClick={() => onCheckedChange(!checked)}
@@ -191,27 +191,32 @@ const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardPro
         />
       </div>
       
-      <div className="flex items-center gap-2 mb-3 w-full">
-        <div className="text-primary p-3 bg-background rounded-full">
+      <div className="flex items-center gap-3 mb-4 w-full">
+        <div className="text-primary p-3 bg-background rounded-full shadow-sm">
           {getIconForSpecialty(id)}
         </div>
-        <span className="text-lg font-semibold">{label}</span>
+        <span className="text-xl font-semibold">{label}</span>
       </div>
       
-      <Badge className={cn("mb-3", getCategoryColor(serviceInfo.category))}>
-        {serviceInfo.category}
-      </Badge>
+      <div className="mb-4 w-full">
+        <Badge className={cn("px-3 py-1 text-xs", getCategoryColor(serviceInfo.category))}>
+          <div className="flex items-center gap-1.5">
+            {getIconForSpecialty(id)}
+            <span>{serviceInfo.category}</span>
+          </div>
+        </Badge>
+      </div>
       
-      <p className="text-sm text-muted-foreground mb-4">
+      <p className="text-sm text-muted-foreground mb-6">
         {getServiceDescription(id)}
       </p>
       
-      <div className="mt-auto w-full flex justify-between items-center pt-2 border-t border-border">
-        <div className="flex items-center gap-1 text-muted-foreground">
+      <div className="mt-auto w-full flex justify-between items-center pt-3 border-t border-border">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
           <Clock className="h-4 w-4" />
-          <span className="text-sm">{serviceInfo.duration} min</span>
+          <span className="text-sm font-medium">{serviceInfo.duration} min</span>
         </div>
-        <div className="flex items-center gap-1 font-medium">
+        <div className="flex items-center gap-1.5 font-medium">
           <DollarSign className="h-4 w-4" />
           <span>R$ {serviceInfo.price}</span>
         </div>
