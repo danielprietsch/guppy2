@@ -12,7 +12,6 @@ import { TermsOfUseModal } from "@/components/booking/TermsOfUseModal";
 import { CabinSearchSection } from "@/components/booking/CabinSearchSection";
 import { BookingSummary } from "@/components/booking/BookingSummary";
 import { useBookingManagement } from "@/hooks/useBookingManagement";
-import { debugLog } from "@/utils/debugLogger";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,10 +24,6 @@ const BookCabinPage = () => {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
-  // Log the ID to verify it exists
-  debugLog("Cabin ID from params:", id);
-
-  // Ensure the ID is passed correctly to the hook
   const {
     selectedTurns,
     total,
@@ -47,11 +42,6 @@ const BookCabinPage = () => {
   useEffect(() => {
     const loadCabinData = async () => {
       if (!id) {
-        toast({
-          title: "Erro",
-          description: "ID da cabine não fornecido",
-          variant: "destructive"
-        });
         setLoading(false);
         return;
       }

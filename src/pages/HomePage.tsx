@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronRight, CalendarDays, MapPin, Users } from "lucide-react";

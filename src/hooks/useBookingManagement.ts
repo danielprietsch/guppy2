@@ -14,9 +14,6 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
-  // Log the cabin ID when the hook is initialized
-  debugLog("useBookingManagement initialized with cabin ID:", cabinId);
-
   const handleTurnSelection = (date: string, turn: string) => {
     setSelectedTurns(prev => {
       const newTurns = { ...prev };
@@ -36,8 +33,6 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
   };
 
   const handleBookCabin = async () => {
-    debugLog("handleBookCabin called with cabin ID:", cabinId);
-
     if (Object.keys(selectedTurns).length === 0 || !acceptTerms) {
       toast({
         title: "Erro",
@@ -73,14 +68,6 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
     try {
       let allBookingsSuccessful = true;
       const bookingPromises = [];
-      
-      // Ensure cabinId is not empty before proceeding
-      if (!cabinId || cabinId.trim() === "") {
-        debugLog("Invalid cabin ID:", cabinId);
-        throw new Error("ID da cabine não informado");
-      }
-      
-      debugLog("Processing bookings for cabin ID:", cabinId);
       
       for (const [date, turns] of Object.entries(selectedTurns)) {
         for (const turn of turns) {
@@ -125,13 +112,6 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       }
 
       debugLog("Creating booking with professional_id:", data.session.user.id);
-      debugLog("Creating booking with cabin_id:", cabinId);
-
-      // Ensure we have a valid cabin_id before making the request
-      if (!cabinId || cabinId.trim() === "") {
-        console.error("Invalid cabin ID:", cabinId);
-        throw new Error("ID da cabine inválido");
-      }
 
       const { error } = await supabase.rpc(
         'create_booking',
