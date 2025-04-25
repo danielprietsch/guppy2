@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,11 +18,14 @@ import { services, bookings, appointments, reviews } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
 import ServiceEditCard from "@/components/ServiceEditCard";
+import PrivacySettingsCard from "@/components/professional/PrivacySettingsCard";
+import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar";
 
 const ProfessionalDashboardPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
+  const [isPublicProfile, setIsPublicProfile] = useState(true);
 
   // Stats data
   const [stats, setStats] = useState({
@@ -33,6 +37,25 @@ const ProfessionalDashboardPage = () => {
 
   useEffect(() => {
     if (user) {
+      // Fetch user profile to get privacy settings
+      const fetchUserProfile = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('is_public')
+            .eq('id', user.id)
+            .single();
+            
+          if (data) {
+            setIsPublicProfile(data.is_public !== false); // Default to public if not set
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      };
+      
+      fetchUserProfile();
+      
       // In a real app, this would fetch data from the API based on the current user
       // Simulating loading behavior
       setTimeout(() => {
@@ -96,6 +119,8 @@ const ProfessionalDashboardPage = () => {
         </Button>
       </div>
 
+      <PrivacySettingsCard initialIsPublic={isPublicProfile} />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
@@ -157,13 +182,18 @@ const ProfessionalDashboardPage = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="appointments" className="space-y-4">
+      <Tabs defaultValue="availability" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="availability">Disponibilidade</TabsTrigger>
           <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
           <TabsTrigger value="services">Meus Serviços</TabsTrigger>
           <TabsTrigger value="bookings">Reservas de Cabine</TabsTrigger>
           <TabsTrigger value="reviews">Avaliações</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="availability" className="space-y-4">
+          <AvailabilityCalendar />
+        </TabsContent>
 
         <TabsContent value="appointments" className="space-y-4">
           <Card>
