@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, AlertCircle } from "lucide-react";
+import { Search, Filter, AlertCircle, Calendar } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Popover,
@@ -15,13 +15,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { addDays, format } from "date-fns";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(new Date());
   
-  console.log("ProfessionalsPage: Rendering with date", today);
+  console.log("ProfessionalsPage: Rendering with date", selectedDate);
 
   // Get all unique categories from serviceData
   const allServices = Object.values(serviceData)
@@ -33,10 +35,11 @@ const ProfessionalsPage = () => {
     data: professionals = [], 
     isLoading,
     isError,
+    refetch,
   } = useProfessionals({ 
     withSpecialties: true,
     withAvailability: true,
-    date: today
+    date: selectedDate
   });
 
   console.log("ProfessionalsPage: Received professionals data", professionals.length);
@@ -66,6 +69,12 @@ const ProfessionalsPage = () => {
     );
   };
 
+  // Function to change date and refetch professionals
+  const changeDate = (daysToAdd: number) => {
+    const newDate = addDays(selectedDate, daysToAdd);
+    setSelectedDate(newDate);
+  };
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
@@ -75,6 +84,28 @@ const ProfessionalsPage = () => {
         <p className="mt-4 text-gray-500">
           Encontre os melhores profissionais para o seu serviço
         </p>
+      </div>
+      
+      {/* Date selector */}
+      <div className="flex justify-center mt-8 mb-4 gap-2">
+        <Button 
+          variant="outline" 
+          onClick={() => changeDate(-1)}
+        >
+          Dia anterior
+        </Button>
+        <div className="flex items-center px-4 py-2 border rounded-md bg-background">
+          <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
+          <span className="font-medium">
+            {format(selectedDate, "dd/MM/yyyy")}
+          </span>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={() => changeDate(1)}
+        >
+          Próximo dia
+        </Button>
       </div>
       
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -180,8 +211,14 @@ const ProfessionalsPage = () => {
                 Nenhum profissional encontrado
               </h3>
               <p className="text-gray-500 max-w-md mx-auto">
-                Não foram encontrados profissionais disponíveis com os filtros selecionados. Tente ajustar sua busca.
+                Não foram encontrados profissionais disponíveis com os filtros selecionados na data {format(selectedDate, "dd/MM/yyyy")}.
               </p>
+              <Button 
+                onClick={() => refetch()}
+                className="mt-4"
+              >
+                Tentar novamente
+              </Button>
             </div>
           )}
         </div>

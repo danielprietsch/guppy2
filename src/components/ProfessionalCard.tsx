@@ -1,8 +1,7 @@
 
 import { Link } from "react-router-dom";
-import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star, Calendar } from "lucide-react";
+import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Professional } from "@/hooks/useProfessionals";
 
