@@ -1,4 +1,3 @@
-
 export const DEBUG_MODE = true; // Enable global debugging in development
 
 // Specific areas of the system can be enabled individually for debugging
@@ -6,7 +5,8 @@ export const DEBUG_AREAS = {
   PRICE_EDIT: true, // Enable debugging just for price editing
   AVAILABILITY: true, // Enable debugging for availability changes
   USER_ACTIONS: true, // Enable debugging for user profile actions
-  CLIENT_PROFILE: true // Enable debugging specifically for client profile issues
+  CLIENT_PROFILE: true, // Enable debugging specifically for client profile issues
+  TIME_CLOSURE: true // Enable debugging for time slot closure operations
 };
 
 // Control verbosity level for specific areas
@@ -14,7 +14,8 @@ export const DEBUG_VERBOSITY = {
   PRICE_EDIT: 1, // 1 = essentials only, 2 = detailed, 3 = all
   AVAILABILITY: 1, // Setting to 1 to ensure we see critical logs
   USER_ACTIONS: 2, // Medium verbosity for user actions
-  CLIENT_PROFILE: 3 // High verbosity for client profile to catch all issues
+  CLIENT_PROFILE: 3, // High verbosity for client profile to catch all issues
+  TIME_CLOSURE: 2 // Medium verbosity for time closure operations
 };
 
 export const debugLog = (...args: any[]) => {
