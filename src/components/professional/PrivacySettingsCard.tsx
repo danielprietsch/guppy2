@@ -26,15 +26,13 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
       if (!user) return;
       
       try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_public')
-          .eq('id', user.id)
-          .single();
+        // Instead of directly querying the profiles table, call a function
+        const { data, error } = await supabase
+          .rpc('get_profile_visibility', { user_id: user.id });
         
         if (error) throw error;
         
-        setIsPublic(profile?.is_public ?? true);
+        setIsPublic(data ?? true);
       } catch (error) {
         console.error("Error fetching privacy settings:", error);
         toast({
@@ -56,13 +54,12 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
     const newIsPublic = value === 'available';
     
     try {
+      // Use RPC function to update visibility to avoid RLS recursion
       const { error } = await supabase
-        .from('profiles')
-        .update({ 
-          is_public: newIsPublic,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+        .rpc('update_profile_visibility', { 
+          user_id: user.id,
+          is_public: newIsPublic
+        });
       
       if (error) throw error;
       
@@ -109,7 +106,7 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
         >
           <ToggleGroupItem 
             value="available" 
-            className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
+            className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-[#F2FCE2] border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
             <div className="p-6 rounded-full bg-primary/5 flex items-center justify-center">
               <Calendar className="h-16 w-16 text-primary" />
@@ -124,7 +121,7 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
           
           <ToggleGroupItem 
             value="unavailable"
-            className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
+            className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-[#F1F0FB] border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
             <div className="p-6 rounded-full bg-primary/5 flex items-center justify-center">
               <Clock className="h-16 w-16 text-primary" />

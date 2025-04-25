@@ -22,12 +22,9 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         const formattedDate = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
         console.log('Fetching professionals for date:', formattedDate);
 
-        // Fetch only public professional profiles
+        // Use a function call to avoid RLS recursion
         const { data: professionals, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('user_type', 'professional')
-          .eq('is_public', true); // Only fetch public profiles
+          .rpc('get_public_professionals');
 
         if (error) {
           console.error('Error fetching professional profiles:', error);
