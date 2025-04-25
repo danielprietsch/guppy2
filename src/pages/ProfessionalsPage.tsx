@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, AlertCircle } from "lucide-react";
@@ -28,32 +28,21 @@ const ProfessionalsPage = () => {
     data: professionals = [], 
     isLoading,
     isError,
-    error
   } = useProfessionals({ 
     withSpecialties: true,
     withAvailability: true,
     date: nextWeek
   });
-  
-  // Log the professional count to help with debugging
-  console.log("Professional count:", professionals.length);
 
-  useEffect(() => {
-    if (isError) {
-      toast({
-        title: "Erro ao carregar profissionais",
-        description: "Não foi possível carregar a lista de profissionais. Por favor, tente novamente.",
-        variant: "destructive",
-      });
-    }
-  }, [isError]);
+  // Log the professional count only once during render
+  console.log("Professional count:", professionals?.length || 0);
 
-  const filteredProfessionals = professionals.filter(professional => {
+  const filteredProfessionals = professionals?.filter(professional => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesService = selectedService === "all" || 
       (professional.specialties && professional.specialties.includes(selectedService));
     return matchesSearch && matchesService;
-  });
+  }) || [];
   
   const uniqueCategories = Array.from(new Set(services.map(service => service.category)));
   
@@ -138,7 +127,9 @@ const ProfessionalsPage = () => {
             </div>
           ) : (
             <div className="mt-12 text-center py-16 border rounded-lg bg-gray-50">
-              <h3 className="text-xl font-medium text-gray-700 mb-2">Não foram encontrados profissionais disponíveis</h3>
+              <h3 className="text-xl font-medium text-gray-700 mb-2">
+                Não foram encontrados profissionais disponíveis
+              </h3>
               <p className="text-gray-500 max-w-md mx-auto">
                 Não foram encontrados profissionais disponíveis com cabines reservadas na data solicitada
               </p>

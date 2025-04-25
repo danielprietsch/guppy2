@@ -16,7 +16,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { data: allProfessionals } = useUsers('professional');
 
   return useQuery({
-    queryKey: ['professionals', date],
+    queryKey: ['professionals', date ? format(date, 'yyyy-MM-dd') : null],
     queryFn: async () => {
       try {
         const formattedDate = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
@@ -31,7 +31,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
         if (availabilityError) {
           console.error('Error fetching availability:', availabilityError);
-          throw availabilityError;
+          return [];
         }
 
         // Early return if no available professionals
@@ -52,7 +52,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
         if (bookingsError) {
           console.error('Error fetching bookings:', bookingsError);
-          throw bookingsError;
+          return [];
         }
 
         // Early return if no confirmed bookings
@@ -84,7 +84,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
         if (profilesError) {
           console.error('Error fetching professional profiles:', profilesError);
-          throw profilesError;
+          return [];
         }
 
         // If no professionals found, return empty array
@@ -126,14 +126,13 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         return professionals as User[];
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
-        throw error;
-      }
-    },
-    // Force returning empty array on error
-    meta: {
-      onError: () => {
         return [];
       }
-    }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    refetchOnReconnect: false, // Don't refetch on reconnect if data exists
+    retry: false, // Don't retry failed queries
   });
 };
