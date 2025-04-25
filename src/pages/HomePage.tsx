@@ -160,15 +160,15 @@ const HomePage = () => {
       <section className="py-16 bg-gray-50">
         <div className="container">
           <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">Localizações em Destaque</h2>
+            <h2 className="text-2xl font-bold">Locais em Destaque</h2>
             <Link to="/locations" className="text-primary font-medium inline-flex items-center">
-              Ver todas <ChevronRight className="h-4 w-4 ml-1" />
+              Ver todos <ChevronRight className="h-4 w-4 ml-1" />
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex flex-col space-y-6">
             {featuredLocations.map((location) => (
-              <LocationCard key={location.id} location={location} />
+              <LocationCard key={location.id} location={location} displayLayout="compact" />
             ))}
           </div>
         </div>

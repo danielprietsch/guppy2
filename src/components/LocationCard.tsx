@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
@@ -44,9 +45,10 @@ type ShiftAvailabilityMap = {
 
 interface LocationCardProps {
   location: Location;
+  displayLayout?: 'compact' | 'full';
 }
 
-const LocationCard = ({ location }: LocationCardProps) => {
+const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) => {
   const [availabilityData, setAvailabilityData] = useState<ShiftAvailabilityMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate] = useState(() => {
@@ -70,6 +72,39 @@ const LocationCard = ({ location }: LocationCardProps) => {
       const availabilityMap: ShiftAvailabilityMap = {};
 
       try {
+        // Skip API call for mock data with numeric IDs (non-UUID format)
+        if (/^\d+$/.test(location.id)) {
+          // Generate mock availability data for samples
+          for (let i = 0; i < 7; i++) {
+            const date = addDays(startDate, i);
+            const dateStr = format(date, "yyyy-MM-dd");
+            const totalCabins = location.cabinsCount || 3;
+            
+            availabilityMap[dateStr] = {
+              morning: {
+                totalCabins,
+                availableCabins: Math.floor(Math.random() * (totalCabins + 1)),
+                manuallyClosedCount: 0
+              },
+              afternoon: {
+                totalCabins,
+                availableCabins: Math.floor(Math.random() * (totalCabins + 1)),
+                manuallyClosedCount: 0
+              },
+              evening: {
+                totalCabins,
+                availableCabins: Math.floor(Math.random() * (totalCabins + 1)),
+                manuallyClosedCount: 0
+              }
+            };
+          }
+          
+          setAvailabilityData(availabilityMap);
+          setIsLoading(false);
+          return;
+        }
+
+        // Only run this query for real UUIDs
         const { data: cabins, error: cabinsError } = await supabase
           .from('cabins')
           .select('id, availability, pricing')
@@ -173,6 +208,55 @@ const LocationCard = ({ location }: LocationCardProps) => {
   }, [location.id, location.cabinsCount, currentDate]);
 
   const nextDays = Array.from({ length: 7 }, (_, i) => addDays(currentDate, i));
+
+  if (displayLayout === 'compact') {
+    return (
+      <Link to={`/locations/${location.id}`} className="block hover:no-underline">
+        <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200 h-full">
+          <CardContent className="p-0">
+            <div className="relative h-48 overflow-hidden">
+              <img 
+                src={displayImage}
+                alt={location.name}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-4">
+                <h3 className="text-lg font-semibold text-white">{location.name}</h3>
+                <p className="text-white/90 text-sm">{location.address}, {location.city}</p>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-3">
+                <div className="text-sm text-gray-600">
+                  <span className="font-medium">{location.cabinsCount}</span> cabines
+                </div>
+                <div className="text-sm text-gray-600">
+                  {location.openingHours.open} - {location.openingHours.close}
+                </div>
+              </div>
+              {location.amenities.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {location.amenities.slice(0, 3).map((amenity, index) => (
+                    <span
+                      key={index}
+                      className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-700"
+                    >
+                      {amenity}
+                    </span>
+                  ))}
+                  {location.amenities.length > 3 && (
+                    <span className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-700">
+                      +{location.amenities.length - 3}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  }
 
   return (
     <div className="relative">
