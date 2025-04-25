@@ -114,6 +114,9 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     const now = new Date();
     const currentHour = now.getHours();
     
+    // Debug logged for visibility
+    debugAreaLog('TIME_CLOSURE', `Checking if can close - Turno: ${turno}, Current hour: ${currentHour}, Is today: ${isToday(date)}`);
+    
     switch(turno.toLowerCase()) {
       case 'manhã':
         return currentHour < 12;
@@ -128,6 +131,9 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
 
   const handleManualClose = (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    debugAreaLog('TIME_CLOSURE', `Attempting to close - Date: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
+    
     if (!canCloseTimeSlot()) {
       toast({
         title: "Não é possível fechar este turno",
@@ -136,11 +142,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       });
       return;
     }
+    
     onManualClose();
   };
 
   const getStatusColor = () => {
-    // Fix the past date check - only consider dates before today as past dates
+    // Only consider dates before today as past dates
     // The current day should not be considered a past date
     if (isBefore(date, startOfDay(new Date())) && !isToday(date)) {
       if (isBooked) return "bg-blue-400";

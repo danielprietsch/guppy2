@@ -54,6 +54,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
 
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
     const dateObj = new Date(date);
+    
+    // Only block past dates, not today
     if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('AVAILABILITY', 'Não é possível alterar status de datas passadas');
       toast({
@@ -94,6 +96,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
 
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: string) => {
     const dateObj = new Date(date);
+    
+    // Only block past dates, not today
     if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('PRICE_EDIT', 'Não é possível alterar preço de datas passadas');
       toast({
@@ -169,7 +173,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         </div>
       </div>
     );
-  }, [daysBooked, getSlotPrice, handlePriceEdit, handleStatusChange, isSlotManuallyClosed, navigate, today]);
+  }, [daysBooked, getSlotPrice, handlePriceEdit, handleStatusChange, isSlotManuallyClosed, navigate]);
 
   const MemoizedCalendar = React.useMemo(() => (
     <Calendar
