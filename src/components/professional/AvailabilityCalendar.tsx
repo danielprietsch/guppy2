@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -23,16 +24,18 @@ interface DayAvailability {
   evening: ShiftStatus;
 }
 
+interface AppointmentClient {
+  name: string;
+  email: string;
+}
+
 interface Appointment {
   id: string;
   date: string;
   time: string;
   client_id: string;
   status: string;
-  client: {
-    name: string;
-    email: string;
-  };
+  client: AppointmentClient;
 }
 
 interface AvailabilityCalendarProps {
@@ -67,20 +70,14 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
     initialAvailability || generateMockAvailability(today, 30)
   );
 
-  const { data: appointments } = useQuery({
+  const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
       const { data, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          client:client_id (
-            name,
-            email
-          )
-        `)
+        .select('*')
         .eq('professional_id', user.id);
 
       if (error) {
@@ -88,7 +85,41 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
         return [];
       }
 
-      return data as Appointment[];
+      // Fetch client information separately
+      const appointmentsWithClients = await Promise.all(
+        data.map(async (appointment) => {
+          if (appointment.client_id) {
+            const { data: clientData, error: clientError } = await supabase
+              .from('profiles')
+              .select('name, email')
+              .eq('id', appointment.client_id)
+              .single();
+            
+            if (clientError || !clientData) {
+              console.error('Error fetching client:', clientError);
+              return {
+                ...appointment,
+                client: { name: 'Cliente não encontrado', email: '' }
+              };
+            }
+            
+            return {
+              ...appointment,
+              client: {
+                name: clientData.name || 'Nome não disponível',
+                email: clientData.email || 'Email não disponível'
+              }
+            };
+          }
+          
+          return {
+            ...appointment,
+            client: { name: 'Cliente não especificado', email: '' }
+          };
+        })
+      );
+
+      return appointmentsWithClients as Appointment[];
     },
   });
 
