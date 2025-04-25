@@ -13,16 +13,17 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
+import { useServices } from "@/hooks/useServices";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+  const [selectedService, setSelectedService] = useState<string>("all");
   const today = new Date();
   const nextWeek = addDays(today, 7);
   
+  const { services } = useServices();
   const { 
     professionals, 
-    specialties, 
     isLoading 
   } = useProfessionals({ 
     withSpecialties: true,
@@ -30,17 +31,20 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
   
-  // Filter professionals by search query and specialty
+  // Filter professionals by search query and service
   const filteredProfessionals = professionals.filter(professional => {
     // Filter by search query (name)
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Filter by specialty if one is selected
-    const matchesSpecialty = !selectedSpecialty || 
-      (professional.specialties && professional.specialties.includes(selectedSpecialty));
+    // Filter by service if one is selected
+    const matchesService = selectedService === "all" || 
+      (professional.specialties && professional.specialties.includes(selectedService));
     
-    return matchesSearch && matchesSpecialty;
+    return matchesSearch && matchesService;
   });
+  
+  // Get unique service categories from the services
+  const uniqueCategories = Array.from(new Set(services.map(service => service.category)));
   
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
@@ -71,15 +75,15 @@ const ProfessionalsPage = () => {
           />
         </div>
         
-        <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
+        <Select value={selectedService} onValueChange={setSelectedService}>
           <SelectTrigger className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-muted-foreground" />
-            <SelectValue placeholder="Filtrar por especialidade" />
+            <SelectValue placeholder="Filtrar por serviço" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todas as especialidades</SelectItem>
-            {specialties.map((specialty) => (
-              <SelectItem key={specialty} value={specialty}>{specialty}</SelectItem>
+            <SelectItem value="all">Todos os serviços</SelectItem>
+            {uniqueCategories.map((category) => (
+              <SelectItem key={category} value={category}>{category}</SelectItem>
             ))}
           </SelectContent>
         </Select>
