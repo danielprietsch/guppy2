@@ -1,6 +1,7 @@
+
 import React, { useContext } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { format, addDays, subDays, startOfDay, parseISO } from "date-fns";
+import { format, addDays, subDays, startOfDay, parseISO, isBefore } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
