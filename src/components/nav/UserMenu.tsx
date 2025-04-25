@@ -82,11 +82,12 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
 
   const fetchLatestProfile = async (userId: string) => {
     try {
+      // Use maybeSingle instead of single to handle cases where profile might not exist
       const { data, error } = await supabase
         .from('profiles')
         .select('avatar_url')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
         
       if (error) throw error;
       

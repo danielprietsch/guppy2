@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,6 +17,11 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
 
   // Log initial cabin ID for debugging
   useEffect(() => {
+    if (!cabinId) {
+      debugBooking("Initial cabinId value is empty, waiting for a valid ID");
+      return;
+    }
+    
     debugBooking("Initial cabinId value:", cabinId);
     
     // Validate the cabin ID at initialization

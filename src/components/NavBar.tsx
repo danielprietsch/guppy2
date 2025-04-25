@@ -59,10 +59,10 @@ const NavBar = () => {
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle();  // Use maybeSingle instead of single
               
             if (profileError) {
-              console.log("NavBar: No profile found in database, using metadata only");
+              console.log("NavBar: Error fetching profile:", profileError);
             } else if (profileData) {
               console.log("NavBar: Profile found, updating with data:", profileData);
               setCurrentUser(prevUser => ({
@@ -71,6 +71,8 @@ const NavBar = () => {
                 avatarUrl: profileData.avatar_url || prevUser!.avatarUrl,
                 phoneNumber: profileData.phone_number,
               }));
+            } else {
+              console.log("NavBar: No profile found in database, using metadata only");
             }
           } catch (err) {
             console.error("Error fetching profile:", err);
@@ -81,26 +83,36 @@ const NavBar = () => {
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
-            .single();
+            .maybeSingle();  // Use maybeSingle instead of single
             
-          if (profileError || !profileData) {
+          if (profileError) {
             console.error("Error fetching user profile:", profileError);
-            setCurrentUser(null);
-            setLoading(false);
-            return;
           }
           
-          const userData: User = {
-            id: profileData.id,
-            name: profileData.name || session.user.email?.split('@')[0] || "User",
-            email: profileData.email || session.user.email || "",
-            user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
-            avatarUrl: profileData.avatar_url,
-            phoneNumber: profileData.phone_number,
-          };
-          
-          console.log("NavBar: User data loaded from database:", userData);
-          setCurrentUser(userData);
+          if (!profileData) {
+            // If no profile data, create a minimal user from session
+            const userData: User = {
+              id: session.user.id,
+              name: session.user.email?.split('@')[0] || "User",
+              email: session.user.email || "",
+              user_type: "professional", // Default type
+              avatarUrl: null,
+            };
+            console.log("NavBar: No profile found, using minimal user data:", userData);
+            setCurrentUser(userData);
+          } else {
+            const userData: User = {
+              id: profileData.id,
+              name: profileData.name || session.user.email?.split('@')[0] || "User",
+              email: profileData.email || session.user.email || "",
+              user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
+              avatarUrl: profileData.avatar_url,
+              phoneNumber: profileData.phone_number,
+            };
+            
+            console.log("NavBar: User data loaded from database:", userData);
+            setCurrentUser(userData);
+          }
         }
       } catch (error) {
         console.error("Error checking auth:", error);
