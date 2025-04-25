@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -130,6 +129,9 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
         <div className="flex flex-wrap gap-2 ml-2 mt-1 mb-1">
           {TURNOS.map(turno => {
             const disponivel = turnos.availability?.[turno.key] !== false;
+            const price = turnos[turno.key];
+            const formattedPrice = typeof price === 'number' ? price.toFixed(2) : '0.00';
+            
             return (
               <span
                 key={turno.key}
@@ -139,7 +141,7 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
                     : 'bg-destructive text-destructive-foreground'
                 }`}
               >
-                {turno.label}: {disponivel ? `R$ ${turnos[turno.key].toFixed(2)}` : 'Indisponível'}
+                {turno.label}: {disponivel ? `R$ ${formattedPrice}` : 'Indisponível'}
               </span>
             );
           })}
