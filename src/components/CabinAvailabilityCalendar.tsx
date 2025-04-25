@@ -1,6 +1,5 @@
-
 import * as React from "react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
@@ -29,6 +28,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const navigate = useNavigate();
+  const today = startOfDay(new Date());
 
   const fmtDate = (date: Date) => format(date, "yyyy-MM-dd");
 
@@ -41,8 +41,13 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     }
   };
 
-  // Improved status change handler with more detailed debugging
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
+    const dateObj = new Date(date);
+    if (isBefore(dateObj, today)) {
+      debugAreaCritical('AVAILABILITY', 'Cannot change status of past dates');
+      return;
+    }
+
     debugAreaCritical('AVAILABILITY', 'Status change request:', { date, turno, isManualClose });
     
     if (onStatusChange) {
@@ -55,10 +60,15 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     } else {
       debugAreaCritical('AVAILABILITY', 'No status change callback provided');
     }
-  }, [onStatusChange]);
+  }, [onStatusChange, today]);
 
-  // Improved price edit handler with more detailed debugging
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: number) => {
+    const dateObj = new Date(date);
+    if (isBefore(dateObj, today)) {
+      debugAreaLog('PRICE_EDIT', 'Cannot edit price of past dates');
+      return;
+    }
+
     debugAreaLog('PRICE_EDIT', 'Handling price edit:', { date, turno, newPrice });
     
     if (onPriceChange) {
@@ -71,23 +81,22 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     } else {
       debugAreaLog('PRICE_EDIT', 'No price change callback provided');
     }
-  }, [onPriceChange]);
+  }, [onPriceChange, today]);
 
   const getSlotPrice = React.useCallback((dateStr: string, turno: string): number => {
     return slotPrices?.[dateStr]?.[turno] || pricePerDay;
   }, [slotPrices, pricePerDay]);
 
-  // Check if a slot is manually closed
   const isSlotManuallyClosed = React.useCallback((dateStr: string, turno: string): boolean => {
     const isClosed = manuallyClosedDates?.[dateStr]?.[turno] || false;
     debugAreaLog('AVAILABILITY', `Slot ${dateStr} ${turno} is manually closed: ${isClosed}`);
     return isClosed;
   }, [manuallyClosedDates]);
 
-  // Memoize the day content rendering function
   const renderDayContent = React.useCallback((day: Date) => {
     const dateStr = fmtDate(day);
     const turnos = ["morning", "afternoon", "evening"];
+    const isPastDate = isBefore(day, today);
 
     return (
       <div className="flex flex-col p-1 h-full">
@@ -101,23 +110,17 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
               isBooked={daysBooked[dateStr]?.[turno] || false}
               isManuallyClosed={isSlotManuallyClosed(dateStr, turno)}
               onPriceEdit={(newPrice) => handlePriceEdit(dateStr, turno, newPrice)}
-              onManualClose={() => {
-                debugAreaCritical('AVAILABILITY', `Requesting manual close for ${dateStr} ${turno}`);
-                handleStatusChange(dateStr, turno, true);
-              }}
-              onRelease={() => {
-                debugAreaCritical('AVAILABILITY', `Requesting release for ${dateStr} ${turno}`);
-                handleStatusChange(dateStr, turno, false);
-              }}
+              onManualClose={() => handleStatusChange(dateStr, turno, true)}
+              onRelease={() => handleStatusChange(dateStr, turno, false)}
               onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}
+              disabled={isPastDate}
             />
           ))}
         </div>
       </div>
     );
-  }, [daysBooked, getSlotPrice, handlePriceEdit, handleStatusChange, isSlotManuallyClosed, navigate]);
+  }, [daysBooked, getSlotPrice, handlePriceEdit, handleStatusChange, isSlotManuallyClosed, navigate, today]);
 
-  // Memoize the calendar component
   const MemoizedCalendar = React.useMemo(() => (
     <Calendar
       mode="single"
@@ -151,9 +154,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   );
 };
 
-// Using React.memo with custom comparison to prevent unnecessary re-renders
 export default React.memo(CabinAvailabilityCalendar, (prevProps, nextProps) => {
-  // Compare props to determine if re-render is necessary
   return (
     prevProps.pricePerDay === nextProps.pricePerDay &&
     JSON.stringify(prevProps.daysBooked) === JSON.stringify(nextProps.daysBooked) &&
