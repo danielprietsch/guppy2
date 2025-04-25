@@ -104,7 +104,7 @@ const ProfessionalsPage = () => {
             <div className="col-span-full text-center py-12">
               <h3 className="text-lg font-medium">Nenhum profissional disponível</h3>
               <p className="mt-1 text-gray-500">
-                Não há profissionais disponíveis nos próximos 7 dias
+                Não foram encontrados profissionais disponíveis na data solicitada
               </p>
             </div>
           )}
