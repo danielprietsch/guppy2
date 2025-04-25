@@ -1,10 +1,18 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from "@/lib/auth";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from "@/integrations/supabase/client";
 
 type ShiftStatus = 'free' | 'busy' | 'closed';
 
@@ -13,6 +21,18 @@ interface DayAvailability {
   morning: ShiftStatus;
   afternoon: ShiftStatus;
   evening: ShiftStatus;
+}
+
+interface Appointment {
+  id: string;
+  date: string;
+  time: string;
+  client_id: string;
+  status: string;
+  client: {
+    name: string;
+    email: string;
+  };
 }
 
 interface AvailabilityCalendarProps {
@@ -38,101 +58,80 @@ const generateMockAvailability = (startDate: Date, days: number): DayAvailabilit
   return availability;
 };
 
-const dayClass = (day: Date, availability: DayAvailability[]) => {
-  const dayAvail = availability.find(a => isSameDay(a.date, day));
-  if (!dayAvail) return "";
-  
-  let freeCount = 0;
-  let busyCount = 0;
-  let closedCount = 0;
-  
-  if (dayAvail.morning === 'free') freeCount++;
-  if (dayAvail.afternoon === 'free') freeCount++;
-  if (dayAvail.evening === 'free') freeCount++;
-  
-  if (dayAvail.morning === 'busy') busyCount++;
-  if (dayAvail.afternoon === 'busy') busyCount++;
-  if (dayAvail.evening === 'busy') busyCount++;
-  
-  if (dayAvail.morning === 'closed') closedCount++;
-  if (dayAvail.afternoon === 'closed') closedCount++;
-  if (dayAvail.evening === 'closed') closedCount++;
-  
-  if (closedCount === 3) return "bg-amber-100 text-gray-500";
-  if (busyCount === 3) return "bg-red-100 text-gray-500";
-  if (freeCount === 3) return "bg-green-100 text-gray-900";
-  
-  if (freeCount > 0) return "bg-gradient-to-br from-green-100 via-white to-amber-100";
-  return "bg-gradient-to-br from-amber-100 via-white to-red-100";
-};
-
-const ShiftStatusIndicator = ({ status }: { status: ShiftStatus }) => {
-  let bgColor = "bg-gray-200";
-  
-  switch (status) {
-    case 'free':
-      bgColor = "bg-green-500";
-      break;
-    case 'busy':
-      bgColor = "bg-red-500";
-      break;
-    case 'closed':
-      bgColor = "bg-amber-500";
-      break;
-  }
-  
-  return <div className={`w-4 h-4 rounded-full ${bgColor}`}></div>;
-};
-
-const DayDetails = ({ dayAvail }: { dayAvail: DayAvailability }) => {
-  return (
-    <div className="mt-2 border-t pt-2">
-      <p className="font-semibold text-sm mb-2">
-        {format(dayAvail.date, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-      </p>
-      <div className="space-y-2 text-sm">
-        <div className="flex items-center justify-between">
-          <span>Manhã:</span>
-          <div className="flex items-center gap-2">
-            <ShiftStatusIndicator status={dayAvail.morning} />
-            <span>{dayAvail.morning === 'free' ? 'Livre' : dayAvail.morning === 'busy' ? 'Ocupado' : 'Fechado'}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Tarde:</span>
-          <div className="flex items-center gap-2">
-            <ShiftStatusIndicator status={dayAvail.afternoon} />
-            <span>{dayAvail.afternoon === 'free' ? 'Livre' : dayAvail.afternoon === 'busy' ? 'Ocupado' : 'Fechado'}</span>
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Noite:</span>
-          <div className="flex items-center gap-2">
-            <ShiftStatusIndicator status={dayAvail.evening} />
-            <span>{dayAvail.evening === 'free' ? 'Livre' : dayAvail.evening === 'busy' ? 'Ocupado' : 'Fechado'}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps) => {
   const { user } = useAuth();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [availability, setAvailability] = useState<DayAvailability[]>(
     initialAvailability || generateMockAvailability(today, 30)
   );
 
-  const selectedDayAvail = selectedDate 
-    ? availability.find(a => isSameDay(a.date, selectedDate))
-    : undefined;
+  const { data: appointments } = useQuery({
+    queryKey: ['professional-appointments', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('appointments')
+        .select(`
+          *,
+          client:client_id (
+            name,
+            email
+          )
+        `)
+        .eq('professional_id', user.id);
+
+      if (error) {
+        console.error('Error fetching appointments:', error);
+        return [];
+      }
+
+      return data as Appointment[];
+    },
+  });
+
+  const getAppointmentsForDay = (date: Date) => {
+    return appointments?.filter(app => 
+      isSameDay(new Date(app.date), date)
+    ) || [];
+  };
+
+  const formatAppointmentTime = (time: string) => {
+    return format(new Date(`2000-01-01T${time}`), 'HH:mm');
+  };
+
+  const dayClass = (day: Date, availability: DayAvailability[]) => {
+    const dayAppointments = getAppointmentsForDay(day);
+    const dayAvail = availability.find(a => isSameDay(a.date, day));
+    
+    let className = "relative h-full w-full ";
+    
+    if (dayAppointments.length > 0) {
+      className += "bg-blue-50 ";
+    } else if (dayAvail) {
+      if (dayAvail.morning === 'closed' && dayAvail.afternoon === 'closed' && dayAvail.evening === 'closed') {
+        className += "bg-amber-100 ";
+      } else if (dayAvail.morning === 'busy' && dayAvail.afternoon === 'busy' && dayAvail.evening === 'busy') {
+        className += "bg-red-100 ";
+      } else if (dayAvail.morning === 'free' && dayAvail.afternoon === 'free' && dayAvail.evening === 'free') {
+        className += "bg-green-100 ";
+      } else {
+        className += "bg-gradient-to-br from-green-100 via-white to-amber-100 ";
+      }
+    }
+
+    return className;
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Calendário de Disponibilidade</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <CalendarIcon className="h-5 w-5" />
+          Calendário de Disponibilidade
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid md:grid-cols-2 gap-6">
@@ -141,67 +140,90 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
+              locale={ptBR}
+              showOutsideDays
               className="border rounded-md p-3"
-              modifiers={{
-                booked: (date) => {
-                  const dayAvail = availability.find(a => isSameDay(a.date, date));
-                  return dayAvail ? dayAvail.morning === 'busy' && dayAvail.afternoon === 'busy' && dayAvail.evening === 'busy' : false;
-                },
-                available: (date) => {
-                  const dayAvail = availability.find(a => isSameDay(a.date, date));
-                  return dayAvail ? dayAvail.morning === 'free' && dayAvail.afternoon === 'free' && dayAvail.evening === 'free' : false;
-                },
-                closed: (date) => {
-                  const dayAvail = availability.find(a => isSameDay(a.date, date));
-                  return dayAvail ? dayAvail.morning === 'closed' && dayAvail.afternoon === 'closed' && dayAvail.evening === 'closed' : false;
-                }
-              }}
-              modifiersStyles={{
-                booked: { backgroundColor: "#FEE2E2" },
-                available: { backgroundColor: "#DCFCE7" },
-                closed: { backgroundColor: "#FEF9C3" }
-              }}
               components={{
-                IconLeft: ({ ...props }) => <span {...props}>«</span>,
-                IconRight: ({ ...props }) => <span {...props}>»</span>,
-                DayContent: ({ date, ...props }) => (
+                DayContent: ({ date }) => (
                   <div className={dayClass(date, availability)}>
-                    {date.getDate()}
+                    <div className="text-center">{date.getDate()}</div>
+                    {getAppointmentsForDay(date).map((app, idx) => (
+                      <div
+                        key={app.id}
+                        className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-xs bg-blue-200 cursor-pointer truncate"
+                        style={{ bottom: `${idx * 18}px` }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedAppointment(app);
+                        }}
+                      >
+                        {formatAppointmentTime(app.time)}
+                      </div>
+                    ))}
                   </div>
                 )
               }}
             />
-            
-            <div className="mt-4 flex flex-col space-y-2">
-              <div className="flex items-center text-sm font-medium space-x-2">
-                <div className="w-4 h-4 rounded bg-green-100"></div>
-                <span>Totalmente Livre</span>
-              </div>
-              <div className="flex items-center text-sm font-medium space-x-2">
-                <div className="w-4 h-4 rounded bg-red-100"></div>
-                <span>Totalmente Ocupado</span>
-              </div>
-              <div className="flex items-center text-sm font-medium space-x-2">
-                <div className="w-4 h-4 rounded bg-amber-100"></div>
-                <span>Fechado</span>
-              </div>
-              <div className="flex items-center text-sm font-medium space-x-2">
-                <div className="w-4 h-4 rounded bg-gradient-to-br from-green-100 via-white to-amber-100"></div>
-                <span>Parcialmente Disponível</span>
-              </div>
-            </div>
           </div>
           
           <div>
-            {selectedDayAvail ? (
-              <DayDetails dayAvail={selectedDayAvail} />
-            ) : (
-              <div className="h-full flex items-center justify-center border rounded-md p-6">
-                <p className="text-muted-foreground">Selecione um dia para ver detalhes</p>
+            {selectedDate && (
+              <div className="border rounded-md p-4">
+                <h3 className="font-medium mb-4">
+                  {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                </h3>
+                <div className="space-y-2">
+                  {getAppointmentsForDay(selectedDate).map((app) => (
+                    <div
+                      key={app.id}
+                      className="flex items-center justify-between p-2 bg-blue-50 rounded-md cursor-pointer hover:bg-blue-100"
+                      onClick={() => setSelectedAppointment(app)}
+                    >
+                      <div>
+                        <p className="font-medium">{formatAppointmentTime(app.time)}</p>
+                        <p className="text-sm text-gray-600">{app.client.name}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {getAppointmentsForDay(selectedDate).length === 0 && (
+                    <p className="text-gray-500 text-center py-4">
+                      Nenhum agendamento para este dia
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </div>
+
+        <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detalhes do Agendamento</DialogTitle>
+            </DialogHeader>
+            {selectedAppointment && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">Data e Hora</p>
+                  <p className="font-medium">
+                    {format(new Date(selectedAppointment.date), "dd/MM/yyyy")} às{' '}
+                    {formatAppointmentTime(selectedAppointment.time)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Cliente</p>
+                  <p className="font-medium">{selectedAppointment.client.name}</p>
+                  <p className="text-sm text-gray-600">{selectedAppointment.client.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <p className="font-medium capitalize">{selectedAppointment.status}</p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
