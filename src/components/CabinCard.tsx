@@ -1,4 +1,3 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,17 +74,6 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     );
   };
 
-  const getCabinCalendarUrl = () => {
-    // Incluir tanto o ID da cabine quanto da localização (se disponível)
-    const params = new URLSearchParams();
-    params.append("cabin", cabin.id);
-    if (location) {
-      params.append("location", location.id);
-    }
-    
-    return `/professional/dashboard?${params.toString()}`;
-  };
-
   return (
     <Card className="overflow-hidden">
       <div className="aspect-video overflow-hidden">
@@ -147,7 +135,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
             </Button>
           </Link>
         ) : isProfessional ? (
-          <Link to={getCabinCalendarUrl()} className="w-full">
+          <Link to={`/professional/calendar?cabin=${cabin.id}`} className="w-full">
             <Button size="sm" className="w-full">
               Reservar Cabine
             </Button>
