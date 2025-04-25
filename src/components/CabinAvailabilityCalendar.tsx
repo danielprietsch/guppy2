@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,11 +29,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   slotPrices = {},
   cabinCreatedAt
 }) => {
-  // Use cabin creation date if available
   const defaultViewMonth = cabinCreatedAt ? parseISO(cabinCreatedAt) : new Date();
   const [viewMonth, setViewMonth] = React.useState<Date>(defaultViewMonth);
   
-  // Update viewMonth when cabinCreatedAt changes
   React.useEffect(() => {
     if (cabinCreatedAt) {
       setViewMonth(parseISO(cabinCreatedAt));

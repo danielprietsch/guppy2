@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Pencil, ArrowUp, ArrowDown, Clock, AlertCircle } from "lucide-react";
+import { Check, Lock, Clock, AlertCircle, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugLog, debugAreaLog } from "@/utils/debugLogger";
 
@@ -150,7 +150,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   }}
                   className="h-4 w-4 p-0 hover:bg-white/20 rounded transition-all flex items-center justify-center"
                 >
-                  <ArrowUp className="h-3 w-3 text-white hover:text-yellow-200" />
+                  <span className="text-white hover:text-yellow-200">+</span>
                 </button>
                 <button
                   type="button"
@@ -160,7 +160,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   }}
                   className="h-4 w-4 p-0 hover:bg-white/20 rounded transition-all flex items-center justify-center"
                 >
-                  <ArrowDown className="h-3 w-3 text-white hover:text-yellow-200" />
+                  <span className="text-white hover:text-yellow-200">-</span>
                 </button>
               </div>
               <button
@@ -182,19 +182,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               )}>
                 {parseFloat(price.toString()).toFixed(2)}
               </span>
-              {!isBooked && !isPastDate && (
-                <button
-                  type="button"
-                  className="h-5 w-5 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    debugAreaLog('PRICE_EDIT', 'Entering edit mode');
-                    setIsEditingPrice(true);
-                  }}
-                >
-                  <Pencil className="h-3 w-3 text-white hover:text-yellow-200 transition-colors" />
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -224,29 +211,45 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <span>Reservado</span>
           </div>
         ) : (
-          <div className="flex gap-1">
-            <Button
-              variant={isManuallyClosed ? "secondary" : "default"}
-              size="sm"
-              onClick={(e) => handleButtonClick(e, onManualClose)}
-              className="text-xs h-6 py-0 flex-1"
-              disabled={isPastDate}
-            >
-              {isManuallyClosed ? "Fechado" : "Fechar"}
-            </Button>
-            <Button
-              variant={isManuallyClosed ? "default" : "secondary"}
-              size="sm"
-              onClick={(e) => handleButtonClick(e, onRelease)}
-              className="text-xs h-6 py-0 flex-1"
-              disabled={isPastDate}
-            >
-              Liberar
-            </Button>
+          <div className="flex flex-col gap-1 w-full">
+            {!isEditingPrice && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsEditingPrice(true);
+                }}
+                className="text-xs h-6 py-0 bg-white hover:bg-gray-100 text-gray-800 w-full"
+              >
+                <Pencil className="h-3 w-3 mr-1" /> Editar preço
+              </Button>
+            )}
+            
+            <div className="flex gap-1 w-full">
+              {isManuallyClosed ? (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={(e) => handleButtonClick(e, onRelease)}
+                  className="text-xs h-6 py-0 w-full"
+                >
+                  Liberar
+                </Button>
+              ) : (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => handleButtonClick(e, onManualClose)}
+                  className="text-xs h-6 py-0 w-full"
+                >
+                  Fechar
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </div>
     </div>
   );
 };
-
