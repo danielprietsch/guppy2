@@ -1,18 +1,18 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, Calendar as CalendarIcon, Check } from "lucide-react";
+import { Search } from "lucide-react";
 import { useCabinSearch } from "@/hooks/useCabinSearch";
 import { supabase } from "@/integrations/supabase/client";
-import { Calendar } from "@/components/ui/calendar";
+import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
+import { Calendar as CalendarIcon, Check } from "lucide-react";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,11 +22,10 @@ const BookCabinPage = () => {
   const [cabin, setCabin] = useState<Cabin | null>(cabinDetails || null);
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "evening" | "">("");
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [price, setPrice] = useState(0);
   const [isWeekend, setIsWeekend] = useState(false);
+  const [selectedTurn, setSelectedTurn] = useState<"morning" | "afternoon" | "evening">("morning");
+  const [daysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
 
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
@@ -135,21 +134,17 @@ const BookCabinPage = () => {
     loadCabinData();
   }, [id, cabinDetails]);
 
-  useEffect(() => {
-    if (cabin && date) {
-      const day = date.getDay();
-      const isWeekend = day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
-      setIsWeekend(isWeekend);
-      
-      // Set price based on cabin pricing and day
-      const basePrice = cabin.price || 50;
-      const weekendMultiplier = isWeekend ? 1.2 : 1;
-      setPrice(basePrice * weekendMultiplier);
-    }
-  }, [cabin, date]);
+  const onSelectDates = (dates: string[]) => {
+    // Handle date selection
+    console.log('Selected dates:', dates);
+  };
+
+  const getBasePrice = (cabin: Cabin) => {
+    return cabin?.price || 50;
+  };
 
   const handleBookCabin = () => {
-    if (!cabin || !date || !selectedShift || !acceptTerms) {
+    if (!cabin || !selectedTurn || !acceptTerms) {
       toast({
         title: "Erro",
         description: "Por favor, preencha todos os campos e aceite os termos",
@@ -243,97 +238,25 @@ const BookCabinPage = () => {
       </div>
       
       <div className="mt-8 grid gap-8 md:grid-cols-[1fr_400px]">
-        <div>
-          <Card>
-            <CardContent className="p-6">
-              <h2 className="text-xl font-semibold">Selecione a data</h2>
-              <div className="mt-4 flex justify-center">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  className="rounded-md border p-3 pointer-events-auto"
-                  disabled={(date) => {
-                    // Disable dates in the past
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return date < today;
-                  }}
-                />
-              </div>
-              
-              <h2 className="mt-8 text-xl font-semibold">Selecione o turno</h2>
-              <div className="mt-4 grid grid-cols-3 gap-4">
-                <Button
-                  variant={selectedShift === "morning" ? "default" : "outline"}
-                  onClick={() => setSelectedShift("morning")}
-                  disabled={cabin && !cabin.availability.morning}
-                  className="flex flex-col h-auto py-3"
-                >
-                  <span>Manhã</span>
-                  <span className="text-xs mt-1">08:00 - 12:00</span>
-                </Button>
-                <Button
-                  variant={selectedShift === "afternoon" ? "default" : "outline"}
-                  onClick={() => setSelectedShift("afternoon")}
-                  disabled={cabin && !cabin.availability.afternoon}
-                  className="flex flex-col h-auto py-3"
-                >
-                  <span>Tarde</span>
-                  <span className="text-xs mt-1">13:00 - 17:00</span>
-                </Button>
-                <Button
-                  variant={selectedShift === "evening" ? "default" : "outline"}
-                  onClick={() => setSelectedShift("evening")}
-                  disabled={cabin && !cabin.availability.evening}
-                  className="flex flex-col h-auto py-3"
-                >
-                  <span>Noite</span>
-                  <span className="text-xs mt-1">18:00 - 22:00</span>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <div className="mt-6">
-            <h2 className="text-xl font-semibold">Termos de Uso</h2>
-            <div className="mt-4 max-h-64 overflow-y-auto rounded-md border p-4">
-              <h3 className="font-medium">CONTRATO DE LOCAÇÃO TEMPORÁRIA DE CABINES</h3>
-              <p className="mt-2 text-sm">
-                Pelo presente instrumento particular, de um lado GUPPY LTDA, doravante denominado LOCADOR, 
-                e de outro lado o usuário devidamente cadastrado na plataforma, doravante denominado 
-                simplesmente LOCATÁRIO, têm entre si como justo e contratado o que segue:
-              </p>
-              <p className="mt-2 text-sm">
-                1. O LOCADOR, por este instrumento, dá em locação ao LOCATÁRIO uma CABINE de sua propriedade,
-                destinada a prestação de serviços de beleza, em posição e local ajustável, no prazo definido no ato da reserva.
-              </p>
-              <p className="mt-2 text-sm">
-                2. O aluguel será pago de forma antecipada, no valor correspondente ao turno e dia da semana escolhidos.
-              </p>
-              <p className="mt-2 text-sm">
-                3. O LOCATÁRIO será responsável por zelar pela limpeza e conservação do espaço e equipamentos.
-              </p>
-              <p className="mt-2 text-sm">
-                4. Políticas de cancelamento: cancelamentos com 24h de antecedência recebem reembolso integral. 
-                Cancelamentos com menos de 24h recebem 50% de reembolso.
-              </p>
-            </div>
-            <div className="mt-4 flex items-center gap-2">
-              <input 
-                type="checkbox" 
-                id="terms" 
-                className="h-4 w-4" 
-                checked={acceptTerms}
-                onChange={(e) => setAcceptTerms(e.target.checked)}
+        <Card>
+          <CardContent className="p-6">
+            {cabin && (
+              <CabinAvailabilityCalendar
+                selectedTurn={selectedTurn}
+                daysBooked={daysBooked}
+                onSelectDates={onSelectDates}
+                selectedDates={[]}
+                pricePerDay={getBasePrice(cabin)}
+                onStatusChange={() => {}}
+                onPriceChange={() => {}}
+                manuallyClosedDates={{}}
+                slotPrices={{}}
+                cabinCreatedAt={cabin.created_at}
               />
-              <label htmlFor="terms" className="text-sm">
-                Li e aceito os termos de uso
-              </label>
-            </div>
-          </div>
-        </div>
-        
+            )}
+          </CardContent>
+        </Card>
+
         <div>
           <Card>
             <CardContent className="p-6">
@@ -347,15 +270,14 @@ const BookCabinPage = () => {
                 )}
                 
                 <div className="mt-4">
-                  <div className="flex items-center gap-2">
-                    <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                  {/* Date display */}
+                  <span>
+                    {/* {date ? format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecione uma data"} */}
+                  </span>
+                  {/* Shift selection */}
+                  <div>
                     <span>
-                      {date ? format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecione uma data"}
-                    </span>
-                  </div>
-                  <div className="mt-2">
-                    <span>
-                      Turno: {selectedShift === "morning" ? "Manhã (08:00 - 12:00)" : selectedShift === "afternoon" ? "Tarde (13:00 - 17:00)" : selectedShift === "evening" ? "Noite (18:00 - 22:00)" : "Selecione um turno"}
+                      {/* Turno: {selectedShift === "morning" ? "Manhã (08:00 - 12:00)" : selectedShift === "afternoon" ? "Tarde (13:00 - 17:00)" : selectedShift === "evening" ? "Noite (18:00 - 22:00)" : "Selecione um turno"} */}
                     </span>
                   </div>
                 </div>
@@ -380,7 +302,7 @@ const BookCabinPage = () => {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span>Valor do turno ({isWeekend ? "fim de semana" : "dia de semana"})</span>
-                    <span>R$ {price.toFixed(2)}</span>
+                    <span>R$ {cabin?.price?.toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Taxa de serviço</span>
@@ -389,7 +311,7 @@ const BookCabinPage = () => {
                   <Separator className="my-2" />
                   <div className="flex items-center justify-between font-bold">
                     <span>Total</span>
-                    <span>R$ {(price + 10).toFixed(2)}</span>
+                    <span>R$ {(cabin?.price + 10).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -398,12 +320,49 @@ const BookCabinPage = () => {
               <Button 
                 className="w-full" 
                 onClick={handleBookCabin}
-                disabled={!acceptTerms || !selectedShift || !date}
+                disabled={!acceptTerms || !selectedTurn}
               >
                 Reservar Cabine
               </Button>
             </CardFooter>
           </Card>
+        </div>
+      </div>
+      <div className="mt-6">
+        <h2 className="text-xl font-semibold">Termos de Uso</h2>
+        <div className="mt-4 max-h-64 overflow-y-auto rounded-md border p-4">
+          <h3 className="font-medium">CONTRATO DE LOCAÇÃO TEMPORÁRIA DE CABINES</h3>
+          <p className="mt-2 text-sm">
+            Pelo presente instrumento particular, de um lado GUPPY LTDA, doravante denominado LOCADOR, 
+            e de outro lado o usuário devidamente cadastrado na plataforma, doravante denominado 
+            simplesmente LOCATÁRIO, têm entre si como justo e contratado o que segue:
+          </p>
+          <p className="mt-2 text-sm">
+            1. O LOCADOR, por este instrumento, dá em locação ao LOCATÁRIO uma CABINE de sua propriedade,
+            destinada a prestação de serviços de beleza, em posição e local ajustável, no prazo definido no ato da reserva.
+          </p>
+          <p className="mt-2 text-sm">
+            2. O aluguel será pago de forma antecipada, no valor correspondente ao turno e dia da semana escolhidos.
+          </p>
+          <p className="mt-2 text-sm">
+            3. O LOCATÁRIO será responsável por zelar pela limpeza e conservação do espaço e equipamentos.
+          </p>
+          <p className="mt-2 text-sm">
+            4. Políticas de cancelamento: cancelamentos com 24h de antecedência recebem reembolso integral. 
+            Cancelamentos com menos de 24h recebem 50% de reembolso.
+          </p>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <input 
+            type="checkbox" 
+            id="terms" 
+            className="h-4 w-4" 
+            checked={acceptTerms}
+            onChange={(e) => setAcceptTerms(e.target.checked)}
+          />
+          <label htmlFor="terms" className="text-sm">
+            Li e aceito os termos de uso
+          </label>
         </div>
       </div>
     </div>
