@@ -288,8 +288,19 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
                 <h3 className="font-semibold text-2xl text-gray-800 mb-3">{location.name}</h3>
                 <p className="text-lg text-gray-600 mb-4">{location.address}, {location.city}</p>
                 
+                <div className="space-y-2 text-base">
+                  <div className="flex items-center text-gray-700">
+                    <span className="font-medium mr-2">Quantidade de cabines:</span>
+                    <span>{location.cabinsCount}</span>
+                  </div>
+                  <div className="flex items-center text-gray-700">
+                    <span className="font-medium mr-2">Horário de Funcionamento:</span>
+                    <span>{location.openingHours.open} - {location.openingHours.close}</span>
+                  </div>
+                </div>
+
                 {ownerData && (
-                  <div className="flex items-center space-x-3 mb-4 p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center space-x-3 mt-4 p-3 bg-slate-50 rounded-lg">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={ownerData.avatarUrl || undefined} alt={ownerData.name} />
                       <AvatarFallback>
@@ -302,17 +313,6 @@ const LocationCard = ({ location, displayLayout = 'full' }: LocationCardProps) =
                     </div>
                   </div>
                 )}
-                
-                <div className="space-y-2 text-base">
-                  <div className="flex items-center text-gray-700">
-                    <span className="font-medium mr-2">Quantidade de cabines:</span>
-                    <span>{location.cabinsCount}</span>
-                  </div>
-                  <div className="flex items-center text-gray-700">
-                    <span className="font-medium mr-2">Horário de Funcionamento:</span>
-                    <span>{location.openingHours.open} - {location.openingHours.close}</span>
-                  </div>
-                </div>
 
                 <div className="flex flex-wrap gap-2 mt-4">
                   {location.amenities.map((amenity, index) => (
