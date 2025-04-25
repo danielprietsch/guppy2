@@ -191,7 +191,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
         <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200">
           <CardContent className="p-4 pb-2">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-lg text-gray-800">{location.name}</h3>
+              <h3 className="font-semibold text-xl text-gray-800">{location.name}</h3>
               <button 
                 className="flex items-center text-primary text-sm hover:underline"
                 onClick={(e) => {
@@ -203,26 +203,41 @@ const LocationCard = ({ location }: LocationCardProps) => {
                 {showAvailability ? "Ocultar disponibilidade" : "Ver disponibilidade"}
               </button>
             </div>
-            <p className="text-sm text-gray-600">{location.address}, {location.city}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {location.cabinsCount} cabines
-              </span>
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                {location.openingHours.open} - {location.openingHours.close}
-              </span>
+            
+            <p className="text-base text-gray-600 mb-3">{location.address}, {location.city}</p>
+            
+            <div className="flex items-center gap-4 text-sm text-gray-700 mb-3">
+              <div className="flex items-center">
+                <span className="font-medium">Cabines:</span>
+                <span className="ml-1">{location.cabinsCount}</span>
+              </div>
+              <div className="flex items-center">
+                <span className="font-medium">Horário:</span>
+                <span className="ml-1">{location.openingHours.open} - {location.openingHours.close}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {location.amenities.map((amenity, index) => (
+                <span
+                  key={index}
+                  className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-700"
+                >
+                  {amenity}
+                </span>
+              ))}
             </div>
             
             {showAvailability && (
               <div className="mt-4 p-3 bg-slate-50 rounded-md shadow-inner">
-                <h4 className="text-sm font-medium mb-3 text-gray-700">Disponibilidade próximos dias</h4>
+                <h4 className="text-base font-medium mb-3 text-gray-700">Disponibilidade próximos dias</h4>
                 {isLoading ? (
                   <div className="flex justify-center p-2">
-                    <p className="text-xs">Carregando...</p>
+                    <p className="text-sm">Carregando...</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-8 gap-2">
-                    <div className="text-xs space-y-[1.625rem] pt-7 font-medium text-gray-600">
+                    <div className="text-sm space-y-[1.1rem] pt-7 font-medium text-gray-600">
                       <div>Manhã</div>
                       <div>Tarde</div>
                       <div>Noite</div>
@@ -248,7 +263,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
           </CardContent>
 
           <div className="grid grid-cols-2 gap-3 px-4 py-3">
-            <div className="aspect-video max-h-28 overflow-hidden rounded-lg shadow-sm">
+            <div className="aspect-video max-h-24 overflow-hidden rounded-lg shadow-sm">
               <img
                 src={displayImage}
                 alt={location.name}
@@ -256,7 +271,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
               />
             </div>
             
-            <div className="aspect-video max-h-28 rounded-lg overflow-hidden shadow-sm">
+            <div className="aspect-video max-h-24 rounded-lg overflow-hidden shadow-sm">
               <iframe
                 title={`${location.name} Mapa`}
                 src={googleMapsEmbedUrl}

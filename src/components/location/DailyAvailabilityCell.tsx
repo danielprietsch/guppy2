@@ -44,43 +44,43 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
   };
 
   return (
-    <div className="text-xs">
-      <div className="font-medium mb-1">
+    <div className="text-sm">
+      <div className="font-medium mb-1 text-base">
         {format(date, "EEE", { locale: ptBR })}
       </div>
-      <div className="text-[10px] mb-1">
+      <div className="text-sm mb-1">
         {format(date, "dd/MM")}
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-1">
         <div className="flex flex-col">
           {shifts.morning.price !== undefined && (
-            <div className="text-[9px] font-medium text-center -mb-0.5">
+            <div className="text-xs font-medium text-center -mb-0.5">
               {formatPrice(shifts.morning.price)}
             </div>
           )}
-          <div className={`${getStatusColor(shifts.morning)} text-white text-[10px] p-1 rounded-sm shadow-sm`}>
+          <div className={`${getStatusColor(shifts.morning)} text-white text-xs p-1 rounded-sm shadow-sm`}>
             {getStatusText(shifts.morning)}
           </div>
         </div>
         
         <div className="flex flex-col">
           {shifts.afternoon.price !== undefined && (
-            <div className="text-[9px] font-medium text-center -mb-0.5">
+            <div className="text-xs font-medium text-center -mb-0.5">
               {formatPrice(shifts.afternoon.price)}
             </div>
           )}
-          <div className={`${getStatusColor(shifts.afternoon)} text-white text-[10px] p-1 rounded-sm shadow-sm`}>
+          <div className={`${getStatusColor(shifts.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm`}>
             {getStatusText(shifts.afternoon)}
           </div>
         </div>
         
         <div className="flex flex-col">
           {shifts.evening.price !== undefined && (
-            <div className="text-[9px] font-medium text-center -mb-0.5">
+            <div className="text-xs font-medium text-center -mb-0.5">
               {formatPrice(shifts.evening.price)}
             </div>
           )}
-          <div className={`${getStatusColor(shifts.evening)} text-white text-[10px] p-1 rounded-sm shadow-sm`}>
+          <div className={`${getStatusColor(shifts.evening)} text-white text-xs p-1 rounded-sm shadow-sm`}>
             {getStatusText(shifts.evening)}
           </div>
         </div>
