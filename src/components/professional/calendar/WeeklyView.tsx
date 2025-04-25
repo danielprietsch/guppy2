@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
@@ -63,18 +64,24 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
                   {format(date, 'd MMM', { locale: ptBR })}
                 </div>
               </div>
-              {hours.map((hour) => (
-                <div
-                  key={hour}
-                  className="h-12 border rounded-md bg-accent/10"
-                >
-                  {appointments
-                    .filter(app => {
-                      const appDate = new Date(app.date);
-                      const appHour = parseInt(app.time.split(':')[0]);
-                      return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
-                    })
-                    .map((app) => (
+              {hours.map((hour) => {
+                const hourAppointments = appointments.filter(app => {
+                  const appDate = new Date(app.date);
+                  const appHour = parseInt(app.time.split(':')[0]);
+                  return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
+                });
+
+                let bgColorClass = "bg-accent/10";
+                if (hourAppointments.length > 0) {
+                  bgColorClass = "bg-blue-50";
+                }
+
+                return (
+                  <div
+                    key={hour}
+                    className={`h-12 border rounded-md ${bgColorClass}`}
+                  >
+                    {hourAppointments.map((app) => (
                       <div
                         key={app.id}
                         className="p-1 m-0.5 bg-primary/10 rounded-sm text-xs truncate"
@@ -82,8 +89,9 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
                         {app.client.name}
                       </div>
                     ))}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>

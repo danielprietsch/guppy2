@@ -38,21 +38,27 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
           </Button>
         </div>
         <div className="space-y-2">
-          {hours.map((hour) => (
-            <div
-              key={hour}
-              className="grid grid-cols-12 py-2 border-b last:border-b-0"
-            >
-              <div className="col-span-2 text-sm text-muted-foreground">
-                {`${hour.toString().padStart(2, '0')}:00`}
-              </div>
-              <div className="col-span-10 min-h-[40px] rounded-md bg-accent/10">
-                {appointments
-                  .filter(app => {
-                    const appHour = parseInt(app.time.split(':')[0]);
-                    return appHour === hour;
-                  })
-                  .map((app) => (
+          {hours.map((hour) => {
+            const hourAppointments = appointments.filter(app => {
+              const appHour = parseInt(app.time.split(':')[0]);
+              return appHour === hour;
+            });
+
+            let bgColorClass = "bg-accent/10";
+            if (hourAppointments.length > 0) {
+              bgColorClass = "bg-blue-50";
+            }
+
+            return (
+              <div
+                key={hour}
+                className="grid grid-cols-12 py-2 border-b last:border-b-0"
+              >
+                <div className="col-span-2 text-sm text-muted-foreground">
+                  {`${hour.toString().padStart(2, '0')}:00`}
+                </div>
+                <div className={`col-span-10 min-h-[40px] rounded-md ${bgColorClass}`}>
+                  {hourAppointments.map((app) => (
                     <div
                       key={app.id}
                       className="p-2 m-1 bg-primary/10 rounded-md text-sm"
@@ -60,9 +66,10 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
                       {app.client.name} - {app.time}
                     </div>
                   ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </CardContent>
     </Card>
