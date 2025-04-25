@@ -1,10 +1,8 @@
-
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, AlertCircle } from "lucide-react";
-import { format, addDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { addDays } from "date-fns";
 import { 
   Select,
   SelectContent,
@@ -25,7 +23,7 @@ const ProfessionalsPage = () => {
   
   const { services } = useServices();
   const { 
-    professionals, 
+    data: professionals = [], 
     isLoading,
     isError,
     error
