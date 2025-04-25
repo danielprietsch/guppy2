@@ -1,10 +1,9 @@
-
 import { Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 
 // Main Layout Components
-import NavBar from "@/components/NavBar";
+// Remove NavBar import since it's already in App.tsx
 import Footer from "@/components/Footer";
 
 // Pages
@@ -53,7 +52,7 @@ const LoadingFallback = () => (
 export default function Index() {
   return (
     <>
-      <NavBar />
+      {/* Remove NavBar from here */}
       <main className="flex-1">
         <Suspense fallback={<LoadingFallback />}>
           <Routes>
