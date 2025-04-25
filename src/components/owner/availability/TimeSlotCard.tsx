@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
+      // Convertendo explicitamente para string antes de chamar onPriceEdit
       onPriceEdit(newPrice.toFixed(2));
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
@@ -94,6 +96,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         
         const formattedPrice = (newPrice / 100).toFixed(2);
         
+        // Garantindo que onPriceEdit receba uma string
         onPriceEdit(formattedPrice);
         
         setPriceValue(newPrice.toString());
@@ -276,3 +279,4 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
+

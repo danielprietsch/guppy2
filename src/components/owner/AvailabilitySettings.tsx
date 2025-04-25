@@ -1,3 +1,4 @@
+
 import { useState, useCallback, useEffect } from "react";
 import {
   Card,
@@ -72,6 +73,7 @@ export const AvailabilitySettings = ({
         newState[date] = {};
       }
       
+      // Convertendo a string para número antes de armazenar
       newState[date][turn] = parseFloat(price);
       
       return newState;
