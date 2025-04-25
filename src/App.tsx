@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Index from './pages/Index';
@@ -62,6 +61,7 @@ function App() {
             {/* Owner Routes */}
             <Route path="/owner/dashboard" element={<OwnerDashboardPage />} />
             <Route path="/owner/profile" element={<OwnerProfilePage />} />
+            <Route path="/owner/reports/cabins-loss" element={<CabinsLossReport />} />
             
             {/* Admin Routes */}
             <Route path="/admin/dashboard" element={<AdminDashboardPage />} />

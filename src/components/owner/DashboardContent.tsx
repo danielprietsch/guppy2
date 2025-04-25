@@ -1,4 +1,3 @@
-
 import { memo } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { LocationsOverview } from "./LocationsOverview";
@@ -8,6 +7,7 @@ import { EquipmentSettings } from "./EquipmentSettings";
 import { AvailabilitySettings } from "./AvailabilitySettings";
 import { LocationSettings } from "./LocationSettings";
 import { EmptyLocationState } from "./EmptyLocationState";
+import { CabinsLossReport } from "@/pages/owner/CabinsLossReport";
 
 interface DashboardContentProps {
   selectedLocation: Location | null;
@@ -21,7 +21,6 @@ interface DashboardContentProps {
   onCabinDeleted: (cabinId: string) => void;
 }
 
-// Usar memo para evitar re-renderizações desnecessárias
 export const DashboardContent = memo(({
   selectedLocation,
   userLocations,
@@ -39,7 +38,6 @@ export const DashboardContent = memo(({
 
   if (!selectedLocation) return null;
 
-  // Renderizar apenas a tab ativa para evitar renderizações desnecessárias
   return (
     <>
       {activeTab === "locations" && (
@@ -84,9 +82,12 @@ export const DashboardContent = memo(({
       {activeTab === "settings" && (
         <LocationSettings selectedLocation={selectedLocation} />
       )}
+      
+      {activeTab === "reports" && (
+        <CabinsLossReport />
+      )}
     </>
   );
 });
 
-// Adicionar displayName para facilitar depuração
 DashboardContent.displayName = "DashboardContent";
