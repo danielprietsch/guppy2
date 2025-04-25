@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,68 +21,15 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         const formattedDate = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
         console.log('Fetching professionals for date:', formattedDate);
 
-        // 1. Fetch professionals with availability
-        const { data: availabilityData, error: availabilityError } = await supabase
-          .from('professional_availability')
-          .select('professional_id')
-          .eq('date', formattedDate)
-          .or('morning_status.eq.free,afternoon_status.eq.free,evening_status.eq.free');
-
-        if (availabilityError) {
-          console.error('Error fetching availability:', availabilityError);
-          return [];
-        }
-
-        // Early return if no available professionals
-        if (!availabilityData || availabilityData.length === 0) {
-          console.log('No professionals available on this date');
-          return [];
-        }
-
-        const availableProfessionalIds = availabilityData.map(a => a.professional_id);
-        console.log('Available professional IDs:', availableProfessionalIds);
-
-        // 2. Fetch bookings to confirm they have a cabin booked
-        const { data: bookingsData, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('professional_id')
-          .eq('date', formattedDate)
-          .eq('status', 'confirmed');
-
-        if (bookingsError) {
-          console.error('Error fetching bookings:', bookingsError);
-          return [];
-        }
-
-        // Early return if no confirmed bookings
-        if (!bookingsData || bookingsData.length === 0) {
-          console.log('No confirmed bookings found for any professionals');
-          return [];
-        }
-
-        const professionalIdsWithBookings = bookingsData.map(b => b.professional_id);
-        console.log('Professionals with bookings:', professionalIdsWithBookings);
-
-        // 3. Get the actual professional profiles that have both availability and bookings
-        const availableAndBookedIds = availableProfessionalIds.filter(id => 
-          professionalIdsWithBookings.includes(id)
-        );
-
-        // Early return if no professionals match both criteria
-        if (availableAndBookedIds.length === 0) {
-          console.log('No professionals available with confirmed bookings');
-          return [];
-        }
-
-        // 4. Fetch the full profile data for these professionals
-        const { data: professionals, error: profilesError } = await supabase
+        // Fetch only public professional profiles
+        const { data: professionals, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_type', 'professional')
-          .in('id', availableAndBookedIds);
+          .eq('is_public', true); // Only fetch public profiles
 
-        if (profilesError) {
-          console.error('Error fetching professional profiles:', profilesError);
+        if (error) {
+          console.error('Error fetching professional profiles:', error);
           return [];
         }
 
@@ -98,7 +44,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           const { data: services, error: servicesError } = await supabase
             .from('services')
             .select('professional_id, category')
-            .in('professional_id', availableAndBookedIds);
+            .in('professional_id', professionals.map(p => p.id));
 
           if (servicesError) {
             console.error('Error fetching services:', servicesError);
@@ -130,9 +76,9 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
-    refetchOnWindowFocus: false, // Don't refetch when window regains focus
-    refetchOnMount: false, // Don't refetch on component mount if data exists
-    refetchOnReconnect: false, // Don't refetch on reconnect if data exists
-    retry: false, // Don't retry failed queries
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: false,
   });
 };

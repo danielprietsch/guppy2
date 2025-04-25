@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -6,33 +7,42 @@ import { Calendar, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { useQueryClient } from "@tanstack/react-query";
 
-interface PrivacySettingsCardProps {
-  initialIsPublic?: boolean;
-}
-
-const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProps) => {
+const PrivacySettingsCard = () => {
   const { user } = useAuth();
-  const [isPublic, setIsPublic] = useState(initialIsPublic);
+  const [isPublic, setIsPublic] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchPrivacySettings = async () => {
       if (!user) return;
       
       try {
-        const { data: { user: userData } } = await supabase.auth.getUser();
-        if (userData?.user_metadata?.isPublic !== undefined) {
-          setIsPublic(userData.user_metadata.isPublic);
-        } else {
-          setIsPublic(initialIsPublic);
-        }
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_public')
+          .eq('id', user.id)
+          .single();
+        
+        if (error) throw error;
+        
+        setIsPublic(profile?.is_public ?? true);
       } catch (error) {
-        console.error("Error fetching user metadata:", error);
+        console.error("Error fetching privacy settings:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar suas configurações de privacidade",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     
     fetchPrivacySettings();
-  }, [user, initialIsPublic]);
+  }, [user]);
 
   const handleTogglePrivacy = async (value: string) => {
     if (!user) return;
@@ -40,15 +50,23 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
     const newIsPublic = value === 'available';
     
     try {
-      const { data: metadataData, error: metadataError } = await supabase.auth.updateUser({
-        data: { isPublic: newIsPublic }
-      });
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          is_public: newIsPublic,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
       
-      if (metadataError) throw metadataError;
+      if (error) throw error;
       
       setIsPublic(newIsPublic);
+      
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['professionals'] });
+      
       toast({
-        title: "Disponibilidade Atualizada",
+        title: "Status Atualizado",
         description: newIsPublic 
           ? "Você está disponível para novos agendamentos." 
           : "Você está indisponível para novos agendamentos.",
@@ -62,6 +80,16 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
       });
     }
   };
+
+  if (isLoading) {
+    return (
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="text-center">Carregando configurações...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="mb-6">

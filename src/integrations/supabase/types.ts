@@ -290,6 +290,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_public: boolean | null
           name: string | null
           phone_number: string | null
           state: string | null
@@ -305,6 +306,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id: string
+          is_public?: boolean | null
           name?: string | null
           phone_number?: string | null
           state?: string | null
@@ -320,6 +322,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_public?: boolean | null
           name?: string | null
           phone_number?: string | null
           state?: string | null
