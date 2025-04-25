@@ -45,26 +45,26 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
   };
 
   return (
-    <Card className="h-full">
-      <CardContent className="p-4 h-full overflow-auto">
-        <div className="flex items-center justify-between mb-4">
+    <Card className="h-full w-full">
+      <CardContent className="p-2 sm:p-4 h-full">
+        <div className="flex items-center justify-between mb-4 sticky top-0 bg-background z-10 py-2">
           <Button variant="ghost" size="sm" onClick={handlePreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <div className="text-lg font-semibold">
+          <div className="text-base sm:text-lg font-semibold">
             {format(weekStart, "MMMM yyyy", { locale: ptBR })}
           </div>
           <Button variant="ghost" size="sm" onClick={handleNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-8 gap-2 min-w-[800px] h-[calc(100%-3rem)]">
-          <div className="space-y-2">
-            <div className="h-12"></div>
+        <div className="grid grid-cols-8 gap-1 sm:gap-2 w-full overflow-x-auto h-[calc(100%-3rem)]">
+          <div className="space-y-1 sm:space-y-2">
+            <div className="h-10 sm:h-12"></div>
             {hours.map((hour) => (
               <div
                 key={hour}
-                className="h-12 text-sm text-muted-foreground flex items-center justify-end pr-2"
+                className="h-10 sm:h-12 text-xs sm:text-sm text-muted-foreground flex items-center justify-end pr-2"
               >
                 {`${hour.toString().padStart(2, '0')}:00`}
               </div>
@@ -72,12 +72,12 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
           </div>
 
           {weekDays.map((date) => (
-            <div key={date.toString()} className="space-y-2">
-              <div className="text-center h-12">
-                <div className="font-semibold">
+            <div key={date.toString()} className="space-y-1 sm:space-y-2 min-w-[100px]">
+              <div className="text-center h-10 sm:h-12">
+                <div className="font-semibold text-xs sm:text-sm">
                   {format(date, 'EEEE', { locale: ptBR })}
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-xs sm:text-sm text-muted-foreground">
                   {format(date, 'd MMM', { locale: ptBR })}
                 </div>
               </div>
@@ -92,15 +92,15 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
                 return (
                   <div
                     key={hour}
-                    className={`h-12 border rounded-md ${cellStatus.color} relative`}
+                    className={`h-10 sm:h-12 border rounded-md ${cellStatus.color} relative`}
                   >
-                    <div className="absolute top-0 right-0 text-xs font-medium px-1 py-0.5 rounded-bl bg-white/80">
+                    <div className="absolute top-0 right-0 text-[10px] sm:text-xs font-medium px-1 py-0.5 rounded-bl bg-white/80">
                       {cellStatus.label}
                     </div>
                     {cellAppointments.map((app) => (
                       <div
                         key={app.id}
-                        className="p-1 m-0.5 bg-primary/10 rounded-sm text-xs truncate"
+                        className="p-0.5 sm:p-1 m-0.5 bg-primary/10 rounded-sm text-[10px] sm:text-xs truncate"
                       >
                         {app.client.name}
                       </div>
