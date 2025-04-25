@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { format } from 'date-fns';
 
 interface UseProfessionalsOptions {
   withSpecialties?: boolean;
@@ -35,14 +35,39 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
     queryKey: ['professionals', date ? format(date, 'yyyy-MM-dd') : null],
     queryFn: async () => {
       try {
-        console.log('Fetching all public professional profiles');
+        console.log('Fetching professionals with confirmed bookings and availability');
         
-        // Get all public professional profiles
+        const formattedDate = format(date, 'yyyy-MM-dd');
+
+        // Get professionals with confirmed bookings
+        const { data: professionalsWithBookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('professional_id')
+          .eq('status', 'paid')
+          .eq('date', formattedDate)
+          .not('professional_id', 'is', null);
+
+        if (bookingsError) {
+          console.error('Error fetching bookings:', bookingsError);
+          return [];
+        }
+
+        // If no professionals have bookings, return empty array
+        if (!professionalsWithBookings || professionalsWithBookings.length === 0) {
+          console.log('No professionals with confirmed bookings found');
+          return [];
+        }
+
+        // Get the unique professional IDs
+        const professionalIds = [...new Set(professionalsWithBookings.map(b => b.professional_id))];
+        
+        // Get all public professional profiles for those with bookings
         const { data: professionalsData, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_type', 'professional')
-          .eq('is_public', true);
+          .eq('is_public', true)
+          .in('id', professionalIds);
 
         if (error) {
           console.error('Error fetching professional profiles:', error);
@@ -51,14 +76,11 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
         // If no professionals found, return empty array
         if (!professionalsData || !Array.isArray(professionalsData) || professionalsData.length === 0) {
-          console.log('No professional profiles found');
+          console.log('No matching professional profiles found');
           return [];
         }
         
         console.log(`Found ${professionalsData.length} professional profiles`);
-
-        // Get all professional IDs
-        const professionalIds = professionalsData.map(prof => prof.id);
 
         // Get services for the professionals
         const { data: services, error: servicesError } = await supabase
@@ -83,7 +105,6 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         // Get availability if requested
         let availability = [];
         if (withAvailability && date) {
-          const formattedDate = format(date, 'yyyy-MM-dd');
           const { data: availData, error: availError } = await supabase
             .from('professional_availability')
             .select('*')
@@ -98,7 +119,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         }
 
         // Process and combine all data
-        return professionalsData.map(prof => {
+        const professionals = professionalsData.map(prof => {
           // Calculate average rating
           const profReviews = reviews?.filter(r => r.professional_id === prof.id) || [];
           const avgRating = profReviews.length > 0
@@ -134,7 +155,21 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             reviewCount: profReviews.length,
             availability: profAvailability,
           } as Professional;
-        }).filter(Boolean) as Professional[]; // Filter out null values
+        }).filter(Boolean) as Professional[];
+
+        // Filter professionals based on availability
+        const availableProfessionals = professionals.filter(prof => {
+          const avail = prof.availability;
+          if (!avail) return false;
+          
+          // Check if professional has at least one free shift
+          return avail.morning_status === 'free' || 
+                 avail.afternoon_status === 'free' || 
+                 avail.evening_status === 'free';
+        });
+
+        console.log(`Returning ${availableProfessionals.length} available professionals`);
+        return availableProfessionals;
 
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
