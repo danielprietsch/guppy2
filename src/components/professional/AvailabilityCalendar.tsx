@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailability, ShiftStatus } from "@/hooks/useAvailability";
 import { useWorkingHours } from "@/hooks/useWorkingHours";
+import { useSearchParams } from "react-router-dom";
 import WorkingHoursSettings from './WorkingHoursSettings';
 import DailyView from './calendar/DailyView';
 import WeeklyView from './calendar/WeeklyView';
@@ -37,11 +38,37 @@ interface Appointment {
 
 const AvailabilityCalendar = () => {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const cabinId = searchParams.get('cabin');
+  const locationId = searchParams.get('location');
+  
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const { availability, updateAvailability } = useAvailability(user?.id);
   const { workingHours, breakTime } = useWorkingHours(user?.id);
   const [viewMode, setViewMode] = useState<"weekly" | "daily">("weekly");
+
+  // Fetch cabin details if cabin ID is provided
+  const { data: cabinData } = useQuery({
+    queryKey: ['cabin-details', cabinId],
+    queryFn: async () => {
+      if (!cabinId) return null;
+      
+      const { data, error } = await supabase
+        .from('cabins')
+        .select('*, locations(*)')
+        .eq('id', cabinId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching cabin details:', error);
+        return null;
+      }
+      
+      return data;
+    },
+    enabled: !!cabinId,
+  });
 
   // Fetch user profile to get creation date
   const { data: userProfile } = useQuery({
@@ -74,14 +101,22 @@ const AvailabilityCalendar = () => {
   }, [userProfile]);
 
   const { data: appointments = [] } = useQuery({
-    queryKey: ['professional-appointments', user?.id],
+    queryKey: ['professional-appointments', user?.id, cabinId],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const { data, error } = await supabase
+      // Base query
+      let query = supabase
         .from('appointments')
         .select('*')
         .eq('professional_id', user.id);
+      
+      // Se temos um ID de cabine, filtrar por ele
+      if (cabinId) {
+        query = query.eq('cabin_id', cabinId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching appointments:', error);
@@ -160,6 +195,38 @@ const AvailabilityCalendar = () => {
   return (
     <Card className="mb-8">
       <CardContent className="p-4 flex flex-col space-y-6">
+        {cabinData && (
+          <div className="bg-muted p-4 rounded-lg">
+            <h2 className="text-xl font-bold">Reservando Cabine: {cabinData.name}</h2>
+            {cabinData.locations && (
+              <p className="text-sm text-muted-foreground">
+                Local: {cabinData.locations.name}, {cabinData.locations.city} - {cabinData.locations.state}
+              </p>
+            )}
+            <p className="mt-2">{cabinData.description}</p>
+            <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <div className="font-medium">Manhã</div>
+                <div>{cabinData.availability?.morning ? 
+                  <span className="text-green-600">Disponível</span> : 
+                  <span className="text-red-500">Indisponível</span>}</div>
+              </div>
+              <div>
+                <div className="font-medium">Tarde</div>
+                <div>{cabinData.availability?.afternoon ? 
+                  <span className="text-green-600">Disponível</span> : 
+                  <span className="text-red-500">Indisponível</span>}</div>
+              </div>
+              <div>
+                <div className="font-medium">Noite</div>
+                <div>{cabinData.availability?.evening ? 
+                  <span className="text-green-600">Disponível</span> : 
+                  <span className="text-red-500">Indisponível</span>}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <WorkingHoursSettings />
 
         <div className="flex justify-center mb-4">
