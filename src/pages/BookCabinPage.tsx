@@ -147,16 +147,16 @@ const BookCabinPage = () => {
   useEffect(() => {
     if (!cabin) return;
 
-    let subtotal = 0;
+    let subtotalTurns = 0;
     Object.entries(selectedTurns).forEach(([date, turns]) => {
       turns.forEach(turn => {
         const turnPrice = cabin.pricing?.defaultPricing?.[turn] || cabin.price || 50;
-        subtotal += turnPrice;
+        subtotalTurns += turnPrice;
       });
     });
     
-    const serviceFee = Object.keys(selectedTurns).length > 0 ? subtotal * 0.1 : 0;
-    setTotal(subtotal + serviceFee);
+    const serviceFee = Object.keys(selectedTurns).length > 0 ? subtotalTurns * 0.1 : 0;
+    setTotal(subtotalTurns + serviceFee);
   }, [selectedTurns, cabin]);
 
   const handleBookCabin = () => {
@@ -320,11 +320,11 @@ const BookCabinPage = () => {
                 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span>Valor total da reserva</span>
+                    <span>Valor total da reserva de Turnos no espaço</span>
                     <span>R$ {(total * 0.9).toFixed(2).replace('.', ',')}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Taxa de serviço</span>
+                    <span>Taxa de serviço (10%)</span>
                     <span>R$ {(total * 0.1).toFixed(2).replace('.', ',')}</span>
                   </div>
                   <Separator className="my-2" />
