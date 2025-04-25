@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -180,93 +179,76 @@ const AvailabilityCalendar = () => {
 
         <WorkingHoursSettings />
 
-        <Tabs defaultValue="day" className="flex-1">
-          <TabsList className="w-full grid grid-cols-3 gap-2 p-2 bg-transparent mb-4">
-            {["day", "week", "month"].map((tab) => (
-              <Card
-                key={tab}
-                className="p-0 border-0 shadow-none hover:bg-accent transition-colors"
-              >
-                <TabsTrigger
-                  value={tab}
-                  className="w-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md py-3 px-4 text-base font-medium"
-                >
-                  {tab === "day" && "Dia"}
-                  {tab === "week" && "Semana"}
-                  {tab === "month" && "Mês"}
-                </TabsTrigger>
-              </Card>
-            ))}
-          </TabsList>
-
-          <div className="flex-1">
-            <TabsContent value="day" className="m-0 outline-none h-[460px]">
-              <Card className="h-full border-0">
-                <CardContent className="p-0">
-                  <DailyView
-                    selectedDate={selectedDate || today}
-                    appointments={appointments || []}
-                    onDateChange={handleDateChange}
-                    workingHours={workingHours}
-                    breakTime={breakTime}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="week" className="m-0 outline-none h-[460px]">
-              <Card className="h-full border-0">
-                <CardContent className="p-0">
-                  <WeeklyView
-                    selectedDate={selectedDate || today}
-                    appointments={appointments || []}
-                    onDateChange={handleDateChange}
-                    workingHours={workingHours}
-                    breakTime={breakTime}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="month" className="m-0 outline-none h-[460px]">
-              <Card className="h-full border-0">
-                <CardContent className="p-4">
-                  <div className="h-full flex flex-col space-y-4">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={setSelectedDate}
-                      locale={ptBR}
-                      showOutsideDays
-                      className="w-full border rounded-md p-3"
-                      components={{
-                        DayContent: ({ date }) => (
-                          <div className={dayClass(date)}>
-                            <div className="text-center">{date.getDate()}</div>
-                            {getAppointmentsForDay(date).map((app, idx) => (
-                              <div
-                                key={app.id}
-                                className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-xs bg-blue-200 cursor-pointer truncate"
-                                style={{ bottom: `${idx * 18}px` }}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setSelectedAppointment(app);
-                                }}
-                              >
-                                {format(new Date(`2000-01-01T${app.time}`), 'HH:mm')}
-                              </div>
-                            ))}
+        <div className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Visão Mensal</CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="h-full flex flex-col space-y-4">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={ptBR}
+                  showOutsideDays
+                  className="w-full border rounded-md p-3"
+                  components={{
+                    DayContent: ({ date }) => (
+                      <div className={dayClass(date)}>
+                        <div className="text-center">{date.getDate()}</div>
+                        {getAppointmentsForDay(date).map((app, idx) => (
+                          <div
+                            key={app.id}
+                            className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-xs bg-blue-200 cursor-pointer truncate"
+                            style={{ bottom: `${idx * 18}px` }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setSelectedAppointment(app);
+                            }}
+                          >
+                            {format(new Date(`2000-01-01T${app.time}`), 'HH:mm')}
                           </div>
-                        )
-                      }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </div>
-        </Tabs>
+                        ))}
+                      </div>
+                    )
+                  }}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Visão Semanal</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <WeeklyView
+                selectedDate={selectedDate || today}
+                appointments={appointments || []}
+                onDateChange={handleDateChange}
+                workingHours={workingHours}
+                breakTime={breakTime}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Visão Diária</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <DailyView
+                selectedDate={selectedDate || today}
+                appointments={appointments || []}
+                onDateChange={handleDateChange}
+                workingHours={workingHours}
+                breakTime={breakTime}
+              />
+            </CardContent>
+          </Card>
+        </div>
 
         <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
           <DialogContent>
