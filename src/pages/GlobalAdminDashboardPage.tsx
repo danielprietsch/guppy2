@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { PermissionsManager } from "@/components/admin/PermissionsManager";
 import { LocationApprovals } from "@/components/admin/LocationApprovals";
 import { UserRegistrationForm } from "@/components/admin/UserRegistrationForm";
+import { SystemBookingsCard } from "@/components/admin/SystemBookingsCard";
 import { LogOut } from "lucide-react";
 
 const GlobalAdminDashboardPage = () => {

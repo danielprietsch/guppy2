@@ -18,10 +18,10 @@ interface Booking {
   created_at: string;
   professional?: {
     name: string | null;
-  };
+  } | null;
   cabin?: {
     name: string;
-  };
+  } | null;
 }
 
 export function SystemBookingsCard() {
@@ -41,7 +41,15 @@ export function SystemBookingsCard() {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setBookings(data || []);
+        
+        // Transform the data to match our Booking interface
+        const formattedData = (data || []).map(item => ({
+          ...item,
+          professional: item.professional as Booking['professional'],
+          cabin: item.cabin as Booking['cabin']
+        }));
+        
+        setBookings(formattedData);
       } catch (error) {
         console.error('Error fetching bookings:', error);
         toast({
