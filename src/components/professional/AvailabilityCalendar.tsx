@@ -185,7 +185,7 @@ const AvailabilityCalendar = () => {
               <CardTitle>Visão Mensal</CardTitle>
             </CardHeader>
             <CardContent className="p-4">
-              <div className="h-full flex flex-col space-y-4">
+              <div className="w-full">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
