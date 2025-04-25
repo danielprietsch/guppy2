@@ -11,10 +11,24 @@ import { debugLog, debugError } from "@/utils/debugLogger";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+interface Reservation {
+  id: string;
+  date: string;
+  shift: string;
+  status: string;
+  price: number;
+  cabin: {
+    name: string;
+    location: {
+      name: string;
+    }
+  }
+}
+
 const ClientReservationsPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [reservations, setReservations] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<Reservation[]>([]);
 
   useEffect(() => {
     const fetchReservations = async () => {
@@ -34,36 +48,32 @@ const ClientReservationsPage = () => {
           return;
         }
 
-        // This is a mock implementation for now
-        // In a real implementation, you would fetch reservations from Supabase
-        // const { data, error } = await supabase
-        //   .from('bookings')
-        //   .select('*, cabin:cabins(name, location_id), location:locations(name)')
-        //   .eq('client_id', session.user.id)
+        // Fetch reservations with cabin and location details
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            id,
+            date,
+            shift,
+            status,
+            price,
+            cabin:cabins (
+              name,
+              location:locations (
+                name
+              )
+            )
+          `)
+          .eq('professional_id', session.user.id)
+          .order('date', { ascending: false });
 
-        // Mock data for demonstration
-        const mockReservations = [
-          {
-            id: "1",
-            date: new Date().toISOString(),
-            shift: "morning",
-            status: "confirmed",
-            cabinName: "Cabine Premium 1",
-            locationName: "Salão Central",
-            professionalName: "Ana Silva"
-          },
-          {
-            id: "2",
-            date: new Date(Date.now() + 86400000 * 3).toISOString(), // 3 days later
-            shift: "afternoon",
-            status: "pending",
-            cabinName: "Cabine VIP 2",
-            locationName: "Estúdio Beleza",
-            professionalName: "João Costa"
-          }
-        ];
+        if (error) {
+          throw error;
+        }
 
-        setReservations(mockReservations);
+        if (data) {
+          setReservations(data as Reservation[]);
+        }
 
       } catch (error) {
         debugError("Error fetching reservations:", error);
@@ -160,7 +170,7 @@ const ClientReservationsPage = () => {
                   <TableHead>Cabine</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Turno</TableHead>
-                  <TableHead>Profissional</TableHead>
+                  <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
@@ -168,13 +178,13 @@ const ClientReservationsPage = () => {
               <TableBody>
                 {reservations.map((reservation) => (
                   <TableRow key={reservation.id}>
-                    <TableCell>{reservation.locationName}</TableCell>
-                    <TableCell>{reservation.cabinName}</TableCell>
+                    <TableCell>{reservation.cabin?.location?.name || 'N/A'}</TableCell>
+                    <TableCell>{reservation.cabin?.name || 'N/A'}</TableCell>
                     <TableCell>
                       {format(new Date(reservation.date), "dd/MM/yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell>{getShiftText(reservation.shift)}</TableCell>
-                    <TableCell>{reservation.professionalName}</TableCell>
+                    <TableCell>R$ {reservation.price.toFixed(2).replace('.', ',')}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(reservation.status)}`}>
                         {getStatusText(reservation.status)}
@@ -212,10 +222,10 @@ const ClientReservationsPage = () => {
               Você ainda não possui nenhuma reserva. Explore nossos profissionais e faça seu agendamento.
             </p>
             <Button
-              onClick={() => navigate("/professionals")}
+              onClick={() => navigate("/locations")}
               className="mt-4"
             >
-              Descobrir Profissionais
+              Descobrir Espaços
             </Button>
           </CardContent>
         </Card>
