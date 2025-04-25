@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,8 +13,9 @@ import {
   Sparkles,
   Star,
   HandHelping,
-  Clock,
-  DollarSign
+  NailPolish,  // New icon for manicure
+  Footprints,  // New icon for pedicure
+  Razor        // New icon for beard
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { serviceData } from "@/utils/serviceData";
@@ -59,9 +61,10 @@ const getIconForSpecialty = (id: string) => {
     // Mãos e Pés
     case "manicure_comum":
     case "manicure_gel":
+      return <NailPolish className="h-5 w-5" />;
     case "pedicure_comum":
     case "pedicure_spa":
-      return <HandMetal className="h-5 w-5" />;
+      return <Footprints className="h-5 w-5" />;
       
     // Maquiagem
     case "maquiagem_social":
@@ -77,7 +80,7 @@ const getIconForSpecialty = (id: string) => {
       
     // Barba
     case "barba":
-      return <Scissors className="h-5 w-5" />;
+      return <Razor className="h-5 w-5" />;
       
     // Bem-estar
     case "massagem_relaxante":
