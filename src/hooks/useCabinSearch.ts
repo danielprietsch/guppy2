@@ -32,10 +32,11 @@ export const useCabinSearch = (locationId?: string) => {
         // Parse JSON fields safely
         let availability = { morning: true, afternoon: true, evening: true };
         if (cabin.availability && typeof cabin.availability === 'object') {
+          const availObj = cabin.availability as Record<string, any>;
           availability = {
-            morning: cabin.availability.morning === true,
-            afternoon: cabin.availability.afternoon === true,
-            evening: cabin.availability.evening === true
+            morning: availObj.morning === true,
+            afternoon: availObj.afternoon === true,
+            evening: availObj.evening === true
           };
         }
 
@@ -43,12 +44,13 @@ export const useCabinSearch = (locationId?: string) => {
         let price = 50; // Default price if not set
         
         if (cabin.pricing && typeof cabin.pricing === 'object') {
+          const pricingObj = cabin.pricing as Record<string, any>;
           pricing = {
-            defaultPricing: cabin.pricing.defaultPricing || {},
-            specificDates: cabin.pricing.specificDates || {}
+            defaultPricing: pricingObj.defaultPricing || {},
+            specificDates: pricingObj.specificDates || {}
           };
           // Extract price from pricing object if available
-          price = cabin.pricing.defaultPrice || 50;
+          price = pricingObj.defaultPrice || 50;
         }
 
         return {

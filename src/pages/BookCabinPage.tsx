@@ -51,21 +51,23 @@ const BookCabinPage = () => {
           // Parse the JSON data to match our Cabin type
           let availability = { morning: true, afternoon: true, evening: true };
           if (cabinData.availability && typeof cabinData.availability === 'object') {
+            const availObj = cabinData.availability as Record<string, any>;
             availability = {
-              morning: cabinData.availability.morning === true,
-              afternoon: cabinData.availability.afternoon === true,
-              evening: cabinData.availability.evening === true
+              morning: availObj.morning === true,
+              afternoon: availObj.afternoon === true,
+              evening: availObj.evening === true
             };
           }
 
           let pricing = { defaultPricing: {}, specificDates: {} };
           let price = 50; // Default price
           if (cabinData.pricing && typeof cabinData.pricing === 'object') {
+            const pricingObj = cabinData.pricing as Record<string, any>;
             pricing = {
-              defaultPricing: cabinData.pricing.defaultPricing || {},
-              specificDates: cabinData.pricing.specificDates || {}
+              defaultPricing: pricingObj.defaultPricing || {},
+              specificDates: pricingObj.specificDates || {}
             };
-            price = cabinData.pricing.defaultPrice || 50;
+            price = pricingObj.defaultPrice || 50;
           }
           
           // Transform the data to match our Cabin type
@@ -96,9 +98,10 @@ const BookCabinPage = () => {
             // Parse the opening hours JSON
             let openingHours = { open: "09:00", close: "18:00" };
             if (locData.opening_hours && typeof locData.opening_hours === 'object') {
+              const hoursObj = locData.opening_hours as Record<string, any>;
               openingHours = {
-                open: locData.opening_hours.open || "09:00",
-                close: locData.opening_hours.close || "18:00"
+                open: hoursObj.open || "09:00",
+                close: hoursObj.close || "18:00"
               };
             }
             
