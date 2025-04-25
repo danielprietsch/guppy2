@@ -1,11 +1,10 @@
 
 import * as React from "react";
-import { format, isBefore, startOfDay, parseISO, isToday } from "date-fns";
+import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/hooks/use-toast";
 
 interface BookingCalendarProps {
   selectedTurns: { [date: string]: string[] };
@@ -20,7 +19,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   pricePerTurn,
   cabinCreatedAt
 }) => {
-  const [viewMonth, setViewMonth] = React.useState<Date>(cabinCreatedAt ? parseISO(cabinCreatedAt) : new Date());
+  const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const today = startOfDay(new Date());
 
   const renderTurnButton = (date: Date, turn: string, price: number) => {
@@ -67,9 +66,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       onMonthChange={setViewMonth}
       locale={ptBR}
       disabled={(date) => {
-        if (!cabinCreatedAt) return false;
-        const creationDate = parseISO(cabinCreatedAt);
-        return isBefore(startOfDay(date), startOfDay(creationDate));
+        // Disable past dates (before today)
+        if (isBefore(startOfDay(date), today)) return true;
+        // If cabin has a creation date, also disable dates before that
+        if (cabinCreatedAt) {
+          const creationDate = parseISO(cabinCreatedAt);
+          return isBefore(startOfDay(date), startOfDay(creationDate));
+        }
+        return false;
       }}
       className="w-full rounded-md border"
       classNames={{

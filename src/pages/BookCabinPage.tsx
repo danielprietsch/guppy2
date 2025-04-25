@@ -33,7 +33,6 @@ const BookCabinPage = () => {
       }
 
       try {
-        // If we don't have cabin details from state, fetch them
         if (!cabinDetails) {
           const { data: cabinData, error: cabinError } = await supabase
             .from('cabins')
@@ -43,7 +42,6 @@ const BookCabinPage = () => {
 
           if (cabinError) throw cabinError;
           
-          // Parse the JSON data to match our Cabin type
           let availability = { morning: true, afternoon: true, evening: true };
           if (cabinData.availability && typeof cabinData.availability === 'object') {
             const availObj = cabinData.availability as Record<string, any>;
@@ -55,7 +53,7 @@ const BookCabinPage = () => {
           }
 
           let pricing = { defaultPricing: {}, specificDates: {} };
-          let price = 50; // Default price
+          let price = 50;
           if (cabinData.pricing && typeof cabinData.pricing === 'object') {
             const pricingObj = cabinData.pricing as Record<string, any>;
             pricing = {
@@ -65,7 +63,6 @@ const BookCabinPage = () => {
             price = pricingObj.defaultPrice || 50;
           }
           
-          // Transform the data to match our Cabin type
           const transformedCabin: Cabin = {
             id: cabinData.id,
             locationId: cabinData.location_id,
@@ -80,7 +77,6 @@ const BookCabinPage = () => {
           
           setCabin(transformedCabin);
 
-          // Fetch location data if we have a cabin
           if (cabinData?.location_id) {
             const { data: locData, error: locError } = await supabase
               .from('locations')
@@ -90,7 +86,6 @@ const BookCabinPage = () => {
 
             if (locError) throw locError;
             
-            // Parse the opening hours JSON
             let openingHours = { open: "09:00", close: "18:00" };
             if (locData.opening_hours && typeof locData.opening_hours === 'object') {
               const hoursObj = locData.opening_hours as Record<string, any>;
@@ -100,7 +95,6 @@ const BookCabinPage = () => {
               };
             }
             
-            // Transform the location data
             const transformedLocation: Location = {
               id: locData.id,
               name: locData.name,
@@ -135,13 +129,11 @@ const BookCabinPage = () => {
       const newTurns = { ...prev };
       
       if (newTurns[date]?.includes(turn)) {
-        // Remove turn if already selected
         newTurns[date] = newTurns[date].filter(t => t !== turn);
         if (newTurns[date].length === 0) {
           delete newTurns[date];
         }
       } else {
-        // Add new turn
         if (!newTurns[date]) {
           newTurns[date] = [];
         }
@@ -152,7 +144,6 @@ const BookCabinPage = () => {
     });
   };
 
-  // Calculate total price whenever selected turns change
   useEffect(() => {
     if (!cabin) return;
 
@@ -163,7 +154,6 @@ const BookCabinPage = () => {
       });
     });
     
-    // Add service fee
     newTotal += 10;
     setTotal(newTotal);
   }, [selectedTurns, cabin]);
@@ -209,7 +199,7 @@ const BookCabinPage = () => {
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">
-          {locationData ? `Cabines em ${locationData.name}` : 'Reserva de Cabine'}
+          {cabin ? `Reservar ${cabin.name}` : 'Reserva de Cabine'}
         </h1>
         
         <div className="relative max-w-md mb-6">
