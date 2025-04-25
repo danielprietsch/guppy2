@@ -1,5 +1,5 @@
 
-import { Search } from "lucide-react";
+import { Search, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -61,19 +61,40 @@ export const CabinSearchSection = ({
                   }`}
                 >
                   <div className="p-4">
-                    <h3 className="font-semibold text-lg mb-2">{cabin.name}</h3>
+                    {/* Display Location Name at the top */}
+                    {locationDetails && (
+                      <h2 className="text-lg font-bold text-primary mb-1">
+                        {locationDetails.name}
+                      </h2>
+                    )}
+                    
+                    {/* Cabin Name */}
+                    <h3 className="font-semibold text-xl mb-2">{cabin.name}</h3>
+                    
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                       {cabin.description}
                     </p>
+                    
                     {cabin.equipment && cabin.equipment.length > 0 && (
-                      <ul className="mt-2 space-y-1">
-                        {cabin.equipment.slice(0, 3).map((item, index) => (
-                          <li key={index} className="text-xs flex items-center gap-1">
-                            <span>•</span> {item}
-                          </li>
-                        ))}
-                      </ul>
+                      <div className="mt-2 space-y-1">
+                        <h4 className="text-sm font-medium mb-1">Equipamentos:</h4>
+                        <ul>
+                          {cabin.equipment.map((item, index) => (
+                            <li 
+                              key={index} 
+                              className="text-xs flex items-center gap-2 mb-1"
+                            >
+                              <Check 
+                                className="h-4 w-4 text-green-500" 
+                                strokeWidth={3}
+                              />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     )}
+                    
                     <Button 
                       className={`w-full mt-4 ${
                         selectedCabin?.id === cabin.id ? 'bg-primary/80' : ''
