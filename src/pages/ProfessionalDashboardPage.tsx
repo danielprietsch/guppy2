@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +16,7 @@ import {
 import { services, bookings, appointments, reviews } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
-import { supabase } from "@/integrations/supabase/client"; // Added missing supabase import
+import { supabase } from "@/integrations/supabase/client";
 import ServiceEditCard from "@/components/ServiceEditCard";
 import PrivacySettingsCard from "@/components/professional/PrivacySettingsCard";
 import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar";
@@ -41,14 +40,12 @@ const ProfessionalDashboardPage = () => {
       // Fetch user profile to get privacy settings
       const fetchUserProfile = async () => {
         try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('is_public')
-            .eq('id', user.id)
-            .single();
-            
-          if (data) {
-            setIsPublicProfile(data.is_public !== false); // Default to public if not set
+          // Buscar configurações de privacidade dos metadados do usuário
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          if (user && user.user_metadata) {
+            const isPublic = user.user_metadata.isPublic !== false; // Default to public if not set
+            setIsPublicProfile(isPublic);
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);

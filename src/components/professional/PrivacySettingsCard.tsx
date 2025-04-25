@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -17,15 +18,31 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
   const [isPublic, setIsPublic] = useState(initialIsPublic);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Efeito para buscar o atual estado de privacidade dos metadados do usuário
+  useEffect(() => {
+    const fetchPrivacySettings = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: { user: userData } } = await supabase.auth.getUser();
+        if (userData?.user_metadata?.isPublic !== undefined) {
+          setIsPublic(userData.user_metadata.isPublic);
+        } else {
+          setIsPublic(initialIsPublic);
+        }
+      } catch (error) {
+        console.error("Error fetching user metadata:", error);
+      }
+    };
+    
+    fetchPrivacySettings();
+  }, [user, initialIsPublic]);
+
   const handleSave = async () => {
     if (!user) return;
     
     setIsSubmitting(true);
     try {
-      const updates = {
-        user_type: user.user_type
-      };
-
       const { data: metadataData, error: metadataError } = await supabase.auth.updateUser({
         data: { isPublic }
       });
