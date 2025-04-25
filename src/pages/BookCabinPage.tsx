@@ -320,7 +320,7 @@ const BookCabinPage = () => {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span>Valor total dos turnos</span>
-                    <span>R$ {(total - 10).toFixed(2)}</span>
+                    <span>R$ {(total - 10).toFixed(2).replace('.', ',')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Taxa de serviço</span>
@@ -329,7 +329,7 @@ const BookCabinPage = () => {
                   <Separator className="my-2" />
                   <div className="flex items-center justify-between font-bold">
                     <span>Total</span>
-                    <span>R$ {total.toFixed(2)}</span>
+                    <span>R$ {total.toFixed(2).replace('.', ',')}</span>
                   </div>
                 </div>
               </div>

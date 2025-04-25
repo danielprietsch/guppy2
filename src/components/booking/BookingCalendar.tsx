@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,7 +48,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       >
         {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
         <div className="text-[10px] mt-0.5">
-          R$ {price}
+          R$ {price.toFixed(2).replace('.', ',')}
         </div>
       </Button>
     );
@@ -105,4 +104,3 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 };
 
 export default BookingCalendar;
-
