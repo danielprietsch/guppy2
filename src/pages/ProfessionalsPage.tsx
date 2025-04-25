@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { User } from "@/lib/types";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,12 +40,15 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
 
-  const filteredProfessionals = professionals?.filter(professional => {
+  // Ensure professionals is always treated as an array
+  const professionalsList = Array.isArray(professionals) ? professionals : [];
+  
+  const filteredProfessionals = professionalsList.filter(professional => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesService = selectedServices.length === 0 || 
       professional.specialties?.some(specialty => selectedServices.includes(specialty));
     return matchesSearch && matchesService;
-  }) || [];
+  });
   
   const toggleService = (category: string) => {
     setSelectedServices(current => 

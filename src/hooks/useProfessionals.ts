@@ -22,18 +22,22 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         const formattedDate = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
         console.log('Fetching professionals for date:', formattedDate);
 
-        const { data: professionals, error } = await supabase.rpc<User[]>('get_public_professionals');
-
+        // Using explicit type assertion for the RPC function
+        const { data, error } = await supabase.rpc('get_public_professionals');
+        
         if (error) {
           console.error('Error fetching professional profiles:', error);
           return [];
         }
 
         // If no professionals found, return empty array
-        if (!professionals || professionals.length === 0) {
+        if (!data || data.length === 0) {
           console.log('No professional profiles found');
           return [];
         }
+
+        // Convert the response to User type
+        const professionals = data as User[];
 
         // 5. If withSpecialties is true, fetch their specialties
         if (withSpecialties && professionals) {
