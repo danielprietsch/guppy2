@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -48,12 +47,8 @@ export function ProfileImageUpload({
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
-      // Check if avatars bucket exists
-      console.log("Checking if avatars bucket exists");
-      
-      // First try to upload the file without checking or creating the bucket
-      console.log("Uploading file to path:", filePath);
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      // Upload file to 'avatars' bucket
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
@@ -69,42 +64,31 @@ export function ProfileImageUpload({
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
-      // Update profile record first (this doesn't require auth)
-      const { error: profileUpdateError } = await supabase
+      // First update the profiles table
+      const { error: profileError } = await supabase
         .from('profiles')
-        .update({ 
+        .update({
           avatar_url: publicUrl,
           updated_at: new Date().toISOString()
         })
         .eq('id', userId);
 
-      if (profileUpdateError) {
-        console.error("Error updating profile:", profileUpdateError);
-        // Continue anyway and try to update user metadata
-        console.warn("Profile update failed, but continuing with user metadata update");
-      } else {
-        console.log("Profile updated successfully");
-      }
-      
-      // Now try to update user metadata
-      try {
-        const { error: userUpdateError } = await supabase.auth.updateUser({
-          data: { avatar_url: publicUrl }
-        });
-
-        if (userUpdateError) {
-          console.error("Error updating user metadata:", userUpdateError);
-          console.warn("User metadata update failed, but image was uploaded successfully");
-          // Don't throw here, as we want to continue even if this fails
-        } else {
-          console.log("User metadata updated successfully");
-        }
-      } catch (authError) {
-        console.error("Auth error when updating user:", authError);
-        // Don't throw here, as we want to continue even if this fails
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
+        throw new Error("Não foi possível atualizar o perfil");
       }
 
-      // Update local preview and notify parent regardless of metadata update result
+      // Then update the user metadata
+      const { error: userError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (userError) {
+        console.error("Error updating user metadata:", userError);
+        throw new Error("Não foi possível atualizar os dados do usuário");
+      }
+
+      // Update local state and notify parent
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);
       
