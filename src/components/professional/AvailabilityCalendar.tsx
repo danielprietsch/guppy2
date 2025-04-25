@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -145,10 +146,7 @@ const AvailabilityCalendar = () => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <WorkingHoursSettings />
-          </div>
+        <div className="grid md:grid-cols-1 gap-6">
           <div>
             <Calendar
               mode="single"
@@ -156,7 +154,7 @@ const AvailabilityCalendar = () => {
               onSelect={setSelectedDate}
               locale={ptBR}
               showOutsideDays
-              className="border rounded-md p-3"
+              className="border rounded-md p-3 w-full"
               components={{
                 DayContent: ({ date }) => (
                   <div className={dayClass(date)}>
@@ -179,6 +177,9 @@ const AvailabilityCalendar = () => {
                 )
               }}
             />
+          </div>
+          <div>
+            <WorkingHoursSettings />
           </div>
         </div>
 
