@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Lock, Clock, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { debugLog, debugAreaLog } from "@/utils/debugLogger";
+import { debugAreaLog } from "@/utils/debugLogger";
 
 interface TimeSlotCardProps {
   turno: string;
@@ -92,7 +92,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
-        onPriceEdit(newPrice);
+        onPriceEdit(Number(newPrice.toFixed(2)));
         setPriceValue(newPrice.toFixed(2));
         
         setAnimatePrice(true);
