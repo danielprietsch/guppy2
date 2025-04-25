@@ -97,7 +97,7 @@ const ProfessionalsPage = () => {
             <SelectValue placeholder="Filtrar por especialidade" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas as especialidades</SelectItem>
+            <SelectItem value="all">Todas as especialidades</SelectItem>
             {specialties.map((specialty) => (
               <SelectItem key={specialty} value={specialty}>{specialty}</SelectItem>
             ))}
@@ -126,7 +126,7 @@ const ProfessionalsPage = () => {
       </div>
       
       {/* Applied filters */}
-      {selectedSpecialty && (
+      {selectedSpecialty && selectedSpecialty !== "all" && (
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge variant="outline" className="flex items-center gap-1">
             Especialidade: {selectedSpecialty}
