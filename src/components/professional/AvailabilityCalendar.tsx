@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,15 +13,7 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
-
-type ShiftStatus = 'free' | 'busy' | 'closed';
-
-interface DayAvailability {
-  date: Date;
-  morning: ShiftStatus;
-  afternoon: ShiftStatus;
-  evening: ShiftStatus;
-}
+import { useAvailability, ShiftStatus } from "@/hooks/useAvailability";
 
 interface AppointmentClient {
   name: string;
@@ -38,37 +29,12 @@ interface Appointment {
   client: AppointmentClient;
 }
 
-interface AvailabilityCalendarProps {
-  initialAvailability?: DayAvailability[];
-}
-
-const generateMockAvailability = (startDate: Date, days: number): DayAvailability[] => {
-  const availability: DayAvailability[] = [];
-  for (let i = 0; i < days; i++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i);
-    
-    const isSunday = date.getDay() === 0;
-    const isMonday = date.getDay() === 1;
-    
-    availability.push({
-      date: new Date(date),
-      morning: isSunday ? 'closed' : isMonday ? 'busy' : Math.random() > 0.3 ? 'free' : 'busy',
-      afternoon: isSunday ? 'closed' : Math.random() > 0.5 ? 'free' : 'busy',
-      evening: isSunday ? 'closed' : Math.random() > 0.7 ? 'free' : 'busy',
-    });
-  }
-  return availability;
-};
-
-const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps) => {
+const AvailabilityCalendar = () => {
   const { user } = useAuth();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
-  const [availability, setAvailability] = useState<DayAvailability[]>(
-    initialAvailability || generateMockAvailability(today, 30)
-  );
+  const { availability, updateAvailability } = useAvailability(user?.id);
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id],
@@ -133,24 +99,38 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
     return format(new Date(`2000-01-01T${time}`), 'HH:mm');
   };
 
-  const dayClass = (day: Date, availability: DayAvailability[]) => {
-    const dayAppointments = getAppointmentsForDay(day);
-    const dayAvail = availability.find(a => isSameDay(a.date, day));
+  const handleShiftStatusChange = async (date: Date, shift: 'morning' | 'afternoon' | 'evening', newStatus: ShiftStatus) => {
+    try {
+      await updateAvailability.mutateAsync({ date, shift, status: newStatus });
+    } catch (error) {
+      console.error('Error updating availability:', error);
+    }
+  };
+
+  const getShiftStatus = (date: Date, shift: 'morning' | 'afternoon' | 'evening'): ShiftStatus => {
+    const dayAvail = availability.find(a => isSameDay(a.date, date));
+    if (!dayAvail) return 'free';
+    return dayAvail[`${shift}_status` as keyof typeof dayAvail] as ShiftStatus;
+  };
+
+  const dayClass = (date: Date) => {
+    const dayAppointments = getAppointmentsForDay(date);
+    const morning = getShiftStatus(date, 'morning');
+    const afternoon = getShiftStatus(date, 'afternoon');
+    const evening = getShiftStatus(date, 'evening');
     
     let className = "relative h-full w-full ";
     
     if (dayAppointments.length > 0) {
       className += "bg-blue-50 ";
-    } else if (dayAvail) {
-      if (dayAvail.morning === 'closed' && dayAvail.afternoon === 'closed' && dayAvail.evening === 'closed') {
-        className += "bg-amber-100 ";
-      } else if (dayAvail.morning === 'busy' && dayAvail.afternoon === 'busy' && dayAvail.evening === 'busy') {
-        className += "bg-red-100 ";
-      } else if (dayAvail.morning === 'free' && dayAvail.afternoon === 'free' && dayAvail.evening === 'free') {
-        className += "bg-green-100 ";
-      } else {
-        className += "bg-gradient-to-br from-green-100 via-white to-amber-100 ";
-      }
+    } else if (morning === 'closed' && afternoon === 'closed' && evening === 'closed') {
+      className += "bg-amber-100 ";
+    } else if (morning === 'busy' && afternoon === 'busy' && evening === 'busy') {
+      className += "bg-red-100 ";
+    } else if (morning === 'free' && afternoon === 'free' && evening === 'free') {
+      className += "bg-green-100 ";
+    } else {
+      className += "bg-gradient-to-br from-green-100 via-white to-amber-100 ";
     }
 
     return className;
@@ -176,7 +156,7 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
               className="border rounded-md p-3"
               components={{
                 DayContent: ({ date }) => (
-                  <div className={dayClass(date, availability)}>
+                  <div className={dayClass(date)}>
                     <div className="text-center">{date.getDate()}</div>
                     {getAppointmentsForDay(date).map((app, idx) => (
                       <div

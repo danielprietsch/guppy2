@@ -234,6 +234,47 @@ export type Database = {
         }
         Relationships: []
       }
+      professional_availability: {
+        Row: {
+          afternoon_status: string
+          created_at: string | null
+          date: string
+          evening_status: string
+          id: string
+          morning_status: string
+          professional_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          afternoon_status?: string
+          created_at?: string | null
+          date: string
+          evening_status?: string
+          id?: string
+          morning_status?: string
+          professional_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          afternoon_status?: string
+          created_at?: string | null
+          date?: string
+          evening_status?: string
+          id?: string
+          morning_status?: string
+          professional_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_availability_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           address: string | null
