@@ -18,7 +18,7 @@ const BookCabinPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cabinDetails, locationDetails } = location.state || {};
-  const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(cabinDetails || null);
+  const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(null);
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
