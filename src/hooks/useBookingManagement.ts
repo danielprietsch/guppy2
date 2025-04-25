@@ -167,7 +167,7 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
           title: "Reserva realizada com sucesso",
           description: "Sua reserva foi enviada e está aguardando pagamento.",
         });
-        navigate("/professional-dashboard");
+        navigate("/client/reservations");
       } else {
         toast({
           title: "Erro parcial",
