@@ -225,7 +225,7 @@ const AvailabilityCalendar = () => {
   // Fetch appointments with proper TypeScript typing
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
-    queryFn: async (): Promise<Appointment[]> => {
+    queryFn: async () => {
       if (!user?.id) return [] as Appointment[];
       
       // Base query
@@ -251,7 +251,7 @@ const AvailabilityCalendar = () => {
       
       // Process appointments to include client information
       const appointmentsWithClients = await Promise.all(
-        rawAppointments.map(async (appointment): Promise<Appointment> => {
+        rawAppointments.map(async (appointment) => {
           let client: AppointmentClient = { name: 'Cliente não especificado', email: '' };
           
           if (appointment.client_id) {
@@ -272,7 +272,7 @@ const AvailabilityCalendar = () => {
           return {
             ...appointment,
             client
-          };
+          } as Appointment;
         })
       );
 
