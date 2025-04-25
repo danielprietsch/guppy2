@@ -143,36 +143,6 @@ export function ProfileImageUpload({
           <span className="text-sm">Alterar foto</span>
         </div>
       </div>
-
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={isUploading}
-          asChild
-        >
-          <label className="cursor-pointer">
-            {isUploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Atualizar foto
-              </>
-            )}
-            <input
-              type="file"
-              onChange={handleFileChange}
-              accept="image/*"
-              className="hidden"
-              disabled={isUploading}
-            />
-          </label>
-        </Button>
-      </div>
     </div>
   );
 }
