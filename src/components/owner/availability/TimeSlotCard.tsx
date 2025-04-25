@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Clock, AlertCircle, Pencil, X } from "lucide-react";
+import { Check, Lock, Clock, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugLog, debugAreaLog } from "@/utils/debugLogger";
 
@@ -110,6 +110,11 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     return "bg-green-500";
   };
 
+  const getTextColor = () => {
+    const status = getStatusColor();
+    return status === "bg-yellow-300" ? "text-black" : "text-white";
+  };
+
   const handleCardClick = (e: React.MouseEvent) => {
     if (isBooked && onViewBooking && !isPastDate) {
       onViewBooking();
@@ -132,7 +137,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       onClick={handleCardClick}
     >
       <div className="flex flex-col gap-1">
-        <div className="text-sm font-medium text-white">{turno}</div>
+        <div className={cn("text-sm font-medium", getTextColor())}>{turno}</div>
         
         <div className="flex items-center justify-center gap-2 mb-1">
           {isEditingPrice && !isPastDate ? (
@@ -142,7 +147,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 type="text"
                 value={formatToCurrency(priceValue)}
                 onChange={handlePriceInputChange}
-                className="w-24 h-7 text-xs text-black py-1 border border-white/50 focus:border-white transition-all text-center"
+                className={cn(
+                  "w-24 h-7 text-xs py-1 border border-white/50 focus:border-white transition-all text-center",
+                  getStatusColor() === "bg-yellow-300" ? "text-black" : "text-black"
+                )}
               />
               <div className="flex gap-1">
                 <button
@@ -153,7 +161,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   }}
                   className="h-7 w-7 p-0 hover:bg-green-600/20 rounded-full transition-all flex items-center justify-center"
                 >
-                  <Check className="h-4 w-4 text-white hover:text-green-400 transition-colors" />
+                  <Check className={cn("h-4 w-4", getTextColor())} />
                 </button>
                 <button
                   type="button"
@@ -164,7 +172,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   }}
                   className="h-7 w-7 p-0 hover:bg-red-600/20 rounded-full transition-all flex items-center justify-center"
                 >
-                  <X className="h-4 w-4 text-white hover:text-red-400 transition-colors" />
+                  <X className={cn("h-4 w-4", getTextColor())} />
                 </button>
               </div>
             </div>
@@ -172,7 +180,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
             <div className="flex flex-col items-center gap-1 w-full">
               <div className="flex items-center justify-center gap-1 w-full">
                 <span className={cn(
-                  "text-white text-sm transition-all",
+                  "text-sm transition-all",
+                  getTextColor(),
                   animatePrice && "animate-bounce text-yellow-200 font-bold"
                 )}>
                   {parseFloat(price).toLocaleString('pt-BR', {
@@ -187,27 +196,27 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         </div>
 
         {isPastDate ? (
-          <div className="flex items-center gap-1 text-white text-xs">
+          <div className={cn("flex items-center gap-1 text-xs", getTextColor())}>
             {isBooked ? (
               <>
-                <Lock className="w-3 h-3" />
+                <Lock className={`w-3 h-3 ${getTextColor()}`} />
                 <span>Alugada</span>
               </>
             ) : isManuallyClosed ? (
               <>
-                <Clock className="w-3 h-3" />
+                <Clock className={`w-3 h-3 ${getTextColor()}`} />
                 <span>Fechada</span>
               </>
             ) : (
               <>
-                <AlertCircle className="w-3 h-3" />
+                <AlertCircle className={`w-3 h-3 ${getTextColor()}`} />
                 <span>Não utilizada</span>
               </>
             )}
           </div>
         ) : isBooked ? (
-          <div className="flex items-center gap-1 text-white text-xs">
-            <Lock className="w-3 h-3" />
+          <div className={cn("flex items-center gap-1 text-xs", getTextColor())}>
+            <Lock className={`w-3 h-3 ${getTextColor()}`} />
             <span>Reservado</span>
           </div>
         ) : (
@@ -220,7 +229,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   e.stopPropagation();
                   setIsEditingPrice(true);
                 }}
-                className="text-xs h-6 py-0 bg-white hover:bg-gray-100 text-gray-800 w-full"
+                className={cn(
+                  "text-xs h-6 py-0 w-full",
+                  getStatusColor() === "bg-yellow-300" 
+                    ? "bg-white hover:bg-gray-100 text-black" 
+                    : "bg-white hover:bg-gray-100 text-gray-800"
+                )}
               >
                 Editar Preço
               </Button>
@@ -232,7 +246,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   variant="default"
                   size="sm"
                   onClick={(e) => handleButtonClick(e, onRelease)}
-                  className="text-xs h-6 py-0 w-full"
+                  className={cn(
+                    "text-xs h-6 py-0 w-full",
+                    getStatusColor() === "bg-yellow-300" 
+                      ? "text-black" 
+                      : "text-white"
+                  )}
                 >
                   Liberar
                 </Button>
@@ -241,7 +260,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   variant="secondary"
                   size="sm"
                   onClick={(e) => handleButtonClick(e, onManualClose)}
-                  className="text-xs h-6 py-0 w-full"
+                  className={cn(
+                    "text-xs h-6 py-0 w-full",
+                    getStatusColor() === "bg-yellow-300" 
+                      ? "text-black" 
+                      : "text-white"
+                  )}
                 >
                   Fechar
                 </Button>
