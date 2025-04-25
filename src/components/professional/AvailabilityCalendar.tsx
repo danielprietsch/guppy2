@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, isSameDay, parseISO } from "date-fns";
+import { format, isSameDay, parseISO, addDays, isAfter, isBefore } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from "@/lib/auth";
 import {
@@ -22,6 +21,8 @@ import WeeklyView from './calendar/WeeklyView';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
 import { Json } from "@/integrations/supabase/types";
+
+const MAX_CALENDAR_DAYS = 90;
 
 interface AppointmentClient {
   name: string;
@@ -222,17 +223,35 @@ const AvailabilityCalendar = () => {
     }
   }, [userProfile]);
 
-  // Fetch appointments with proper TypeScript typing
+  // Calculando as datas limite para o calendário
+  const getDateLimits = (): { startDate: Date, endDate: Date } => {
+    const today = new Date();
+    const endDate = addDays(today, MAX_CALENDAR_DAYS);
+    
+    // Use a data de criação do usuário como início se disponível, senão use hoje
+    const startDate = userProfile?.created_at ? 
+      parseISO(userProfile.created_at) : today;
+      
+    return { startDate, endDate };
+  };
+
+  // Fetch appointments with proper TypeScript typing and date limitations
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
     queryFn: async () => {
       if (!user?.id) return [] as Appointment[];
       
-      // Base query
+      const { startDate, endDate } = getDateLimits();
+      const startDateStr = format(startDate, 'yyyy-MM-dd');
+      const endDateStr = format(endDate, 'yyyy-MM-dd');
+      
+      // Base query with date limits
       let query = supabase
         .from('appointments')
         .select('*')
-        .eq('professional_id', user.id);
+        .eq('professional_id', user.id)
+        .gte('date', startDateStr) // Greater than or equal to start date
+        .lte('date', endDateStr); // Less than or equal to end date
       
       // Se temos um ID de cabine, filtrar por ele
       if (cabinId) {
@@ -249,8 +268,8 @@ const AvailabilityCalendar = () => {
       // Type assertion for the raw data
       const rawAppointments = data as RawAppointmentData[];
       
-      // Process appointments to include client information
-      const appointmentsWithClients = await Promise.all(
+      // Process appointments to include client information with explicit typing
+      const appointmentsWithClients: Appointment[] = await Promise.all(
         rawAppointments.map(async (appointment) => {
           let client: AppointmentClient = { name: 'Cliente não especificado', email: '' };
           
@@ -270,9 +289,13 @@ const AvailabilityCalendar = () => {
           }
           
           return {
-            ...appointment,
-            client
-          } as Appointment;
+            id: appointment.id,
+            date: appointment.date,
+            time: appointment.time,
+            client_id: appointment.client_id,
+            status: appointment.status,
+            client: client
+          };
         })
       );
 
@@ -281,7 +304,15 @@ const AvailabilityCalendar = () => {
     enabled: !!user?.id
   });
 
+  // Filtra os agendamentos dentro do limite de dias
   const getAppointmentsForDay = (date: Date): Appointment[] => {
+    const { startDate, endDate } = getDateLimits();
+    
+    // Só retorna agendamentos dentro do intervalo de datas permitido
+    if (isBefore(date, startDate) || isAfter(date, endDate)) {
+      return [];
+    }
+    
     return (appointments || []).filter(app => 
       isSameDay(new Date(app.date), date)
     );
@@ -306,6 +337,21 @@ const AvailabilityCalendar = () => {
   };
 
   const handleDateChange = (newDate: Date): void => {
+    // Verificar se a data está dentro dos limites
+    const { startDate, endDate } = getDateLimits();
+    
+    if (isBefore(newDate, startDate)) {
+      console.warn('Data selecionada está antes da data de início permitida');
+      setSelectedDate(startDate);
+      return;
+    }
+    
+    if (isAfter(newDate, endDate)) {
+      console.warn('Data selecionada está após a data final permitida');
+      setSelectedDate(endDate);
+      return;
+    }
+    
     setSelectedDate(newDate);
   };
 
