@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Globe, Lock } from "lucide-react";
+import { Calendar, Clock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -38,7 +38,7 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
   const handleTogglePrivacy = async (value: string) => {
     if (!user) return;
     
-    const newIsPublic = value === 'public';
+    const newIsPublic = value === 'available';
     
     try {
       const { data: metadataData, error: metadataError } = await supabase.auth.updateUser({
@@ -49,15 +49,15 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
       
       setIsPublic(newIsPublic);
       toast({
-        title: "Configurações de privacidade atualizadas",
+        title: "Disponibilidade Atualizada",
         description: newIsPublic 
-          ? "Seu perfil agora está visível para clientes." 
-          : "Seu perfil agora está privado.",
+          ? "Você está disponível para novos agendamentos." 
+          : "Você está indisponível para novos agendamentos.",
       });
     } catch (error: any) {
-      console.error("Error updating privacy settings:", error);
+      console.error("Error updating availability settings:", error);
       toast({
-        title: "Erro ao atualizar configurações",
+        title: "Erro ao atualizar disponibilidade",
         description: error.message || "Ocorreu um erro ao salvar suas configurações",
         variant: "destructive",
       });
@@ -67,39 +67,39 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
   return (
     <Card className="mb-6">
       <CardContent className="p-6">
-        <Label className="text-lg font-medium mb-6 block">Visibilidade do Perfil</Label>
+        <Label className="text-lg font-medium mb-6 block">Disponibilidade para Agendamentos</Label>
         <ToggleGroup
           type="single"
-          value={isPublic ? 'public' : 'private'}
+          value={isPublic ? 'available' : 'unavailable'}
           onValueChange={handleTogglePrivacy}
           className="grid grid-cols-2 gap-6 h-full"
         >
           <ToggleGroupItem 
-            value="public" 
+            value="available" 
             className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
             <div className="p-6 rounded-full bg-primary/5 flex items-center justify-center">
-              <Globe className="h-16 w-16 text-primary" />
+              <Calendar className="h-16 w-16 text-primary" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-xl mb-2">Público</div>
+              <div className="font-semibold text-xl mb-2">Disponível</div>
               <p className="text-sm text-muted-foreground max-w-[200px]">
-                Seu perfil será visível para todos os clientes
+                Você está aceitando novos agendamentos
               </p>
             </div>
           </ToggleGroupItem>
           
           <ToggleGroupItem 
-            value="private"
+            value="unavailable"
             className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
             <div className="p-6 rounded-full bg-primary/5 flex items-center justify-center">
-              <Lock className="h-16 w-16 text-primary" />
+              <Clock className="h-16 w-16 text-primary" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-xl mb-2">Privado</div>
+              <div className="font-semibold text-xl mb-2">Indisponível</div>
               <p className="text-sm text-muted-foreground max-w-[200px]">
-                Seu perfil permanecerá oculto para clientes
+                Você não está aceitando novos agendamentos
               </p>
             </div>
           </ToggleGroupItem>
