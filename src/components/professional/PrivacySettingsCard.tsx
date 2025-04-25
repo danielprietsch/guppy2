@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Calendar, Clock, Eye, EyeOff } from "lucide-react";
+import { Check, X, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -100,26 +100,36 @@ const PrivacySettingsCard = () => {
         >
           <ToggleGroupItem 
             value="available" 
-            className="flex flex-col items-center justify-between p-4 rounded-xl data-[state=on]:bg-[#F2FCE2]"
+            className="flex flex-col items-center justify-between p-6 rounded-xl data-[state=on]:bg-[#F2FCE2] h-48"
           >
-            <Eye className="h-8 w-8 text-primary mb-2" />
+            <div className="bg-green-100 rounded-full p-4 mb-4">
+              <Check className="h-12 w-12 text-green-600" />
+            </div>
             <div className="text-center">
-              <div className="font-semibold">Disponível</div>
-              <p className="text-xs text-muted-foreground">
-                Aceitando agendamentos
+              <div className="font-semibold text-lg">Disponível</div>
+              <p className="text-sm text-muted-foreground">
+                Visível para todos os clientes
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Seus serviços estarão disponíveis para reserva
               </p>
             </div>
           </ToggleGroupItem>
           
           <ToggleGroupItem 
             value="unavailable"
-            className="flex flex-col items-center justify-between p-4 rounded-xl data-[state=on]:bg-[#F1F0FB]"
+            className="flex flex-col items-center justify-between p-6 rounded-xl data-[state=on]:bg-[#F1F0FB] h-48"
           >
-            <EyeOff className="h-8 w-8 text-primary mb-2" />
+            <div className="bg-red-100 rounded-full p-4 mb-4">
+              <X className="h-12 w-12 text-red-600" />
+            </div>
             <div className="text-center">
-              <div className="font-semibold">Indisponível</div>
-              <p className="text-xs text-muted-foreground">
-                Não aceitando agendamentos
+              <div className="font-semibold text-lg">Indisponível</div>
+              <p className="text-sm text-muted-foreground">
+                Oculto para novos clientes
+              </p>
+              <p className="text-xs text-muted-foreground mt-2">
+                Não receberá novos agendamentos
               </p>
             </div>
           </ToggleGroupItem>
