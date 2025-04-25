@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
@@ -44,27 +45,26 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
   };
 
   return (
-    <Card className="h-full">
-      <CardContent className="p-0 h-full flex flex-col">
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-background sticky top-0 z-10">
-          <Button variant="ghost" size="sm" onClick={handlePreviousWeek}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-base sm:text-lg font-semibold">
-            {format(weekStart, "MMMM yyyy", { locale: ptBR })}
-          </div>
-          <Button variant="ghost" size="sm" onClick={handleNextWeek}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 bg-background sticky top-0 z-10 border-b">
+        <Button variant="ghost" size="sm" onClick={handlePreviousWeek}>
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <div className="text-base sm:text-lg font-semibold">
+          {format(weekStart, "MMMM yyyy", { locale: ptBR })}
         </div>
-        <div className="flex-1 overflow-auto">
-          <div className="grid grid-cols-8 gap-1 p-4 min-w-[800px]">
-            <div className="space-y-1">
-              <div className="h-10"></div>
+        <Button variant="ghost" size="sm" onClick={handleNextWeek}>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <div className="min-w-[800px] p-4">
+          <div className="grid grid-cols-8 gap-4">
+            <div className="pt-10">
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="h-10 text-xs text-muted-foreground flex items-center justify-end pr-2"
+                  className="h-16 text-sm font-medium text-muted-foreground flex items-center justify-end pr-2"
                 >
                   {`${hour.toString().padStart(2, '0')}:00`}
                 </div>
@@ -72,15 +72,15 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
             </div>
 
             {weekDays.map((date) => (
-              <div key={date.toString()} className="space-y-1 min-w-[100px]">
-                <div className="text-center h-10">
-                  <div className="font-semibold text-xs">
+              <div key={date.toString()} className="space-y-2">
+                <Card className="text-center p-2 bg-background">
+                  <div className="font-semibold">
                     {format(date, 'EEEE', { locale: ptBR })}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="text-sm text-muted-foreground">
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
-                </div>
+                </Card>
                 {hours.map((hour) => {
                   const cellStatus = getCellStatus(date, hour);
                   const cellAppointments = appointments.filter(app => {
@@ -90,30 +90,32 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
                   });
 
                   return (
-                    <div
+                    <Card
                       key={hour}
-                      className={`h-10 border rounded-md ${cellStatus.color} relative`}
+                      className={`h-16 ${cellStatus.color} relative`}
                     >
-                      <div className="absolute top-0 right-0 text-[10px] font-medium px-1 py-0.5 rounded-bl bg-white/80">
-                        {cellStatus.label}
-                      </div>
-                      {cellAppointments.map((app) => (
-                        <div
-                          key={app.id}
-                          className="p-0.5 bg-primary/10 rounded-sm text-[10px] truncate"
-                        >
-                          {app.client.name}
+                      <CardContent className="p-1 h-full">
+                        <div className="absolute top-0 right-0 text-[10px] font-medium px-1.5 py-0.5 rounded-bl bg-white/90">
+                          {cellStatus.label}
                         </div>
-                      ))}
-                    </div>
+                        {cellAppointments.map((app) => (
+                          <div
+                            key={app.id}
+                            className="text-[10px] p-1 bg-primary/10 rounded-sm truncate mt-1"
+                          >
+                            {app.client.name}
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
             ))}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 
