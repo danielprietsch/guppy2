@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -20,6 +19,7 @@ import WorkingHoursSettings from './WorkingHoursSettings';
 import DailyView from './calendar/DailyView';
 import WeeklyView from './calendar/WeeklyView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ToggleGroup, Label } from "@/components/ui/toggle-group";
 
 interface AppointmentClient {
   name: string;
@@ -154,8 +154,31 @@ const AvailabilityCalendar = () => {
           Calendário de Disponibilidade
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 h-[calc(100%-5rem)] flex flex-col">
-        <Tabs defaultValue="day" className="h-full">
+      <CardContent className="p-4 h-[calc(100%-5rem)] flex flex-col space-y-6">
+        <Card>
+          <CardContent className="p-6">
+            <Label className="text-lg font-medium mb-6 block">Disponibilidade para Agendamentos</Label>
+            <ToggleGroup
+              type="single"
+              defaultValue="open"
+              onValueChange={(value) => console.log(value)}
+              className="flex items-center gap-2"
+            >
+              <ToggleGroupItem value="open" className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Disponível
+              </ToggleGroupItem>
+              <ToggleGroupItem value="closed" className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5" />
+                Não Disponível
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </CardContent>
+        </Card>
+
+        <WorkingHoursSettings />
+
+        <Tabs defaultValue="day" className="flex-1">
           <TabsList className="w-full grid grid-cols-3 gap-2 p-2 bg-transparent mb-4">
             {["day", "week", "month"].map((tab) => (
               <Card
@@ -242,8 +265,6 @@ const AvailabilityCalendar = () => {
             </TabsContent>
           </div>
         </Tabs>
-
-        <WorkingHoursSettings />
 
         <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
           <DialogContent>
