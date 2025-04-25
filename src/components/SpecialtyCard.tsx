@@ -166,14 +166,15 @@ const SpecialtyCard = ({
         checked ? "border-primary bg-accent" : "border-input"
       )}
     >
-      {/* Checkbox maior e mais visível */}
+      {/* Checkbox maior e mais visível com área clicável ampliada */}
       <div 
-        className="absolute top-4 right-4 cursor-pointer p-2 rounded-lg hover:bg-accent-foreground/10"
+        className="absolute top-4 right-4 cursor-pointer p-2 rounded-lg hover:bg-accent-foreground/10 flex items-center justify-center"
         onClick={() => onCheckedChange(!checked)}
       >
         <Checkbox
           checked={checked}
-          className="w-6 h-6 border-2"
+          onCheckedChange={(value) => onCheckedChange(!!value)}
+          className="w-8 h-8 border-2 cursor-pointer"
           id={`checkbox-${id}`}
         />
       </div>
