@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, AlertCircle, Calendar } from "lucide-react";
@@ -28,10 +29,11 @@ const ProfessionalsPage = () => {
   
   const [selectedServices, setSelectedServices] = useState<string[]>(allServices);
   
+  // Initialize with current date and 'month' mode as default
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [dateMode, setDateMode] = useState<'day' | 'month'>('day');
+  const [dateMode, setDateMode] = useState<'day' | 'month'>('month');
   
-  console.log("ProfessionalsPage: Rendering with date", selectedDate);
+  console.log("ProfessionalsPage: Rendering with date", selectedDate, "in mode", dateMode);
 
   const { 
     data: professionals = [], 
@@ -82,6 +84,15 @@ const ProfessionalsPage = () => {
     setDateMode('month');
   };
 
+  // Debug function to log current filter settings
+  useEffect(() => {
+    console.log("Current filter settings:", {
+      dateMode,
+      selectedDate: format(selectedDate, "yyyy-MM-dd"),
+      selectedServices,
+    });
+  }, [dateMode, selectedDate, selectedServices]);
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
@@ -93,7 +104,7 @@ const ProfessionalsPage = () => {
         </p>
       </div>
       
-      <div className="flex justify-center mt-8 mb-4 gap-2">
+      <div className="flex justify-center mt-8 mb-4 gap-2 flex-wrap">
         <Button 
           variant="outline" 
           onClick={() => changeDate(-1)}
@@ -121,6 +132,23 @@ const ProfessionalsPage = () => {
         >
           Este mês
         </Button>
+      </div>
+      
+      <div className="mt-4 text-center text-sm text-gray-500">
+        <span>Filtro atual: </span>
+        <span className="font-medium">
+          {dateMode === 'day' 
+            ? `Dia: ${format(selectedDate, "dd/MM/yyyy")}` 
+            : `Mês: ${format(selectedDate, "MMMM yyyy")}`
+          }
+        </span>
+        <span> • </span>
+        <span className="font-medium">
+          {selectedServices.length === allServices.length 
+            ? 'Todos os serviços' 
+            : `${selectedServices.length} serviço(s) selecionado(s)`
+          }
+        </span>
       </div>
       
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
