@@ -10,6 +10,7 @@ interface BookingCalendarProps {
   selectedTurns: { [date: string]: string[] };
   onSelectTurn: (date: string, turn: string) => void;
   pricePerTurn: { [turn: string]: number };
+  cabinAvailability?: { morning: boolean; afternoon: boolean; evening: boolean };
   cabinCreatedAt?: string;
 }
 
@@ -17,6 +18,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   selectedTurns,
   onSelectTurn,
   pricePerTurn,
+  cabinAvailability = { morning: true, afternoon: true, evening: true },
   cabinCreatedAt
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
@@ -26,17 +28,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     const dateStr = format(date, 'yyyy-MM-dd');
     const isSelected = selectedTurns[dateStr]?.includes(turn);
     const isPastDate = isBefore(date, today) && !isToday(date);
+    const isClosed = !cabinAvailability[turn as keyof typeof cabinAvailability];
+
+    const getButtonClasses = () => {
+      if (isPastDate) return "bg-gray-300 text-gray-500 cursor-not-allowed";
+      if (isClosed) return "bg-yellow-300 text-yellow-800 cursor-not-allowed";
+      if (isSelected) return "bg-blue-500 text-white";
+      return "bg-secondary hover:bg-secondary/80";
+    };
 
     return (
       <Button
         key={turn}
-        onClick={() => !isPastDate && onSelectTurn(dateStr, turn)}
+        onClick={() => !isPastDate && !isClosed && onSelectTurn(dateStr, turn)}
         className={cn(
           "w-full p-2 text-xs font-medium rounded-sm transition-colors",
-          isSelected ? "bg-primary text-primary-foreground" : "bg-secondary",
-          isPastDate ? "opacity-50 cursor-not-allowed" : "hover:bg-primary/80",
+          getButtonClasses()
         )}
-        disabled={isPastDate}
+        disabled={isPastDate || isClosed}
       >
         {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
         <div className="text-[10px] mt-0.5">

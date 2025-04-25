@@ -265,6 +265,7 @@ const BookCabinPage = () => {
                   afternoon: cabin.price,
                   evening: cabin.price
                 }}
+                cabinAvailability={cabin.availability}
                 cabinCreatedAt={cabin.created_at}
               />
             )}
