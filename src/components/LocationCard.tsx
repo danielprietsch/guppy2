@@ -1,9 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { format, addDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { DailyAvailabilityCell } from "./location/DailyAvailabilityCell";
 
@@ -181,7 +181,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
         <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200">
           <CardContent className="p-6">
             <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-7">
+              <div className="col-span-4">
                 <h3 className="font-semibold text-2xl text-gray-800 mb-3">{location.name}</h3>
                 <p className="text-lg text-gray-600 mb-4">{location.address}, {location.city}</p>
                 
@@ -191,7 +191,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
                     <span>{location.cabinsCount}</span>
                   </div>
                   <div className="flex items-center text-gray-700">
-                    <span className="font-medium mr-2">Horário de funcionamento:</span>
+                    <span className="font-medium mr-2">Horário:</span>
                     <span>{location.openingHours.open} - {location.openingHours.close}</span>
                   </div>
                 </div>
@@ -208,16 +208,18 @@ const LocationCard = ({ location }: LocationCardProps) => {
                 </div>
               </div>
 
-              <div className="col-span-5 flex flex-col gap-4">
-                <div className="aspect-video h-32 overflow-hidden rounded-lg shadow-sm">
+              <div className="col-span-4">
+                <div className="h-48 overflow-hidden rounded-lg shadow-sm">
                   <img
                     src={displayImage}
                     alt={location.name}
                     className="h-full w-full object-cover transition-transform hover:scale-105"
                   />
                 </div>
-                
-                <div className="aspect-video h-32 rounded-lg overflow-hidden shadow-sm">
+              </div>
+
+              <div className="col-span-4">
+                <div className="h-48 rounded-lg overflow-hidden shadow-sm">
                   <iframe
                     title={`${location.name} Mapa`}
                     src={googleMapsEmbedUrl}
