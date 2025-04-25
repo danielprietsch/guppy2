@@ -1,50 +1,49 @@
+
 import { Link } from "react-router-dom";
 import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-const professionalAvatars = {
-  female: [
-    "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  ],
-  male: [
-    "https://images.unsplash.com/photo-1519340333755-c6eb8f2aaa9b?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  ],
-};
-
-function detectGender(name: string): "male" | "female" {
-  const femaleNames = [
-    "ana", "mariana", "fernanda", "silva", "santos", "lima"
-  ];
-  if (
-    femaleNames.some((f) => name.toLowerCase().includes(f)) ||
-    name.trim().toLowerCase().split(" ")[0].endsWith("a")
-  ) {
-    return "female";
-  }
-  return "male";
-}
-
 interface ProfessionalCardProps {
-  professional: User;
+  professional: User & {
+    specialties?: string[];
+    services?: Array<{
+      name: string;
+      category: string;
+      price: number;
+    }>;
+    rating?: number | null;
+    reviewCount?: number;
+    availability?: {
+      morning_status: string;
+      afternoon_status: string;
+      evening_status: string;
+    } | null;
+  };
 }
 
 const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
-  // Use the user's real avatar if available
   const avatarUrl = professional.avatarUrl || professional.avatar_url;
-  const rating = 4.5;
-
-  // Make sure specialties is always an array
   const specialties = Array.isArray(professional.specialties) ? professional.specialties : [];
+  const rating = professional.rating || 0;
+  const reviewCount = professional.reviewCount || 0;
+
+  const getAvailabilityStatus = () => {
+    if (!professional.availability) return "indisponível";
+    const { morning_status, afternoon_status, evening_status } = professional.availability;
+    if (morning_status === "free" || afternoon_status === "free" || evening_status === "free") {
+      return "disponível";
+    }
+    return "ocupado";
+  };
+
+  const availabilityStatus = getAvailabilityStatus();
+  const availabilityColor = {
+    disponível: "bg-green-500",
+    ocupado: "bg-red-500",
+    indisponível: "bg-gray-500",
+  }[availabilityStatus];
 
   return (
     <Link to={`/professional/${professional.id}`} className="block">
@@ -64,18 +63,24 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
         </div>
         <CardContent className="p-4">
           <h3 className="font-semibold text-lg">{professional.name}</h3>
-          <div className="flex items-center gap-1 mt-1">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm">{rating}</span>
+          
+          {/* Rating and Reviews */}
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-sm ml-1">{rating.toFixed(1)}</span>
+            </div>
+            <span className="text-sm text-gray-500">({reviewCount} avaliações)</span>
           </div>
           
-          {/* Available indicator */}
+          {/* Availability Status */}
           <div className="mt-2 flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
-            <span className="text-xs text-green-600">Disponível</span>
+            <span className={`flex h-2 w-2 rounded-full ${availabilityColor}`}></span>
+            <span className="text-xs capitalize">{availabilityStatus}</span>
           </div>
           
-          {specialties.length > 0 ? (
+          {/* Services/Specialties */}
+          {specialties.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1">
               {specialties.map((specialty, index) => (
                 <Badge
@@ -87,8 +92,19 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
                 </Badge>
               ))}
             </div>
-          ) : (
-            <div className="mt-3 text-xs text-gray-500">Especialidades não definidas</div>
+          )}
+          
+          {/* Price Range */}
+          {professional.services && professional.services.length > 0 && (
+            <div className="mt-3 text-sm text-gray-600">
+              A partir de{" "}
+              {new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              }).format(
+                Math.min(...professional.services.map((s) => s.price))
+              )}
+            </div>
           )}
         </CardContent>
       </Card>

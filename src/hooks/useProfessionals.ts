@@ -13,7 +13,6 @@ interface UseProfessionalsOptions {
 
 export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { withSpecialties = true, withAvailability = false, date = null } = options;
-  const { data: allProfessionals } = useUsers('professional');
 
   return useQuery({
     queryKey: ['professionals', date ? format(date, 'yyyy-MM-dd') : null],
@@ -23,7 +22,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         console.log('Fetching professionals for date:', formattedDate);
 
         // Using explicit type assertion for the RPC function
-        const { data, error } = await supabase.rpc('get_public_professionals');
+        const { data: professionals, error } = await supabase.rpc('get_public_professionals');
         
         if (error) {
           console.error('Error fetching professional profiles:', error);
@@ -31,45 +30,64 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         }
 
         // If no professionals found, return empty array
-        if (!data || !Array.isArray(data) || data.length === 0) {
+        if (!professionals || !Array.isArray(professionals) || professionals.length === 0) {
           console.log('No professional profiles found');
           return [];
         }
 
-        // Convert the response to User type
-        const professionals = data as User[];
+        // Get services for all professionals
+        const { data: services, error: servicesError } = await supabase
+          .from('services')
+          .select('professional_id, name, category, price')
+          .in('professional_id', professionals.map(p => p.id));
 
-        // 5. If withSpecialties is true, fetch their specialties
-        if (withSpecialties && professionals) {
-          const { data: services, error: servicesError } = await supabase
-            .from('services')
-            .select('professional_id, category')
-            .in('professional_id', professionals.map(p => p.id));
+        // Get reviews for all professionals
+        const { data: reviews, error: reviewsError } = await supabase
+          .from('reviews')
+          .select('professional_id, rating')
+          .in('professional_id', professionals.map(p => p.id));
 
-          if (servicesError) {
-            console.error('Error fetching services:', servicesError);
-          } else if (Array.isArray(services)) {
-            // Group specialties by professional
-            const specialtiesByProfessional: Record<string, string[]> = {};
-            services.forEach(service => {
-              if (!service.professional_id) return;
-              if (!specialtiesByProfessional[service.professional_id]) {
-                specialtiesByProfessional[service.professional_id] = [];
-              }
-              if (!specialtiesByProfessional[service.professional_id].includes(service.category)) {
-                specialtiesByProfessional[service.professional_id].push(service.category);
-              }
-            });
-
-            // Add specialties to professional profiles
-            return professionals.map(prof => ({
-              ...prof,
-              specialties: specialtiesByProfessional[prof.id] || []
-            }));
+        // Get availability for all professionals if requested
+        let availability = [];
+        if (withAvailability) {
+          const { data: availData, error: availError } = await supabase
+            .from('professional_availability')
+            .select('*')
+            .in('professional_id', professionals.map(p => p.id))
+            .eq('date', formattedDate);
+          
+          if (availError) {
+            console.error('Error fetching availability:', availError);
+          } else {
+            availability = availData || [];
           }
         }
 
-        return professionals;
+        // Process and combine all data
+        return professionals.map(prof => {
+          // Calculate average rating
+          const profReviews = reviews?.filter(r => r.professional_id === prof.id) || [];
+          const avgRating = profReviews.length > 0
+            ? profReviews.reduce((acc, rev) => acc + rev.rating, 0) / profReviews.length
+            : null;
+
+          // Get professional's services
+          const profServices = services?.filter(s => s.professional_id === prof.id) || [];
+          const specialties = [...new Set(profServices.map(s => s.category))];
+
+          // Get availability status
+          const profAvailability = availability.find(a => a.professional_id === prof.id);
+
+          return {
+            ...prof,
+            specialties,
+            services: profServices,
+            rating: avgRating,
+            reviewCount: profReviews.length,
+            availability: profAvailability,
+          };
+        });
+
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
         return [];
