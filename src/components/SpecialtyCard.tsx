@@ -5,8 +5,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Scissors, 
   Brush, 
-  Spray, 
-  Nail 
+  SprayCan, 
+  NailPolish 
 } from "lucide-react";
 
 interface SpecialtyCardProps {
@@ -23,7 +23,7 @@ const getIconForSpecialty = (id: string) => {
       return <Scissors className="h-5 w-5" />;
     case "coloracao":
     case "luzes":
-      return <Spray className="h-5 w-5" />;
+      return <SprayCan className="h-5 w-5" />;
     case "escova":
     case "hidratacao":
       return <Brush className="h-5 w-5" />;
@@ -31,7 +31,7 @@ const getIconForSpecialty = (id: string) => {
     case "manicure_gel":
     case "pedicure_comum":
     case "pedicure_spa":
-      return <Nail className="h-5 w-5" />;
+      return <NailPolish className="h-5 w-5" />;
     default:
       return <Scissors className="h-5 w-5" />;
   }
