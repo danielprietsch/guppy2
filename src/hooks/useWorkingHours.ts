@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { Json } from '@/integrations/supabase/types';
 
 export interface WorkingHoursDay {
   start: string;
@@ -19,6 +20,24 @@ export interface BreakTime {
   start: string;
   end: string;
 }
+
+// Default working hours configuration
+const defaultWorkingHours: WorkingHours = {
+  monday: { start: '09:00', end: '17:00', enabled: true },
+  tuesday: { start: '09:00', end: '17:00', enabled: true },
+  wednesday: { start: '09:00', end: '17:00', enabled: true },
+  thursday: { start: '09:00', end: '17:00', enabled: true },
+  friday: { start: '09:00', end: '17:00', enabled: true },
+  saturday: { start: '09:00', end: '17:00', enabled: false },
+  sunday: { start: '09:00', end: '17:00', enabled: false }
+};
+
+// Default break time configuration
+const defaultBreakTime: BreakTime = {
+  enabled: true,
+  start: '12:00',
+  end: '13:00'
+};
 
 export const useWorkingHours = (professionalId: string | undefined) => {
   const queryClient = useQueryClient();
@@ -39,7 +58,15 @@ export const useWorkingHours = (professionalId: string | undefined) => {
         return null;
       }
 
-      return data?.[0] ?? null;
+      // If no data exists, return default values
+      if (!data || data.length === 0) {
+        return {
+          working_hours: defaultWorkingHours,
+          break_time: defaultBreakTime
+        };
+      }
+
+      return data[0];
     },
     enabled: !!professionalId
   });
@@ -55,22 +82,21 @@ export const useWorkingHours = (professionalId: string | undefined) => {
         .from('professional_availability')
         .select('id')
         .eq('professional_id', professionalId)
-        .eq('date', formattedDate)
-        .single();
+        .limit(1);
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found" error
+      if (fetchError) {
         throw fetchError;
       }
 
-      if (existingData) {
+      if (existingData && existingData.length > 0) {
         // Update existing record
         const { error } = await supabase
           .from('professional_availability')
           .update({
-            working_hours: workingHours as any,
-            break_time: breakTime as any
+            working_hours: workingHours as unknown as Json,
+            break_time: breakTime as unknown as Json
           })
-          .eq('id', existingData.id);
+          .eq('id', existingData[0].id);
 
         if (error) throw error;
       } else {
@@ -80,8 +106,8 @@ export const useWorkingHours = (professionalId: string | undefined) => {
           .insert([{
             professional_id: professionalId,
             date: formattedDate,
-            working_hours: workingHours as any,
-            break_time: breakTime as any
+            working_hours: workingHours as unknown as Json,
+            break_time: breakTime as unknown as Json
           }]);
 
         if (error) throw error;
@@ -92,9 +118,18 @@ export const useWorkingHours = (professionalId: string | undefined) => {
     }
   });
 
+  // Use our type assertions to safely convert the JSON data to our expected types
+  const typedWorkingHours = workingHours?.working_hours ? 
+    workingHours.working_hours as unknown as WorkingHours : 
+    defaultWorkingHours;
+
+  const typedBreakTime = workingHours?.break_time ? 
+    workingHours.break_time as unknown as BreakTime : 
+    defaultBreakTime;
+
   return {
-    workingHours: workingHours?.working_hours as WorkingHours | undefined,
-    breakTime: workingHours?.break_time as BreakTime | undefined,
+    workingHours: typedWorkingHours,
+    breakTime: typedBreakTime,
     isLoading,
     updateWorkingHours
   };
