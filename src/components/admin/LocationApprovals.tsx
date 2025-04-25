@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -58,18 +57,16 @@ export const LocationApprovals = () => {
 
       // Now, fetch owner details for each location
       const locationsWithOwners = await Promise.all((data || []).map(async (location) => {
+        // Get the owner info from a security definer function to avoid RLS infinite recursion
         const { data: ownerData, error: ownerError } = await supabase
-          .from('profiles')
-          .select('name, email')
-          .eq('id', location.owner_id)
-          .single();
+          .rpc('get_user_profile', { user_id: location.owner_id });
           
         if (ownerError) {
           debugError(`LocationApprovals: Error fetching owner for location ${location.id}:`, ownerError);
           return {
             id: location.id,
             name: location.name,
-            cabins_count: location.cabins_count,
+            cabins_count: location.cabins_count || 0,
             active: location.active,
             owner_name: "Desconhecido",
             owner_email: "Desconhecido",
@@ -80,7 +77,7 @@ export const LocationApprovals = () => {
         return {
           id: location.id,
           name: location.name,
-          cabins_count: location.cabins_count,
+          cabins_count: location.cabins_count || 0,
           active: location.active,
           owner_name: ownerData?.name || "Desconhecido",
           owner_email: ownerData?.email || "Desconhecido",
