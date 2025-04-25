@@ -51,7 +51,6 @@ const AvailabilityCalendar = () => {
         return [];
       }
 
-      // Fetch client information separately
       const appointmentsWithClients = await Promise.all(
         data.map(async (appointment) => {
           if (appointment.client_id) {
@@ -147,6 +146,9 @@ const AvailabilityCalendar = () => {
       <CardContent>
         <div className="grid md:grid-cols-2 gap-6">
           <div>
+            <WorkingHoursSettings />
+          </div>
+          <div>
             <Calendar
               mode="single"
               selected={selectedDate}
@@ -176,35 +178,6 @@ const AvailabilityCalendar = () => {
                 )
               }}
             />
-          </div>
-          
-          <div>
-            {selectedDate && (
-              <div className="border rounded-md p-4">
-                <h3 className="font-medium mb-4">
-                  {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
-                </h3>
-                <div className="space-y-2">
-                  {getAppointmentsForDay(selectedDate).map((app) => (
-                    <div
-                      key={app.id}
-                      className="flex items-center justify-between p-2 bg-blue-50 rounded-md cursor-pointer hover:bg-blue-100"
-                      onClick={() => setSelectedAppointment(app)}
-                    >
-                      <div>
-                        <p className="font-medium">{formatAppointmentTime(app.time)}</p>
-                        <p className="text-sm text-gray-600">{app.client.name}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {getAppointmentsForDay(selectedDate).length === 0 && (
-                    <p className="text-gray-500 text-center py-4">
-                      Nenhum agendamento para este dia
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

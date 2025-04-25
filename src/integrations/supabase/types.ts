@@ -237,6 +237,7 @@ export type Database = {
       professional_availability: {
         Row: {
           afternoon_status: string
+          break_time: Json | null
           created_at: string | null
           date: string
           evening_status: string
@@ -244,9 +245,11 @@ export type Database = {
           morning_status: string
           professional_id: string
           updated_at: string | null
+          working_hours: Json | null
         }
         Insert: {
           afternoon_status?: string
+          break_time?: Json | null
           created_at?: string | null
           date: string
           evening_status?: string
@@ -254,9 +257,11 @@ export type Database = {
           morning_status?: string
           professional_id: string
           updated_at?: string | null
+          working_hours?: Json | null
         }
         Update: {
           afternoon_status?: string
+          break_time?: Json | null
           created_at?: string | null
           date?: string
           evening_status?: string
@@ -264,6 +269,7 @@ export type Database = {
           morning_status?: string
           professional_id?: string
           updated_at?: string | null
+          working_hours?: Json | null
         }
         Relationships: [
           {
@@ -578,6 +584,14 @@ export type Database = {
       }
       is_user_owner: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      is_within_working_hours: {
+        Args: {
+          professional_id: string
+          check_date: string
+          check_time: string
+        }
         Returns: boolean
       }
       update_admin_profile: {

@@ -24,7 +24,7 @@ export const useAvailability = (professionalId: string | undefined) => {
       
       const { data, error } = await supabase
         .from('professional_availability')
-        .select('*')
+        .select('*, working_hours, break_time')
         .eq('professional_id', professionalId);
 
       if (error) {
