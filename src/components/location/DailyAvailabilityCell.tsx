@@ -30,7 +30,9 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "bg-yellow-500";
     }
-    return shift.availableCabins > 0 ? "bg-green-500" : "bg-red-500";
+    // Consider a shift as available only if there's at least one cabin available
+    // AND it's not manually closed AND the total cabins count is greater than 0
+    return (shift.availableCabins > 0 && shift.totalCabins > 0) ? "bg-green-500" : "bg-red-500";
   };
 
   const getStatusText = (shift: ShiftAvailability) => {
@@ -38,11 +40,16 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "Fechado";
     }
-    return shift.availableCabins > 0 ? `${shift.availableCabins} livre${shift.availableCabins > 1 ? 's' : ''}` : "Reservado";
+    // Return "Reservado" if no cabins are available or if there are no cabins at all
+    if (shift.availableCabins <= 0 || shift.totalCabins <= 0) {
+      return "Reservado";
+    }
+    return `${shift.availableCabins} livre${shift.availableCabins > 1 ? 's' : ''}`;
   };
 
   const handleShiftClick = (shift: ShiftAvailability) => {
-    if (shift.availableCabins > 0 && cabinId && !isPastDate) {
+    // Only allow clicking if there are actually available cabins
+    if (shift.availableCabins > 0 && shift.totalCabins > 0 && cabinId && !isPastDate) {
       setShowBookingDialog(true);
     }
   };
