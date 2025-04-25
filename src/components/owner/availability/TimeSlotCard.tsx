@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
+        // Fix: Convert the number to string before setting it to state
         setPriceValue(newPrice.toString());
         onPriceEdit(newPrice);
         setAnimatePrice(true);
