@@ -47,9 +47,12 @@ export const useAuth = () => {
               specialties: []
             });
           }
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error("Error in auth hook:", error);
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -57,12 +60,23 @@ export const useAuth = () => {
 
     getUser();
 
+    // Setup auth state change listener with improved handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
+        
+        if (event === 'SIGNED_OUT') {
+          // When signed out, immediately clear the user state
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+        
         if (session) {
           getUser();
         } else {
           setUser(null);
+          setLoading(false);
         }
       }
     );

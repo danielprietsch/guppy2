@@ -27,16 +27,12 @@ const NavBar = () => {
           return;
         }
         
-        // First, check if user metadata contains user type information
         const userMetadata = session.user.user_metadata;
         const userTypeFromMetadata = userMetadata?.userType;
         const nameFromMetadata = userMetadata?.name;
         const avatarFromMetadata = userMetadata?.avatar_url;
         
         if (userTypeFromMetadata) {
-          // If metadata has user info, use that first (it's most reliable)
-          console.log("NavBar: Using user data from metadata:", userMetadata);
-          
           const userData: User = {
             id: session.user.id,
             name: nameFromMetadata || session.user.email?.split('@')[0] || "User",
@@ -48,8 +44,6 @@ const NavBar = () => {
           setCurrentUser(userData);
           setLoading(false);
         } else {
-          // Fallback: Fetch user profile from Supabase
-          console.log("NavBar: Fetching user profile from database");
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -62,7 +56,6 @@ const NavBar = () => {
             return;
           }
           
-          // Map profile data to User type
           const userData: User = {
             id: profileData.id,
             name: profileData.name || session.user.email?.split('@')[0] || "User",
@@ -85,7 +78,6 @@ const NavBar = () => {
     
     checkAuth();
     
-    // Setup auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state change:", event);
@@ -97,7 +89,6 @@ const NavBar = () => {
       }
     );
     
-    // Listen for profile changes to update avatar and user info in real-time
     const channel = supabase
       .channel('public:profiles')
       .on(
@@ -108,7 +99,6 @@ const NavBar = () => {
           table: 'profiles',
         },
         (payload) => {
-          // Only update if it's the current user's profile that changed
           if (currentUser && payload.new.id === currentUser.id) {
             console.log("Profile updated in real-time:", payload.new);
             setCurrentUser(prev => {
@@ -135,14 +125,24 @@ const NavBar = () => {
     try {
       const { error } = await supabase.auth.signOut();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error signing out:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível desconectar. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setCurrentUser(null);
       
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado com sucesso.",
       });
       
-      navigate("/login");
+      window.location.href = "/login";
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
@@ -187,22 +187,7 @@ const NavBar = () => {
           </div>
 
           {currentUser ? (
-            <UserMenu currentUser={currentUser} onLogout={() => {
-              supabase.auth.signOut().then(() => {
-                toast({
-                  title: "Logout realizado",
-                  description: "Você foi desconectado com sucesso.",
-                });
-                navigate("/login");
-              }).catch(error => {
-                console.error("Error signing out:", error);
-                toast({
-                  title: "Erro",
-                  description: "Não foi possível desconectar. Tente novamente.",
-                  variant: "destructive",
-                });
-              });
-            }} />
+            <UserMenu currentUser={currentUser} onLogout={handleLogout} />
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/login">

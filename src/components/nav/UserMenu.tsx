@@ -1,5 +1,5 @@
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
 import { LogOut } from "lucide-react";
@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface UserMenuProps {
   currentUser: User;
@@ -21,6 +22,7 @@ interface UserMenuProps {
 }
 
 export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
+  const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(currentUser?.avatarUrl || null);
 
   useEffect(() => {
@@ -80,6 +82,32 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   // Extract first letter of name for avatar fallback
   const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
 
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      
+      // Call the parent component's onLogout callback
+      onLogout();
+      
+      // Navigate to login page
+      navigate("/login");
+    } catch (error) {
+      console.error("Error signing out:", error);
+      toast({
+        title: "Erro ao sair",
+        description: "Não foi possível desconectar. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
@@ -117,7 +145,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onLogout} className="text-red-600 cursor-pointer">
+          <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
             <LogOut className="mr-2 h-4 w-4" />
             Sair
           </DropdownMenuItem>

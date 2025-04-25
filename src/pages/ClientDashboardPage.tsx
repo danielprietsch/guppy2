@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, LogOut } from "lucide-react";
 import { debugLog, debugError } from "@/utils/debugLogger";
 
 const ClientDashboardPage = () => {
@@ -46,6 +46,40 @@ const ClientDashboardPage = () => {
     checkAuth();
   }, [navigate]);
 
+  // Improved logout handler
+  const handleLogout = async () => {
+    try {
+      debugLog("ClientDashboardPage: Realizando logout...");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        debugError("ClientDashboardPage: Erro no logout:", error);
+        toast({
+          title: "Erro ao sair",
+          description: "Não foi possível desconectar. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      debugLog("ClientDashboardPage: Logout bem-sucedido, redirecionando...");
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso."
+      });
+      
+      // Force a full page reload to clear any cached state
+      window.location.href = "/login";
+    } catch (error) {
+      debugError("ClientDashboardPage: Exceção no logout:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-12 flex items-center justify-center">
@@ -67,6 +101,14 @@ const ClientDashboardPage = () => {
             Bem-vindo ao seu painel de cliente
           </p>
         </div>
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          className="mt-4 md:mt-0 flex items-center"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
       </div>
       
       <div className="mt-8">

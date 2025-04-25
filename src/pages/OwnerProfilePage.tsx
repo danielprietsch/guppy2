@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types"; 
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@radix-ui/react-tabs";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { LogOut } from "lucide-react";
 
 const OwnerProfilePage = () => {
   const navigate = useNavigate();
@@ -96,12 +96,33 @@ const OwnerProfilePage = () => {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logout realizado",
-      description: "Você foi desconectado com sucesso.",
-    });
-    navigate("/login");
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error("Error signing out:", error);
+        toast({
+          title: "Erro ao sair",
+          description: "Não foi possível desconectar. Tente novamente.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso.",
+      });
+      
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Error during logout:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!currentUser) {
@@ -134,9 +155,10 @@ const OwnerProfilePage = () => {
         </div>
         <Button
           variant="outline"
-          className="mt-4 md:mt-0"
+          className="mt-4 md:mt-0 flex items-center"
           onClick={handleLogout}
         >
+          <LogOut className="mr-2 h-4 w-4" />
           Sair
         </Button>
       </div>

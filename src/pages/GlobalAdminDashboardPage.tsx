@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { PermissionsManager } from "@/components/admin/PermissionsManager";
 import { LocationApprovals } from "@/components/admin/LocationApprovals";
 import { UserRegistrationForm } from "@/components/admin/UserRegistrationForm";
+import { LogOut } from "lucide-react";
 
 const GlobalAdminDashboardPage = () => {
   const navigate = useNavigate();
@@ -97,12 +99,36 @@ const GlobalAdminDashboardPage = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast({
-      title: "Logout realizado",
-      description: "Você foi desconectado com sucesso.",
-    });
-    navigate("/login");
+    try {
+      debugLog("GlobalAdminDashboardPage: Realizando logout...");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        debugError("GlobalAdminDashboardPage: Erro no logout:", error);
+        toast({
+          title: "Erro ao sair",
+          description: "Não foi possível desconectar. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      debugLog("GlobalAdminDashboardPage: Logout bem-sucedido, redirecionando...");
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso."
+      });
+      
+      // Force a full page reload to clear any cached state
+      window.location.href = "/login";
+    } catch (error) {
+      debugError("GlobalAdminDashboardPage: Exceção no logout:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   if (loading) {
@@ -128,8 +154,9 @@ const GlobalAdminDashboardPage = () => {
         <Button
           onClick={handleLogout}
           variant="outline"
-          className="mt-4 md:mt-0"
+          className="mt-4 md:mt-0 flex items-center"
         >
+          <LogOut className="mr-2 h-4 w-4" />
           Sair
         </Button>
       </div>

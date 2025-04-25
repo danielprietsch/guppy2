@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOwnerProfile } from "@/hooks/useOwnerProfile";
@@ -33,7 +32,6 @@ const OwnerDashboardPage = () => {
   const [addCabinModalOpen, setAddCabinModalOpen] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
-  // Verificação de sessão executada apenas uma vez ao montar o componente
   useEffect(() => {
     const checkSession = async () => {
       try {
@@ -52,7 +50,6 @@ const OwnerDashboardPage = () => {
         
         debugLog("OwnerDashboardPage: Sessão encontrada, usuário:", session.user);
         
-        // Simplificar verificação de tipo de usuário - aceitar owner ou global_admin
         const userType = session.user.user_metadata?.userType;
         
         if (userType === 'owner' || userType === 'global_admin') {
@@ -61,7 +58,6 @@ const OwnerDashboardPage = () => {
           return;
         }
 
-        // Redirecionar usuários não autorizados
         debugLog("OwnerDashboardPage: Usuário não autorizado, redirecionando");
         toast({
           title: "Acesso Negado",
@@ -83,7 +79,6 @@ const OwnerDashboardPage = () => {
     checkSession();
   }, [navigate]);
 
-  // Uso do useCallback para evitar recriações desnecessárias da função
   const loadLocations = useCallback(() => {
     if (currentUser?.id && authChecked) {
       debugLog("OwnerDashboardPage: Carregando locais para o usuário:", currentUser.id);
@@ -91,26 +86,54 @@ const OwnerDashboardPage = () => {
     }
   }, [currentUser, authChecked, loadUserLocations]);
 
-  // Carregar locais quando o usuário estiver disponível
   useEffect(() => {
     loadLocations();
   }, [loadLocations]);
   
-  // Usar useMemo para calcular estados derivados
   const isLoading = useMemo(() => 
     userLoading || locationsLoading || !authChecked, 
     [userLoading, locationsLoading, authChecked]
   );
 
-  // Handler para abertura do modal de adicionar cabine
   const handleAddCabinClick = useCallback(() => {
     setAddCabinModalOpen(true);
   }, []);
 
-  // Handler para abertura do modal de adicionar local
   const handleAddLocationClick = useCallback(() => {
     setAddLocationModalOpen(true);
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      debugLog("OwnerDashboardPage: Realizando logout...");
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        debugError("OwnerDashboardPage: Erro no logout:", error);
+        toast({
+          title: "Erro ao sair",
+          description: "Não foi possível desconectar. Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      debugLog("OwnerDashboardPage: Logout bem-sucedido, redirecionando...");
+      toast({
+        title: "Logout realizado",
+        description: "Você foi desconectado com sucesso."
+      });
+      
+      window.location.href = "/login";
+    } catch (error) {
+      debugError("OwnerDashboardPage: Exceção no logout:", error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -136,11 +159,21 @@ const OwnerDashboardPage = () => {
 
   return (
     <div className="container px-4 py-8 md:px-6 md:py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Dashboard do Franqueado</h1>
-        <p className="text-muted-foreground">
-          Gerencie seus locais, cabines e equipamentos
-        </p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard do Franqueado</h1>
+          <p className="text-muted-foreground">
+            Gerencie seus locais, cabines e equipamentos
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          className="mt-4 md:mt-0 flex items-center"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-6">
