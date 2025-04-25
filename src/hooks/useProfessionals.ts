@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { useUsers } from '@/hooks/useUsers';
 
 interface UseProfessionalsOptions {
   withSpecialties?: boolean;
@@ -12,73 +13,42 @@ interface UseProfessionalsOptions {
 
 export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { withSpecialties = true, withAvailability = false, date = null } = options;
+  
+  // Use the existing useUsers hook as a fallback
+  const { data: allProfessionals } = useUsers('professional');
 
   const professionalsQuery = useQuery({
     queryKey: ['professionals', date],
     queryFn: async () => {
-      if (!date) return [];
-
-      const formattedDate = format(date, 'yyyy-MM-dd');
-      
       try {
-        // Fetch all professionals with availability first
-        const { data: availableProfessionals, error: availabilityError } = await supabase
-          .from('professional_availability')
-          .select(`
-            professional_id,
-            morning_status,
-            afternoon_status,
-            evening_status,
-            profiles:professional_id (
-              id,
-              name,
-              email,
-              avatar_url
-            )
-          `)
-          .eq('date', formattedDate)
-          .or('morning_status.eq.free,afternoon_status.eq.free,evening_status.eq.free');
-
-        if (availabilityError) {
-          console.error('Error fetching professionals availability:', availabilityError);
-          return [];
+        if (!date) {
+          // If no date provided, return all professionals from the useUsers hook
+          return allProfessionals || [];
         }
-
-        if (!availableProfessionals || availableProfessionals.length === 0) {
-          console.log('No professionals available on the selected date');
-          return [];
+        
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        
+        console.log('Fetching professionals for date:', formattedDate);
+        
+        // First, directly fetch all professionals to avoid RLS issues
+        const { data: professionals, error: professionalError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_type', 'professional');
+          
+        if (professionalError) {
+          console.error('Error fetching professionals:', professionalError);
+          // Return fallback data from useUsers hook
+          return allProfessionals || [];
         }
-
-        // Get active bookings for professionals
-        const { data: activeBookings, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('professional_id')
-          .eq('date', formattedDate)
-          .eq('status', 'confirmed');
-
-        if (bookingsError) {
-          console.error('Error fetching bookings:', bookingsError);
-          return [];
-        }
-
-        if (!activeBookings || activeBookings.length === 0) {
-          console.log('No confirmed bookings found for the selected date');
-          return [];
-        }
-
-        // Create a set of professional IDs with confirmed bookings
-        const professionalIdsWithBookings = new Set(
-          activeBookings.map(booking => booking.professional_id)
-        );
-
-        // Get all services data separately
+        
+        // Get services data separately
         const { data: services, error: servicesError } = await supabase
           .from('services')
           .select('professional_id, category');
 
         if (servicesError) {
           console.error('Error fetching services:', servicesError);
-          return [];
         }
 
         // Create specialties map
@@ -97,32 +67,69 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             }
           });
         }
+        
+        // Get availability data separately
+        let availableProfessionalIds: string[] = [];
+        
+        if (withAvailability) {
+          const { data: availability, error: availabilityError } = await supabase
+            .from('professional_availability')
+            .select('professional_id')
+            .eq('date', formattedDate)
+            .or('morning_status.eq.free,afternoon_status.eq.free,evening_status.eq.free');
 
-        // Filter professionals who have both availability AND confirmed bookings
-        const availableProfessionalsWithBookings = availableProfessionals
-          .filter(prof => {
-            // Check if professional has at least one confirmed booking
-            return professionalIdsWithBookings.has(prof.professional_id) && prof.profiles;
-          })
-          .map(prof => {
-            const profId = prof.professional_id;
-            return {
-              id: prof.profiles?.id || '',
-              name: prof.profiles?.name || '',
-              email: prof.profiles?.email || '',
-              avatarUrl: prof.profiles?.avatar_url,
-              specialties: specialtiesByProfessional[profId] || []
-            };
-          });
+          if (!availabilityError && availability) {
+            availableProfessionalIds = availability.map(a => a.professional_id);
+            console.log('Available professional IDs:', availableProfessionalIds);
+          } else if (availabilityError) {
+            console.error('Error fetching availability:', availabilityError);
+          }
+        }
+        
+        // Get bookings data separately
+        let professionalIdsWithBookings: string[] = [];
+        
+        const { data: bookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('professional_id')
+          .eq('date', formattedDate)
+          .eq('status', 'confirmed');
 
-        console.log('Found professionals with availability and bookings:', availableProfessionalsWithBookings.length);
-        return availableProfessionalsWithBookings as User[];
+        if (!bookingsError && bookings) {
+          professionalIdsWithBookings = bookings.map(b => b.professional_id);
+          console.log('Professionals with bookings:', professionalIdsWithBookings);
+        } else if (bookingsError) {
+          console.error('Error fetching bookings:', bookingsError);
+        }
+        
+        // Process professionals data
+        let processedProfessionals = professionals.map(prof => ({
+          id: prof.id,
+          name: prof.name || '',
+          email: prof.email || '',
+          avatarUrl: prof.avatar_url,
+          avatar_url: prof.avatar_url,
+          specialties: specialtiesByProfessional[prof.id] || []
+        })) as User[];
+        
+        // Filter based on availability and bookings if required
+        if (withAvailability) {
+          processedProfessionals = processedProfessionals.filter(prof => 
+            availableProfessionalIds.includes(prof.id) && 
+            professionalIdsWithBookings.includes(prof.id)
+          );
+        }
+        
+        console.log('Final professionals list:', processedProfessionals.length);
+        return processedProfessionals;
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
-        return [];
+        // Return fallback data from useUsers hook
+        return allProfessionals || [];
       }
     },
-    enabled: !!date
+    // Enable the query unconditionally - we'll return all professionals if no date is provided
+    enabled: true
   });
 
   return {

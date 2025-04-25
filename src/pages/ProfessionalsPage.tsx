@@ -15,6 +15,7 @@ import {
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { useServices } from "@/hooks/useServices";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +35,8 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
   
+  console.log("Professional count:", professionals.length);
+
   const filteredProfessionals = professionals.filter(professional => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesService = selectedService === "all" || 
@@ -96,8 +99,23 @@ const ProfessionalsPage = () => {
       )}
       
       {isLoading ? (
-        <div className="mt-12 text-center">
-          <p>Carregando profissionais...</p>
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-lg overflow-hidden border">
+              <Skeleton className="h-64 w-full" />
+              <div className="p-4 space-y-2">
+                <Skeleton className="h-5 w-2/3" />
+                <Skeleton className="h-4 w-1/4" />
+                <div className="mt-2">
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+                <div className="flex gap-1 mt-2">
+                  <Skeleton className="h-6 w-16" />
+                  <Skeleton className="h-6 w-16" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
