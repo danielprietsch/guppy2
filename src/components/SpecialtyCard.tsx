@@ -223,7 +223,7 @@ const SpecialtyCard = ({
             value={duration !== undefined ? duration : serviceInfo.duration}
             onChange={(e) => onDurationChange && onDurationChange(Number(e.target.value))}
             placeholder="Duração em minutos"
-            className="w-full text-lg p-4 font-medium bg-white border-2 border-primary/20 focus:border-primary"
+            className="w-full text-lg p-4 font-medium bg-white border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-primary/5 transition-all"
           />
         </div>
 
@@ -240,7 +240,7 @@ const SpecialtyCard = ({
             value={price !== undefined ? price : serviceInfo.price}
             onChange={(e) => onPriceChange && onPriceChange(Number(e.target.value))}
             placeholder="Valor em reais"
-            className="w-full text-lg p-4 font-medium bg-white border-2 border-primary/20 focus:border-primary"
+            className="w-full text-lg p-4 font-medium bg-white border-2 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-primary/5 transition-all"
           />
         </div>
       </div>
