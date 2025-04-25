@@ -35,40 +35,14 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
     queryKey: ['professionals', date ? format(date, 'yyyy-MM-dd') : null],
     queryFn: async () => {
       try {
-        // Calculate the start and end of the week for the given date
-        const weekStart = format(startOfWeek(date), 'yyyy-MM-dd');
-        const weekEnd = format(endOfWeek(date), 'yyyy-MM-dd');
+        console.log('Fetching all public professional profiles');
         
-        console.log('Fetching professionals for week:', weekStart, 'to', weekEnd);
-
-        // First get all active bookings for the week
-        const { data: activeBookings, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('professional_id')
-          .gte('date', weekStart)
-          .lte('date', weekEnd)
-          .eq('status', 'confirmed');
-
-        if (bookingsError) {
-          console.error('Error fetching bookings:', bookingsError);
-          return [];
-        }
-
-        // Get unique professional IDs from bookings
-        const professionalIds = [...new Set(activeBookings?.map(b => b.professional_id) || [])];
-
-        if (professionalIds.length === 0) {
-          console.log('No professionals with active bookings found');
-          return [];
-        }
-
-        // Get professionals that have active bookings
+        // Get all public professional profiles
         const { data: professionalsData, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_type', 'professional')
-          .eq('is_public', true)
-          .in('id', professionalIds);
+          .eq('is_public', true);
 
         if (error) {
           console.error('Error fetching professional profiles:', error);
@@ -80,27 +54,41 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           console.log('No professional profiles found');
           return [];
         }
+        
+        console.log(`Found ${professionalsData.length} professional profiles`);
 
-        // Get services for the filtered professionals
+        // Get all professional IDs
+        const professionalIds = professionalsData.map(prof => prof.id);
+
+        // Get services for the professionals
         const { data: services, error: servicesError } = await supabase
           .from('services')
           .select('professional_id, name, category, price')
           .in('professional_id', professionalIds);
 
-        // Get reviews for the filtered professionals
+        if (servicesError) {
+          console.error('Error fetching services:', servicesError);
+        }
+
+        // Get reviews for the professionals
         const { data: reviews, error: reviewsError } = await supabase
           .from('reviews')
           .select('professional_id, rating')
           .in('professional_id', professionalIds);
 
+        if (reviewsError) {
+          console.error('Error fetching reviews:', reviewsError);
+        }
+
         // Get availability if requested
         let availability = [];
-        if (withAvailability) {
+        if (withAvailability && date) {
+          const formattedDate = format(date, 'yyyy-MM-dd');
           const { data: availData, error: availError } = await supabase
             .from('professional_availability')
             .select('*')
             .in('professional_id', professionalIds)
-            .eq('date', format(date, 'yyyy-MM-dd'));
+            .eq('date', formattedDate);
           
           if (availError) {
             console.error('Error fetching availability:', availError);
@@ -119,6 +107,13 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
           // Get professional's services
           const profServices = services?.filter(s => s.professional_id === prof.id) || [];
+          
+          // Only include professionals with services if withSpecialties is true
+          if (withSpecialties && profServices.length === 0) {
+            console.log(`Professional ${prof.id} has no services, skipping`);
+            return null;
+          }
+          
           const specialties = [...new Set(profServices.map(s => s.category))];
 
           // Get availability status
@@ -126,9 +121,9 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
           // Ensure user_type is one of the allowed types
           const userType = prof.user_type === 'professional' ? 'professional' : 
-                           prof.user_type === 'client' ? 'client' : 
-                           prof.user_type === 'owner' ? 'owner' : 
-                           prof.user_type === 'global_admin' ? 'global_admin' : 'professional';
+                          prof.user_type === 'client' ? 'client' : 
+                          prof.user_type === 'owner' ? 'owner' : 
+                          prof.user_type === 'global_admin' ? 'global_admin' : 'professional';
 
           return {
             ...prof,
@@ -139,7 +134,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             reviewCount: profReviews.length,
             availability: profAvailability,
           } as Professional;
-        });
+        }).filter(Boolean) as Professional[]; // Filter out null values
 
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);

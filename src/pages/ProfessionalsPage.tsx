@@ -1,8 +1,8 @@
+
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, AlertCircle } from "lucide-react";
-import { addDays } from "date-fns";
 import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Popover,
@@ -20,7 +20,8 @@ const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const today = new Date();
-  const nextWeek = today;
+  
+  console.log("ProfessionalsPage: Rendering with date", today);
 
   // Get all unique categories from serviceData
   const allServices = Object.values(serviceData)
@@ -35,9 +36,11 @@ const ProfessionalsPage = () => {
   } = useProfessionals({ 
     withSpecialties: true,
     withAvailability: true,
-    date: nextWeek
+    date: today
   });
 
+  console.log("ProfessionalsPage: Received professionals data", professionals.length);
+  
   // Ensure professionals is always treated as an array
   const professionalsList = Array.isArray(professionals) ? professionals : [];
   
@@ -45,8 +48,15 @@ const ProfessionalsPage = () => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesService = selectedServices.length === 0 || 
       professional.specialties?.some(specialty => selectedServices.includes(specialty));
-    return matchesSearch && matchesService;
+    
+    const result = matchesSearch && matchesService;
+    if (!result) {
+      console.log(`Filtered out professional ${professional.id}: search match=${matchesSearch}, service match=${matchesService}`);
+    }
+    return result;
   });
+  
+  console.log("ProfessionalsPage: Filtered professionals", filteredProfessionals.length);
   
   const toggleService = (category: string) => {
     setSelectedServices(current => 
