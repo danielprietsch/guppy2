@@ -42,13 +42,13 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
       </div>
       <div className="space-y-1">
         <div className={`${getStatusColor(shifts.morning)} text-white text-[10px] p-1 rounded-sm`}>
-          M: {getStatusText(shifts.morning)}
+          {getStatusText(shifts.morning)}
         </div>
         <div className={`${getStatusColor(shifts.afternoon)} text-white text-[10px] p-1 rounded-sm`}>
-          T: {getStatusText(shifts.afternoon)}
+          {getStatusText(shifts.afternoon)}
         </div>
         <div className={`${getStatusColor(shifts.evening)} text-white text-[10px] p-1 rounded-sm`}>
-          N: {getStatusText(shifts.evening)}
+          {getStatusText(shifts.evening)}
         </div>
       </div>
     </div>
