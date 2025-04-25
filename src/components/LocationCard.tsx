@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
@@ -191,7 +190,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
                     <span>{location.cabinsCount}</span>
                   </div>
                   <div className="flex items-center text-gray-700">
-                    <span className="font-medium mr-2">Horário:</span>
+                    <span className="font-medium mr-2">Horário de Funcionamento:</span>
                     <span>{location.openingHours.open} - {location.openingHours.close}</span>
                   </div>
                 </div>
