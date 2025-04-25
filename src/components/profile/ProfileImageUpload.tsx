@@ -107,10 +107,7 @@ export function ProfileImageUpload({
 
   return (
     <div className={`flex flex-col items-center gap-4 ${className}`}>
-      <label 
-        className="relative cursor-pointer group block"
-        title="Alterar foto de perfil"
-      >
+      <div className="relative cursor-pointer group block">
         <Avatar className="h-32 w-32 border-2 border-primary/20">
           <AvatarImage 
             src={previewUrl || undefined}
@@ -137,14 +134,24 @@ export function ProfileImageUpload({
           </div>
         )}
         
-        <input
-          type="file"
-          onChange={handleFileChange}
-          accept="image/*"
-          className="hidden"
-          disabled={isUploading}
-        />
-      </label>
+        <label 
+          className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
+          title="Alterar foto de perfil"
+        >
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Camera className="h-5 w-5" />
+          )}
+          <input
+            type="file"
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+            disabled={isUploading}
+          />
+        </label>
+      </div>
     </div>
   );
 }
