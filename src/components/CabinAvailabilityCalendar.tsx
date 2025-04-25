@@ -163,6 +163,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
               onRelease={() => handleStatusChange(dateStr, turno, false)}
               onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}
               isPastDate={isPastDate}
+              date={day}
             />
           ))}
         </div>

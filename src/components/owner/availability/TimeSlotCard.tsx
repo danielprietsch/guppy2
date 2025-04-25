@@ -1,10 +1,11 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Lock, Clock, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugAreaLog } from "@/utils/debugLogger";
+import { format, isToday, isBefore } from 'date-fns';
+import { toast } from "@/hooks/use-toast";
 
 interface TimeSlotCardProps {
   turno: string;
@@ -16,6 +17,7 @@ interface TimeSlotCardProps {
   onRelease: () => void;
   onViewBooking?: () => void;
   isPastDate?: boolean;
+  date: Date;
 }
 
 export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
@@ -27,7 +29,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   onManualClose,
   onRelease,
   onViewBooking,
-  isPastDate = false
+  isPastDate = false,
+  date
 }) => {
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(price.toString());
@@ -72,7 +75,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
-      // Convertendo explicitamente para string antes de chamar onPriceEdit
       onPriceEdit(newPrice.toFixed(2));
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
@@ -94,7 +96,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
-        // Always convert to string before calling onPriceEdit
         const formattedPrice = (newPrice / 100).toFixed(2);
         onPriceEdit(formattedPrice);
         
@@ -104,6 +105,37 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         setTimeout(() => setAnimatePrice(false), 700);
       }
     }
+  };
+
+  const canCloseTimeSlot = () => {
+    if (!isToday(date)) return true;
+    
+    const now = new Date();
+    const currentHour = now.getHours();
+    
+    switch(turno.toLowerCase()) {
+      case 'manhã':
+        return currentHour < 12;
+      case 'tarde':
+        return currentHour < 17;
+      case 'noite':
+        return currentHour < 22;
+      default:
+        return true;
+    }
+  };
+
+  const handleManualClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canCloseTimeSlot()) {
+      toast({
+        title: "Não é possível fechar este turno",
+        description: "O horário limite para fechamento deste turno já passou.",
+        variant: "destructive"
+      });
+      return;
+    }
+    onManualClose();
   };
 
   const getStatusColor = () => {
@@ -188,7 +220,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={(e) => handleButtonClick(e, onManualClose)}
+                  onClick={handleManualClose}
                   className={cn(
                     "text-xs h-6 py-0 w-full bg-yellow-300 hover:bg-yellow-400 text-black"
                   )}
