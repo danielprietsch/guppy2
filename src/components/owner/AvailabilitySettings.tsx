@@ -541,9 +541,18 @@ export const AvailabilitySettings = ({
               {selectedCabin && (
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="grid grid-cols-2 w-full">
-                    <TabsTrigger value="calendar">Calendário</TabsTrigger>
                     <TabsTrigger value="batch">Edição em Massa</TabsTrigger>
+                    <TabsTrigger value="calendar">Calendário</TabsTrigger>
                   </TabsList>
+
+                  <TabsContent value="batch" className="mt-4">
+                    <BatchPriceEditor 
+                      defaultPrice={cabinPrices[selectedCabin] || 100}
+                      onPriceChange={(dates, turns, price) => 
+                        handleBatchPriceUpdate(selectedCabin, dates, turns, price)
+                      }
+                    />
+                  </TabsContent>
 
                   <TabsContent value="calendar" className="mt-4">
                     <div className="w-full overflow-x-auto">
@@ -559,15 +568,6 @@ export const AvailabilitySettings = ({
                         slotPrices={slotPrices[selectedCabin]}
                       />
                     </div>
-                  </TabsContent>
-
-                  <TabsContent value="batch" className="mt-4">
-                    <BatchPriceEditor 
-                      defaultPrice={cabinPrices[selectedCabin] || 100}
-                      onPriceChange={(dates, turns, price) => 
-                        handleBatchPriceUpdate(selectedCabin, dates, turns, price)
-                      }
-                    />
                   </TabsContent>
                 </Tabs>
               )}
