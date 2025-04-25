@@ -11,7 +11,7 @@ interface TimeSlotCardProps {
   price: number;
   isBooked: boolean;
   isManuallyClosed: boolean;
-  onPriceEdit: (newPrice: number) => void;
+  onPriceEdit: (newPrice: number) => void; // Ensuring this is a number
   onManualClose: () => void;
   onRelease: () => void;
   onViewBooking?: () => void;
@@ -68,11 +68,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const handlePriceSubmit = () => {
-    const newPrice = parseInt(priceValue) / 100;
+    const newPrice = parseFloat(priceValue) / 100;
     debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
-      onPriceEdit(newPrice);
+      // Ensure a number is passed
+      onPriceEdit(Number(newPrice.toFixed(2)));
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
     } else {
