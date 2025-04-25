@@ -48,6 +48,26 @@ const BookCabinPage = () => {
 
           if (cabinError) throw cabinError;
           
+          // Parse the JSON data to match our Cabin type
+          let availability = { morning: true, afternoon: true, evening: true };
+          if (cabinData.availability && typeof cabinData.availability === 'object') {
+            availability = {
+              morning: cabinData.availability.morning === true,
+              afternoon: cabinData.availability.afternoon === true,
+              evening: cabinData.availability.evening === true
+            };
+          }
+
+          let pricing = { defaultPricing: {}, specificDates: {} };
+          let price = 50; // Default price
+          if (cabinData.pricing && typeof cabinData.pricing === 'object') {
+            pricing = {
+              defaultPricing: cabinData.pricing.defaultPricing || {},
+              specificDates: cabinData.pricing.specificDates || {}
+            };
+            price = cabinData.pricing.defaultPrice || 50;
+          }
+          
           // Transform the data to match our Cabin type
           const transformedCabin: Cabin = {
             id: cabinData.id,
@@ -56,9 +76,9 @@ const BookCabinPage = () => {
             description: cabinData.description || '',
             equipment: cabinData.equipment || [],
             imageUrl: cabinData.image_url,
-            availability: cabinData.availability || { morning: true, afternoon: true, evening: true },
-            price: cabinData.pricing?.defaultPrice,
-            pricing: cabinData.pricing
+            availability,
+            price,
+            pricing
           };
           
           setCabin(transformedCabin);
@@ -73,6 +93,15 @@ const BookCabinPage = () => {
 
             if (locError) throw locError;
             
+            // Parse the opening hours JSON
+            let openingHours = { open: "09:00", close: "18:00" };
+            if (locData.opening_hours && typeof locData.opening_hours === 'object') {
+              openingHours = {
+                open: locData.opening_hours.open || "09:00",
+                close: locData.opening_hours.close || "18:00"
+              };
+            }
+            
             // Transform the location data
             const transformedLocation: Location = {
               id: locData.id,
@@ -82,7 +111,7 @@ const BookCabinPage = () => {
               state: locData.state,
               zipCode: locData.zip_code,
               cabinsCount: locData.cabins_count || 0,
-              openingHours: locData.opening_hours || { open: "09:00", close: "18:00" },
+              openingHours,
               amenities: locData.amenities || [],
               imageUrl: locData.image_url,
               description: locData.description,

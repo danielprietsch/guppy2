@@ -28,17 +28,41 @@ export const useCabinSearch = (locationId?: string) => {
       }
 
       // Transform the response to match our Cabin type
-      return data.map(cabin => ({
-        id: cabin.id,
-        locationId: cabin.location_id,
-        name: cabin.name,
-        description: cabin.description || '',
-        equipment: cabin.equipment || [],
-        imageUrl: cabin.image_url,
-        availability: cabin.availability || { morning: true, afternoon: true, evening: true },
-        price: cabin.pricing?.defaultPrice,
-        pricing: cabin.pricing
-      })) as Cabin[];
+      return data.map(cabin => {
+        // Parse JSON fields safely
+        let availability = { morning: true, afternoon: true, evening: true };
+        if (cabin.availability && typeof cabin.availability === 'object') {
+          availability = {
+            morning: cabin.availability.morning === true,
+            afternoon: cabin.availability.afternoon === true,
+            evening: cabin.availability.evening === true
+          };
+        }
+
+        let pricing = { defaultPricing: {}, specificDates: {} };
+        let price = 50; // Default price if not set
+        
+        if (cabin.pricing && typeof cabin.pricing === 'object') {
+          pricing = {
+            defaultPricing: cabin.pricing.defaultPricing || {},
+            specificDates: cabin.pricing.specificDates || {}
+          };
+          // Extract price from pricing object if available
+          price = cabin.pricing.defaultPrice || 50;
+        }
+
+        return {
+          id: cabin.id,
+          locationId: cabin.location_id,
+          name: cabin.name,
+          description: cabin.description || '',
+          equipment: cabin.equipment || [],
+          imageUrl: cabin.image_url,
+          availability,
+          price,
+          pricing
+        } as Cabin;
+      });
     },
   });
 
