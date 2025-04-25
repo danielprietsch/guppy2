@@ -155,7 +155,7 @@ const AvailabilityCalendar = () => {
       </CardHeader>
       <CardContent className="p-4 flex flex-col space-y-6">
         <Card>
-          <CardContent className="p-6">
+          <CardContent>
             <Label className="text-lg font-medium mb-6 block">Disponibilidade para Agendamentos</Label>
             <ToggleGroup
               type="single"
