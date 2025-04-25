@@ -24,7 +24,11 @@ export function ProfileImageUpload({
   useEffect(() => {
     if (currentAvatarUrl) {
       console.log("ProfileImageUpload: Setting preview from currentAvatarUrl:", currentAvatarUrl);
-      setPreviewUrl(currentAvatarUrl);
+      // Add cache-busting parameter to prevent stale image display
+      const urlWithCache = currentAvatarUrl.includes('?') 
+        ? `${currentAvatarUrl}&t=${Date.now()}`
+        : `${currentAvatarUrl}?t=${Date.now()}`;
+      setPreviewUrl(urlWithCache);
     }
   }, [currentAvatarUrl]);
 
@@ -75,37 +79,18 @@ export function ProfileImageUpload({
       }
 
       console.log("Avatar updated successfully via RPC function, result:", updateResult);
-
-      // Update user metadata directly to ensure it's updated
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl }
-      });
       
-      if (metadataError) {
-        console.error("Error updating user metadata:", metadataError);
-      } else {
-        console.log("User metadata updated successfully with new avatar");
-      }
-
-      setPreviewUrl(publicUrl);
+      const urlWithCache = publicUrl.includes('?') 
+        ? `${publicUrl}&t=${Date.now()}`
+        : `${publicUrl}?t=${Date.now()}`;
+      
+      setPreviewUrl(urlWithCache);
       onImageUploaded(publicUrl);
-
-      // Force refresh profiles table with direct update instead of using RPC
-      try {
-        // Direct update to force trigger realtime events
-        const { error: refreshError } = await supabase
-          .from('profiles')
-          .update({ updated_at: new Date().toISOString() })
-          .eq('id', userId);
-          
-        if (refreshError) {
-          console.error("Error forcing profile refresh:", refreshError);
-        } else {
-          console.log("Forced profile refresh with timestamp update");
-        }
-      } catch (refreshError) {
-        console.error("Error sending refresh signal:", refreshError);
-      }
+      
+      toast({
+        title: "Foto atualizada",
+        description: "Sua foto de perfil foi atualizada com sucesso."
+      });
       
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);
@@ -135,6 +120,13 @@ export function ProfileImageUpload({
             src={previewUrl || undefined}
             alt="Foto de perfil" 
             className="object-cover"
+            onError={() => {
+              console.log("Avatar image failed to load, retrying with fresh cache");
+              // Try again with a new cache buster if loading fails
+              if (currentAvatarUrl) {
+                setPreviewUrl(`${currentAvatarUrl}?t=${Date.now()}`);
+              }
+            }}
           />
           <AvatarFallback className="bg-primary/10 text-primary text-3xl">
             {firstLetter}

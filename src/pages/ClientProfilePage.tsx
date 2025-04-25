@@ -93,11 +93,6 @@ const ClientProfilePage = () => {
         
         // Force a refresh of the profile data
         await refreshProfile();
-        
-        // Add a small delay and refresh again to ensure UI updates
-        setTimeout(() => {
-          refreshProfile();
-        }, 1000);
       }
     } catch (error: any) {
       debugAreaCritical("CLIENT_PROFILE", "Error updating avatar:", error);

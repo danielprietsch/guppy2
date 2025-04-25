@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
@@ -24,24 +25,23 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
-  const cacheBuster = `?t=${Date.now()}`;
-  
+  // Apply cache busting to all avatar URLs
   useEffect(() => {
     if (currentUser?.avatarUrl) {
       console.log("UserMenu: Setting avatar URL from currentUser:", currentUser.avatarUrl);
-      
       const urlWithCache = currentUser.avatarUrl.includes('?') 
         ? `${currentUser.avatarUrl}&t=${Date.now()}`
-        : `${currentUser.avatarUrl}${cacheBuster}`;
-      
+        : `${currentUser.avatarUrl}?t=${Date.now()}`;
       setAvatarUrl(urlWithCache);
     }
-  }, [currentUser, cacheBuster]);
+  }, [currentUser]);
   
+  // Set up realtime subscription for profile updates with unique channel name
   useEffect(() => {
     if (currentUser?.id) {
       console.log("UserMenu: Setting up realtime subscription for profile updates", currentUser.id);
       
+      // Use a unique channel name with timestamp to prevent duplicate channels
       const channelName = `avatar-updates-${currentUser.id}-${Date.now()}`;
       
       const channel = supabase
@@ -62,7 +62,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
               const newUrl = payload.new.avatar_url;
               const urlWithCache = newUrl.includes('?') 
                 ? `${newUrl}&t=${Date.now()}`
-                : `${newUrl}${cacheBuster}`;
+                : `${newUrl}?t=${Date.now()}`;
               
               setAvatarUrl(urlWithCache);
             }
@@ -70,16 +70,17 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         )
         .subscribe();
 
-      fetchLatestProfile(currentUser.id, cacheBuster);
+      // Fetch latest profile data when component mounts
+      fetchLatestProfile(currentUser.id);
 
       return () => {
         console.log("UserMenu: Cleaning up realtime subscription");
         supabase.removeChannel(channel);
       };
     }
-  }, [currentUser?.id, cacheBuster]);
+  }, [currentUser?.id]);
 
-  const fetchLatestProfile = async (userId: string, cacheParam: string) => {
+  const fetchLatestProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -94,7 +95,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         
         const urlWithCache = data.avatar_url.includes('?') 
           ? `${data.avatar_url}&t=${Date.now()}`
-          : `${data.avatar_url}${cacheParam}`;
+          : `${data.avatar_url}?t=${Date.now()}`;
         
         setAvatarUrl(urlWithCache);
       }
@@ -150,25 +151,19 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     }
   };
 
-  const displayAvatarUrl = avatarUrl || 
-    (currentUser.avatarUrl ? 
-      (currentUser.avatarUrl.includes('?') 
-        ? `${currentUser.avatarUrl}&t=${Date.now()}` 
-        : `${currentUser.avatarUrl}${cacheBuster}`) 
-      : null);
-
   return (
     <div className="flex items-center gap-4">
       <DropdownMenu>
         <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
           <Avatar className="h-10 w-10 border-2 border-primary/20">
             <AvatarImage 
-              src={displayAvatarUrl || undefined}
+              src={avatarUrl || undefined}
               alt={currentUser.name || "User"} 
               className="object-cover"
               onError={() => {
                 console.error("Avatar failed to load, retrying with new URL");
                 if (currentUser.avatarUrl) {
+                  // Create a new URL with fresh cache buster if loading fails
                   setAvatarUrl(`${currentUser.avatarUrl}?t=${Date.now()}`);
                 }
               }}
