@@ -1,73 +1,164 @@
-# Welcome to your Lovable project
 
-## Project info
+# Sistema de Gestão de Espaços para Profissionais da Beleza
 
-**URL**: https://lovable.dev/projects/14c446ad-652a-4ad1-85a9-b3f728673c6a
+## 📝 Sobre o Projeto
 
-## How can I edit this code?
+Este é um sistema web desenvolvido para gerenciar espaços e cabines para profissionais da beleza. A plataforma permite que proprietários disponibilizem seus espaços para aluguel, e profissionais possam reservá-los de forma eficiente.
 
-There are several ways of editing your application.
+## 🚀 Funcionalidades Principais
 
-**Use Lovable**
+- **Sistema de Autenticação**
+  - Login/Registro com múltiplos tipos de usuário (cliente, profissional, proprietário, admin)
+  - Recuperação de senha
+  - Perfis personalizados por tipo de usuário
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/14c446ad-652a-4ad1-85a9-b3f728673c6a) and start prompting.
+- **Gestão de Espaços**
+  - Cadastro e gerenciamento de locais
+  - Sistema de aprovação de novos espaços
+  - Configuração de cabines e equipamentos
+  - Definição de preços e disponibilidade
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Sistema de Reservas**
+  - Agendamento de cabines
+  - Visualização de disponibilidade
+  - Histórico de reservas
+  - Confirmação e cancelamento
 
-**Use your preferred IDE**
+- **Painel Administrativo**
+  - Gestão de usuários
+  - Aprovação de locais
+  - Monitoramento de reservas
+  - Configurações do sistema
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠 Tecnologias Utilizadas
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**
+  - React
+  - TypeScript
+  - Tailwind CSS
+  - Shadcn/ui
+  - React Router
+  - React Query
+  - Framer Motion
+  - Lucide Icons
 
-Follow these steps:
+- **Backend**
+  - Supabase (Banco de dados e autenticação)
+  - PostgreSQL
+  - Row Level Security (RLS)
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 📦 Instalação e Execução
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Clone o repositório
+```bash
+git clone <URL_DO_REPOSITÓRIO>
+```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Instale as dependências
+```bash
+npm install
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+3. Configure as variáveis de ambiente
+```bash
+# Crie um arquivo .env na raiz do projeto com as seguintes variáveis:
+VITE_SUPABASE_URL=sua_url_do_supabase
+VITE_SUPABASE_ANON_KEY=sua_chave_anon_do_supabase
+```
+
+4. Execute o projeto
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🔒 Tipos de Usuário
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Cliente
+- Visualiza profissionais e locais
+- Faz reservas
+- Gerencia seu perfil
 
-**Use GitHub Codespaces**
+### Profissional
+- Gerencia sua agenda
+- Reserva cabines
+- Configura seus serviços
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Proprietário
+- Cadastra e gerencia locais
+- Configura cabines e preços
+- Visualiza relatórios
 
-## What technologies are used for this project?
+### Administrador Global
+- Gerencia todos os usuários
+- Aprova novos locais
+- Configura o sistema
 
-This project is built with:
+## 📱 Layout Responsivo
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+O sistema é totalmente responsivo, adaptando-se a diferentes tamanhos de tela:
+- Desktop
+- Tablet
+- Dispositivos móveis
 
-## How can I deploy this project?
+## 🔐 Segurança
 
-Simply open [Lovable](https://lovable.dev/projects/14c446ad-652a-4ad1-85a9-b3f728673c6a) and click on Share -> Publish.
+- Autenticação segura via Supabase
+- Políticas de Row Level Security (RLS)
+- Validação de dados em tempo real
+- Proteção contra XSS e CSRF
 
-## Can I connect a custom domain to my Lovable project?
+## 🌐 Endpoints da API
 
-Yes, you can!
+### Autenticação
+- POST /auth/login
+- POST /auth/register
+- POST /auth/reset-password
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+### Locais
+- GET /locations
+- POST /locations
+- PUT /locations/:id
+- DELETE /locations/:id
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+### Reservas
+- GET /bookings
+- POST /bookings
+- PUT /bookings/:id
+- DELETE /bookings/:id
+
+## 📊 Estrutura do Banco de Dados
+
+### Tabelas Principais
+- users
+- profiles
+- locations
+- cabins
+- bookings
+- services
+
+## 🤝 Como Contribuir
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
+## 📞 Suporte
+
+Para suporte, envie um email para support@seudominio.com ou abra uma issue no repositório.
+
+## 🎉 Agradecimentos
+
+- Equipe de desenvolvimento
+- Contribuidores
+- Comunidade open source
+
+---
+
+Desenvolvido com ❤️ pela sua equipe
+
