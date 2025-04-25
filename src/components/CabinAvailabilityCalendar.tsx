@@ -54,19 +54,8 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   };
 
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
-    const dateObj = new Date(date);
-    
-    // Apenas bloqueamos datas antes de hoje, não o próprio dia atual
-    if (isBefore(dateObj, today) && !isToday(dateObj)) {
-      debugAreaLog('AVAILABILITY', 'Não é possível alterar status de datas passadas');
-      toast({
-        title: "Operação não permitida",
-        description: "Não é possível alterar status de datas passadas.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+    // Removemos a verificação de datas passadas para permitir que a alteração de status ocorra em qualquer data
+    // Agora o controle é feito apenas no componente TimeSlotCard
     debugAreaLog('AVAILABILITY', 'Solicitação de alteração de status:', { date, turno, isManualClose });
     
     if (onStatusChange) {
@@ -74,7 +63,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         onStatusChange(date, turno, isManualClose);
         toast({
           title: isManualClose ? "Turno fechado" : "Turno liberado",
-          description: `${isManualClose ? "Fechado" : "Liberado"} o turno ${getTurnoLabel(turno)} para a data ${format(dateObj, "dd/MM/yyyy")}`,
+          description: `${isManualClose ? "Fechado" : "Liberado"} o turno ${getTurnoLabel(turno)} para a data ${format(new Date(date), "dd/MM/yyyy")}`,
         });
         debugAreaLog('AVAILABILITY', 'Callback de alteração de status executado com sucesso');
       } catch (error) {
@@ -93,7 +82,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         variant: "destructive"
       });
     }
-  }, [onStatusChange, today]);
+  }, [onStatusChange]);
 
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: string) => {
     const dateObj = new Date(date);

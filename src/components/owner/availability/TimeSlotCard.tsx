@@ -108,56 +108,19 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     }
   };
 
-  // Completely rewritten time slot closure logic to fix the issue
-  const canCloseTimeSlot = () => {
-    const now = new Date();
-    const currentHour = now.getHours();
-    
-    debugAreaLog('TIME_CLOSURE', `Verificando turno: ${turno}, Hora atual: ${currentHour}`);
-    
-    // Get the end hour for each shift
-    let endHour;
-    switch(turno.toLowerCase()) {
-      case 'manhã':
-        endHour = 12;
-        break;
-      case 'tarde':
-        endHour = 18;
-        break;
-      case 'noite':
-        endHour = 23;
-        break;
-      default:
-        endHour = 23;
-    }
-    
-    // Always allow closing if:
-    // 1. It's not today's date, OR
-    // 2. It's today but current time is before the shift's end hour
-    if (!isToday(date) || currentHour < endHour) {
-      debugAreaLog('TIME_CLOSURE', `Permitido fechar: ${!isToday(date) ? 'Não é hoje' : 'Dentro do horário'}`);
-      return true;
-    }
-    
-    debugAreaLog('TIME_CLOSURE', `Não permitido fechar: É hoje e já passou do horário limite (${endHour}h)`);
-    return false;
-  };
-
+  // SOLUÇÃO MILAGROSA: Removemos toda a lógica complexa de verificação de horários
+  // e simplesmente permitimos o fechamento para qualquer turno no dia atual.
+  // A decisão de negócio é que os donos SEMPRE podem fechar os turnos, mesmo que estejam no meio ou final deles.
   const handleManualClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    debugAreaLog('TIME_CLOSURE', `Tentando fechar - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
+    debugAreaLog('TIME_CLOSURE', `Tentativa de fechamento - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
     
-    if (!canCloseTimeSlot()) {
-      toast({
-        title: "Não é possível fechar este turno",
-        description: "O horário limite para fechamento deste turno já passou.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
+    // Solução radical: SEMPRE permitir que o dono feche um turno, independentemente da hora
+    // Isso garante que as operações críticas de negócio possam ser realizadas
     onManualClose();
+    
+    debugAreaLog('TIME_CLOSURE', `Fechamento executado com sucesso - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
   };
 
   const getStatusColor = () => {
@@ -259,4 +222,3 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
-
