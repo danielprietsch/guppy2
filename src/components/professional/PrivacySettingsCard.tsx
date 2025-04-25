@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -71,34 +72,34 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
           type="single"
           value={isPublic ? 'public' : 'private'}
           onValueChange={handleTogglePrivacy}
-          className="grid grid-cols-2 gap-6"
+          className="grid grid-cols-2 gap-6 h-full"
         >
           <ToggleGroupItem 
             value="public" 
-            className="flex flex-col items-center gap-4 p-8 data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
+            className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
-            <div className="p-4 rounded-full bg-primary/5">
-              <Globe className="h-12 w-12 text-primary" />
+            <div className="p-6 rounded-full bg-primary/5 flex items-center justify-center">
+              <Globe className="h-16 w-16 text-primary" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg mb-1">Público</div>
-              <p className="text-sm text-muted-foreground">
-                Visível para clientes
+              <div className="font-semibold text-xl mb-2">Público</div>
+              <p className="text-sm text-muted-foreground max-w-[200px]">
+                Seu perfil será visível para todos os clientes
               </p>
             </div>
           </ToggleGroupItem>
           
           <ToggleGroupItem 
             value="private"
-            className="flex flex-col items-center gap-4 p-8 data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
+            className="flex flex-col items-center justify-between gap-4 p-8 h-full min-h-[320px] data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
-            <div className="p-4 rounded-full bg-primary/5">
-              <Lock className="h-12 w-12 text-primary" />
+            <div className="p-6 rounded-full bg-primary/5 flex items-center justify-center">
+              <Lock className="h-16 w-16 text-primary" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-lg mb-1">Privado</div>
-              <p className="text-sm text-muted-foreground">
-                Oculto para clientes
+              <div className="font-semibold text-xl mb-2">Privado</div>
+              <p className="text-sm text-muted-foreground max-w-[200px]">
+                Seu perfil permanecerá oculto para clientes
               </p>
             </div>
           </ToggleGroupItem>
