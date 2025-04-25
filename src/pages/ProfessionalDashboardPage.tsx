@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +14,7 @@ import {
   PieChart,
   Loader2,
 } from "lucide-react";
-import { services, bookings, appointments, reviews } from "@/lib/mock-data";
+import { services, appointments, reviews } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +29,7 @@ const ProfessionalDashboardPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [userBookings, setUserBookings] = useState([]);
+  const [bookingsLoading, setBookingsLoading] = useState(true);
   const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
@@ -136,7 +138,10 @@ const ProfessionalDashboardPage = () => {
     const fetchBookings = async () => {
       if (!user?.id) return;
       
+      setBookingsLoading(true);
       try {
+        console.log("Fetching bookings for professional:", user.id);
+        
         const { data, error } = await supabase
           .from('bookings')
           .select(`
@@ -148,10 +153,14 @@ const ProfessionalDashboardPage = () => {
               )
             )
           `)
-          .eq('professional_id', user.id)
-          .order('date', { ascending: false });
+          .eq('professional_id', user.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching bookings:", error);
+          throw error;
+        }
+        
+        console.log("Bookings data fetched:", data);
         setUserBookings(data || []);
       } catch (error) {
         console.error("Error fetching bookings:", error);
@@ -160,6 +169,8 @@ const ProfessionalDashboardPage = () => {
           description: "Não foi possível carregar suas reservas.",
           variant: "destructive",
         });
+      } finally {
+        setBookingsLoading(false);
       }
     };
 
@@ -300,7 +311,7 @@ const ProfessionalDashboardPage = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="availability" className="space-y-4">
+      <Tabs defaultValue="bookings" className="space-y-4">
         <TabsList>
           <TabsTrigger value="availability">Disponibilidade</TabsTrigger>
           <TabsTrigger value="working-hours">Horários de Trabalho</TabsTrigger>
@@ -427,7 +438,7 @@ const ProfessionalDashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {loading ? (
+                {bookingsLoading ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
