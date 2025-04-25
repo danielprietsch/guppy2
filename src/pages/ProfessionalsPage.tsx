@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -31,19 +30,13 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
   
-  // Filter professionals by search query and service
   const filteredProfessionals = professionals.filter(professional => {
-    // Filter by search query (name)
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    // Filter by service if one is selected
     const matchesService = selectedService === "all" || 
       (professional.specialties && professional.specialties.includes(selectedService));
-    
     return matchesSearch && matchesService;
   });
   
-  // Get unique service categories from the services
   const uniqueCategories = Array.from(new Set(services.map(service => service.category)));
   
   return (
@@ -63,7 +56,6 @@ const ProfessionalsPage = () => {
         </h2>
       </div>
       
-      {/* Filters section */}
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="flex items-center gap-2 border rounded-lg p-2">
           <Search className="h-5 w-5 text-muted-foreground" />
@@ -89,7 +81,6 @@ const ProfessionalsPage = () => {
         </Select>
       </div>
       
-      {/* Professionals grid */}
       {isLoading ? (
         <div className="mt-12 text-center">
           <p>Carregando profissionais...</p>
@@ -104,7 +95,7 @@ const ProfessionalsPage = () => {
             <div className="col-span-full text-center py-12">
               <h3 className="text-lg font-medium">Nenhum profissional disponível</h3>
               <p className="mt-1 text-gray-500">
-                Não foram encontrados profissionais disponíveis na data solicitada
+                Não foram encontrados profissionais disponíveis com cabines reservadas na data solicitada
               </p>
             </div>
           )}
