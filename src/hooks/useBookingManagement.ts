@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { debugLog } from "@/utils/debugLogger";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 export const useBookingManagement = (cabinId: string, onClose: () => void) => {
   const navigate = useNavigate();
@@ -63,6 +63,16 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       return;
     }
 
+    // Validate cabin ID before proceeding
+    if (!cabinId || cabinId.trim() === "") {
+      toast({
+        title: "Erro",
+        description: "ID do espaço inválido. Por favor, selecione um espaço válido.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setBookingInProgress(true);
     
     try {
@@ -111,13 +121,27 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
         throw new Error("Usuário não autenticado");
       }
 
-      debugLog("Creating booking with professional_id:", data.session.user.id);
+      // Verify all fields are valid before calling the RPC function
+      if (!cabinId || cabinId.trim() === "") {
+        debugError("createBooking: Invalid cabin ID");
+        throw new Error("ID do espaço inválido");
+      }
+
+      const professionalId = data.session.user.id;
+      if (!professionalId || professionalId.trim() === "") {
+        debugError("createBooking: Invalid professional ID");
+        throw new Error("ID do profissional inválido");
+      }
+
+      debugLog("Creating booking with professional_id:", professionalId);
+      debugLog("Creating booking with cabin_id:", cabinId);
+      debugLog("Creating booking for date:", date, "shift:", turn);
 
       const { error } = await supabase.rpc(
         'create_booking',
         { 
           cabin_id: cabinId,
-          professional_id: data.session.user.id,
+          professional_id: professionalId,
           date, 
           shift: turn, 
           price,
@@ -126,13 +150,13 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       );
 
       if (error) {
-        console.error("Erro ao criar reserva:", error);
+        debugError("Erro ao criar reserva:", error);
         throw error;
       }
       
       return true;
     } catch (error) {
-      console.error("Erro ao criar reserva:", error);
+      debugError("Erro ao criar reserva:", error);
       return false;
     }
   };

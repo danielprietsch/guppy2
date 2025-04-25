@@ -31,6 +31,18 @@ export const BookingConfirmationDialog = ({
     setIsChecking(true);
     
     try {
+      // Validate cabin ID
+      if (!cabinId || cabinId.trim() === "") {
+        debugLog("BookingConfirmation: Invalid cabin ID");
+        toast({
+          title: "Erro",
+          description: "ID do espaço inválido. Por favor, selecione um espaço válido.",
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
       // ONLY use auth.getSession() - avoid ALL database queries at this stage
       const { data: { session } } = await supabase.auth.getSession();
       
