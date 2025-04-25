@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 
 export const Logo = () => {
   return (
-    <Link to="/" className="flex items-center gap-2">
+    <Link to="/" className="flex items-center">
       <img
-        src="/lovable-uploads/98c919f3-9c42-4aba-8b8b-f94df3194b31.png"
-        alt="Guppy Logo"
-        className="h-8"
+        src="/lovable-uploads/7b9573df-e2ee-4224-89bd-17a9fc3c01a5.png"
+        alt="Logo"
+        className="h-16 w-16 object-contain"
       />
-      <span className="text-xl font-bold text-guppy-tertiary">Guppy</span>
     </Link>
   );
 };
