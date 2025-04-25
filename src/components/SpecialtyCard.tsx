@@ -159,6 +159,13 @@ const SpecialtyCard = ({
 }: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
+  // Handle checkbox click with preventing default to avoid navigation
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onCheckedChange(!checked);
+  };
+  
   return (
     <div
       className={cn(
@@ -169,11 +176,14 @@ const SpecialtyCard = ({
       {/* Checkbox maior e mais visível com área clicável ampliada */}
       <div 
         className="absolute top-4 right-4 cursor-pointer p-2 rounded-lg hover:bg-accent-foreground/10 flex items-center justify-center"
-        onClick={() => onCheckedChange(!checked)}
+        onClick={handleCheckboxClick}
       >
         <Checkbox
           checked={checked}
-          onCheckedChange={(value) => onCheckedChange(!!value)}
+          onCheckedChange={(value) => {
+            // Prevent default form submission behavior
+            onCheckedChange(!!value);
+          }}
           className="w-8 h-8 border-2 cursor-pointer"
           id={`checkbox-${id}`}
         />

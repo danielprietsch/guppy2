@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,6 +49,16 @@ const NewServicePage = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedServices, setSelectedServices] = useState<{ id: string; price: number; duration: number; }[]>([]);
+  const [showWarning, setShowWarning] = useState(true);
+
+  // Update warning visibility based on selected services
+  useEffect(() => {
+    if (selectedServices.length > 0) {
+      setShowWarning(false);
+    } else {
+      setShowWarning(true);
+    }
+  }, [selectedServices]);
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
@@ -152,7 +162,7 @@ const NewServicePage = () => {
         <h1 className="text-3xl font-bold">Novos Serviços</h1>
       </div>
 
-      {selectedServices.length === 0 && (
+      {showWarning && (
         <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-lg mb-6">
           <p className="text-sm font-medium">
             Selecione pelo menos um serviço para se tornar elegível nas pesquisas
