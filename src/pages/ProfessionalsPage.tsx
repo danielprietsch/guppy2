@@ -19,18 +19,20 @@ import { addDays, format, startOfMonth, endOfMonth } from "date-fns";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedServices, setSelectedServices] = useState<string[]>([]);
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [dateMode, setDateMode] = useState<'day' | 'month'>('day');
   
-  console.log("ProfessionalsPage: Rendering with date", selectedDate);
-
-  // Get all unique categories from serviceData
+  // Get all unique categories from serviceData and initialize selectedServices with all of them
   const allServices = Object.values(serviceData)
     .map(service => service.category)
     .filter((value, index, self) => self.indexOf(value) === index)
     .sort();
   
+  const [selectedServices, setSelectedServices] = useState<string[]>(allServices);
+  
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dateMode, setDateMode] = useState<'day' | 'month'>('day');
+  
+  console.log("ProfessionalsPage: Rendering with date", selectedDate);
+
   const { 
     data: professionals = [], 
     isLoading,
@@ -44,7 +46,6 @@ const ProfessionalsPage = () => {
 
   console.log("ProfessionalsPage: Received professionals data", professionals.length);
   
-  // Ensure professionals is always treated as an array
   const professionalsList = Array.isArray(professionals) ? professionals : [];
   
   const filteredProfessionals = professionalsList.filter(professional => {
@@ -69,14 +70,12 @@ const ProfessionalsPage = () => {
     );
   };
 
-  // Function to change date and refetch professionals
   const changeDate = (daysToAdd: number) => {
     const newDate = addDays(selectedDate, daysToAdd);
     setSelectedDate(newDate);
     setDateMode('day');
   };
 
-  // Function to set this month
   const setThisMonth = () => {
     const now = new Date();
     setSelectedDate(now);
@@ -94,7 +93,6 @@ const ProfessionalsPage = () => {
         </p>
       </div>
       
-      {/* Date selector */}
       <div className="flex justify-center mt-8 mb-4 gap-2">
         <Button 
           variant="outline" 
