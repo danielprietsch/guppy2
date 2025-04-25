@@ -201,192 +201,170 @@ const BookCabinPage = () => {
   }
 
   return (
-    <div className="container px-4 py-12 md:px-6 md:py-16">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">
-          {cabin ? `Reservar ${cabin.name}` : 'Reserva de Cabine'}
-        </h1>
-        
-        <div className="relative max-w-md mb-6">
-          <Input
-            type="text"
-            placeholder="Buscar cabines..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-        </div>
+    <div className="container h-screen max-h-screen overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 h-full p-4">
+        {/* Left Column */}
+        <div className="space-y-4 overflow-y-auto">
+          <h1 className="text-2xl font-bold mb-2">
+            {cabin ? `Reservar ${cabin.name}` : 'Reserva de Cabine'}
+          </h1>
+          
+          <div className="relative max-w-md mb-4">
+            <Input
+              type="text"
+              placeholder="Buscar cabines..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? (
-            <p>Carregando cabines...</p>
-          ) : cabins.length > 0 ? (
-            cabins.map((cabin) => (
-              <Card key={cabin.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-lg mb-2">{cabin.name}</h3>
-                  <p className="text-sm text-muted-foreground">{cabin.description}</p>
-                  {cabin.equipment && cabin.equipment.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {cabin.equipment.map((item, index) => (
-                        <li key={index} className="text-xs flex items-center gap-1">
-                          <span>•</span> {item}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-                <CardFooter className="p-4 pt-0">
-                  <Button 
-                    className="w-full"
-                    onClick={() => navigate(`/book-cabin/${cabin.id}`, {
-                      state: { cabinDetails: cabin, locationDetails: locationData }
-                    })}
-                  >
-                    Selecionar Cabine
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))
-          ) : (
-            <p>Nenhuma cabine encontrada.</p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {isLoading ? (
+              <p>Carregando cabines...</p>
+            ) : cabins.length > 0 ? (
+              cabins.map((cabin) => (
+                <Card key={cabin.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold text-lg mb-2">{cabin.name}</h3>
+                    <p className="text-sm text-muted-foreground line-clamp-2">{cabin.description}</p>
+                    {cabin.equipment && cabin.equipment.length > 0 && (
+                      <ul className="mt-2 space-y-1">
+                        {cabin.equipment.slice(0, 3).map((item, index) => (
+                          <li key={index} className="text-xs flex items-center gap-1">
+                            <span>•</span> {item}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                  <CardFooter className="p-4 pt-0">
+                    <Button 
+                      className="w-full"
+                      onClick={() => navigate(`/book-cabin/${cabin.id}`, {
+                        state: { cabinDetails: cabin, locationDetails: locationData }
+                      })}
+                    >
+                      Selecionar Cabine
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <p>Nenhuma cabine encontrada.</p>
+            )}
+          </div>
+
+          {cabin && (
+            <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Selecione os turnos desejados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BookingCalendar
+                  selectedTurns={selectedTurns}
+                  onSelectTurn={handleTurnSelection}
+                  pricePerTurn={{
+                    morning: cabin.price,
+                    afternoon: cabin.price,
+                    evening: cabin.price
+                  }}
+                  cabinAvailability={cabin.availability}
+                  cabinCreatedAt={cabin.created_at}
+                />
+              </CardContent>
+            </Card>
           )}
         </div>
-      </div>
-      
-      <div className="mt-8 grid gap-8 md:grid-cols-[1fr_400px]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Selecione os turnos desejados</CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            {cabin && (
-              <BookingCalendar
-                selectedTurns={selectedTurns}
-                onSelectTurn={handleTurnSelection}
-                pricePerTurn={{
-                  morning: cabin.price,
-                  afternoon: cabin.price,
-                  evening: cabin.price
-                }}
-                cabinAvailability={cabin.availability}
-                cabinCreatedAt={cabin.created_at}
-              />
-            )}
-          </CardContent>
-        </Card>
 
-        <div>
-          <Card>
+        {/* Right Column - Reservation Summary */}
+        <div className="flex flex-col space-y-4">
+          <Card className="sticky top-4">
             <CardContent className="p-6">
-              <h2 className="text-xl font-semibold">Resumo da reserva</h2>
-              <div className="mt-4">
-                {cabin && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium">{cabin.name}</span>
-                    {locationData && <span>{locationData.name}</span>}
-                  </div>
-                )}
-                
-                <div className="mt-4">
-                  <h3 className="font-medium mb-2">Turnos selecionados:</h3>
-                  {Object.entries(selectedTurns).map(([date, turns]) => (
-                    <div key={date} className="mb-2">
-                      <p className="text-sm text-gray-600">{date}:</p>
-                      <div className="flex gap-2">
-                        {turns.map(turn => (
-                          <span key={turn} className="text-sm bg-secondary px-2 py-1 rounded">
-                            {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+              <h2 className="text-xl font-semibold mb-4">Resumo da reserva</h2>
+              {cabin && (
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-medium">{cabin.name}</span>
+                  {locationData && <span>{locationData.name}</span>}
                 </div>
-                
-                <Separator className="my-4" />
-                
-                {cabin && cabin.equipment && (
-                  <div className="space-y-2">
-                    <h3 className="font-medium">O que está incluso:</h3>
-                    <ul className="grid gap-1 text-sm">
-                      {cabin.equipment.map((item, index) => (
-                        <li key={index} className="flex items-center gap-2">
-                          <span>•</span> {item}
-                        </li>
+              )}
+              
+              <div className="mb-4">
+                <h3 className="font-medium mb-2">Turnos selecionados:</h3>
+                {Object.entries(selectedTurns).map(([date, turns]) => (
+                  <div key={date} className="mb-2">
+                    <p className="text-sm text-gray-600">{date}:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {turns.map(turn => (
+                        <span key={turn} className="text-sm bg-secondary px-2 py-1 rounded">
+                          {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
+                        </span>
                       ))}
-                    </ul>
+                    </div>
                   </div>
-                )}
-                
-                <Separator className="my-4" />
-                
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span>Valor total da reserva de Turnos no espaço</span>
-                    <span>R$ {subtotalTurns.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Taxa de serviço (10%)</span>
-                    <span>R$ {serviceFee.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex items-center justify-between font-bold">
-                    <span>Total</span>
-                    <span>R$ {total.toFixed(2).replace('.', ',')}</span>
-                  </div>
+                ))}
+              </div>
+              
+              <Separator className="my-4" />
+              
+              {cabin && cabin.equipment && (
+                <div className="space-y-2 mb-4">
+                  <h3 className="font-medium">O que está incluso:</h3>
+                  <ul className="grid gap-1 text-sm">
+                    {cabin.equipment.map((item, index) => (
+                      <li key={index} className="flex items-center gap-2">
+                        <span>•</span> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              <Separator className="my-4" />
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span>Valor total da reserva de Turnos no espaço</span>
+                  <span>R$ {subtotalTurns.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Taxa de serviço (10%)</span>
+                  <span>R$ {serviceFee.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <Separator className="my-2" />
+                <div className="flex items-center justify-between font-bold">
+                  <span>Total</span>
+                  <span>R$ {total.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <Button 
+                  className="w-full" 
+                  onClick={handleBookCabin}
+                  disabled={!acceptTerms || Object.keys(selectedTurns).length === 0}
+                >
+                  Reservar Cabine
+                </Button>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    id="terms" 
+                    className="h-4 w-4" 
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                  />
+                  <label htmlFor="terms" className="text-sm">
+                    Li e aceito os termos de uso
+                  </label>
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="p-6 pt-0">
-              <Button 
-                className="w-full" 
-                onClick={handleBookCabin}
-                disabled={!acceptTerms || Object.keys(selectedTurns).length === 0}
-              >
-                Reservar Cabine
-              </Button>
-            </CardFooter>
           </Card>
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <h2 className="text-xl font-semibold">Termos de Uso</h2>
-        <div className="mt-4 max-h-64 overflow-y-auto rounded-md border p-4">
-          <h3 className="font-medium">CONTRATO DE LOCAÇÃO TEMPORÁRIA DE CABINES</h3>
-          <p className="mt-2 text-sm">
-            Pelo presente instrumento particular, de um lado GUPPY LTDA, doravante denominado LOCADOR, 
-            e de outro lado o usuário devidamente cadastrado na plataforma, doravante denominado 
-            simplesmente LOCATÁRIO, têm entre si como justo e contratado o que segue:
-          </p>
-          <p className="mt-2 text-sm">
-            1. O LOCADOR, por este instrumento, dá em locação ao LOCATÁRIO uma CABINE de sua propriedade,
-            destinada a prestação de serviços de beleza, em posição e local ajustável, no prazo definido no ato da reserva.
-          </p>
-          <p className="mt-2 text-sm">
-            2. O aluguel será pago de forma antecipada, no valor correspondente ao turno e dia da semana escolhidos.
-          </p>
-          <p className="mt-2 text-sm">
-            3. O LOCATÁRIO será responsável por zelar pela limpeza e conservação do espaço e equipamentos.
-          </p>
-          <p className="mt-2 text-sm">
-            4. Políticas de cancelamento: cancelamentos com 24h de antecedência recebem reembolso integral. 
-            Cancelamentos com menos de 24h recebem 50% de reembolso.
-          </p>
-        </div>
-        <div className="mt-4 flex items-center gap-2">
-          <input 
-            type="checkbox" 
-            id="terms" 
-            className="h-4 w-4" 
-            checked={acceptTerms}
-            onChange={(e) => setAcceptTerms(e.target.checked)}
-          />
-          <label htmlFor="terms" className="text-sm">
-            Li e aceito os termos de uso
-          </label>
         </div>
       </div>
     </div>
