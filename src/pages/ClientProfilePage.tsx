@@ -21,14 +21,17 @@ const ClientProfilePage = () => {
     error
   });
 
-  // Subscribe to realtime updates for the profile
+  // Subscribe to realtime updates for the profile with improved channel name
   useEffect(() => {
     if (!currentUser?.id) return;
     
     debugAreaLog("CLIENT_PROFILE", "Setting up realtime subscription for profile updates");
     
+    // Use timestamp in channel name to ensure uniqueness
+    const channelName = `profile-updates-${currentUser.id}-${Date.now()}`;
+    
     const channel = supabase
-      .channel('profile-updates-page')
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -37,8 +40,8 @@ const ClientProfilePage = () => {
           table: 'profiles',
           filter: `id=eq.${currentUser.id}`,
         },
-        () => {
-          debugAreaLog("CLIENT_PROFILE", "Received profile update, refreshing data");
+        (payload) => {
+          debugAreaLog("CLIENT_PROFILE", "Received profile update, refreshing data", payload);
           refreshProfile();
         }
       )
@@ -89,7 +92,12 @@ const ClientProfilePage = () => {
         });
         
         // Force a refresh of the profile data
-        refreshProfile();
+        await refreshProfile();
+        
+        // Add a small delay and refresh again to ensure UI updates
+        setTimeout(() => {
+          refreshProfile();
+        }, 1000);
       }
     } catch (error: any) {
       debugAreaCritical("CLIENT_PROFILE", "Error updating avatar:", error);

@@ -90,10 +90,19 @@ export function ProfileImageUpload({
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);
 
-      // Force refresh of profile data in other components by publishing to realtime
+      // Force refresh profiles table with direct update instead of using RPC
       try {
-        await supabase.rpc('force_refresh_profile', { profile_id: userId });
-        console.log("Forced profile refresh signal sent");
+        // Direct update to force trigger realtime events
+        const { error: refreshError } = await supabase
+          .from('profiles')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', userId);
+          
+        if (refreshError) {
+          console.error("Error forcing profile refresh:", refreshError);
+        } else {
+          console.log("Forced profile refresh with timestamp update");
+        }
       } catch (refreshError) {
         console.error("Error sending refresh signal:", refreshError);
       }

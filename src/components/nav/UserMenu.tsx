@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
@@ -25,29 +24,28 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
-  // Effect to update avatar URL whenever currentUser changes
+  const cacheBuster = `?t=${Date.now()}`;
+  
   useEffect(() => {
     if (currentUser?.avatarUrl) {
       console.log("UserMenu: Setting avatar URL from currentUser:", currentUser.avatarUrl);
-      setAvatarUrl(currentUser.avatarUrl);
       
-      // Add a cache-busting parameter to force refresh
-      if (currentUser.avatarUrl.includes('?')) {
-        setAvatarUrl(`${currentUser.avatarUrl}&t=${new Date().getTime()}`);
-      } else {
-        setAvatarUrl(`${currentUser.avatarUrl}?t=${new Date().getTime()}`);
-      }
+      const urlWithCache = currentUser.avatarUrl.includes('?') 
+        ? `${currentUser.avatarUrl}&t=${Date.now()}`
+        : `${currentUser.avatarUrl}${cacheBuster}`;
+      
+      setAvatarUrl(urlWithCache);
     }
-  }, [currentUser]);
+  }, [currentUser, cacheBuster]);
   
-  // Subscribe to profile changes to refresh the avatar when updated elsewhere
   useEffect(() => {
     if (currentUser?.id) {
       console.log("UserMenu: Setting up realtime subscription for profile updates", currentUser.id);
       
-      // Listen for both profile updates and auth metadata updates
+      const channelName = `avatar-updates-${currentUser.id}-${Date.now()}`;
+      
       const channel = supabase
-        .channel('avatar-updates-menu')
+        .channel(channelName)
         .on(
           'postgres_changes',
           {
@@ -61,59 +59,55 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
             if (payload.new && payload.new.avatar_url) {
               console.log("UserMenu: Updating avatar from realtime event to", payload.new.avatar_url);
               
-              // Add a cache-busting parameter
               const newUrl = payload.new.avatar_url;
-              if (newUrl.includes('?')) {
-                setAvatarUrl(`${newUrl}&t=${new Date().getTime()}`);
-              } else {
-                setAvatarUrl(`${newUrl}?t=${new Date().getTime()}`);
-              }
+              const urlWithCache = newUrl.includes('?') 
+                ? `${newUrl}&t=${Date.now()}`
+                : `${newUrl}${cacheBuster}`;
+              
+              setAvatarUrl(urlWithCache);
             }
           }
         )
         .subscribe();
 
-      // Also fetch the latest profile data to ensure we have the most recent avatar
-      const fetchLatestProfile = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('avatar_url')
-            .eq('id', currentUser.id)
-            .single();
-            
-          if (error) throw error;
-          
-          if (data && data.avatar_url) {
-            console.log("UserMenu: Fetched latest avatar from DB:", data.avatar_url);
-            // Add a cache-busting parameter
-            if (data.avatar_url.includes('?')) {
-              setAvatarUrl(`${data.avatar_url}&t=${new Date().getTime()}`);
-            } else {
-              setAvatarUrl(`${data.avatar_url}?t=${new Date().getTime()}`);
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching latest profile:", error);
-        }
-      };
-      
-      fetchLatestProfile();
+      fetchLatestProfile(currentUser.id, cacheBuster);
 
       return () => {
         console.log("UserMenu: Cleaning up realtime subscription");
         supabase.removeChannel(channel);
       };
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, cacheBuster]);
 
-  // If we don't have user data, don't render anything
+  const fetchLatestProfile = async (userId: string, cacheParam: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data && data.avatar_url) {
+        console.log("UserMenu: Fetched latest avatar from DB:", data.avatar_url);
+        
+        const urlWithCache = data.avatar_url.includes('?') 
+          ? `${data.avatar_url}&t=${Date.now()}`
+          : `${data.avatar_url}${cacheParam}`;
+        
+        setAvatarUrl(urlWithCache);
+      }
+    } catch (error) {
+      console.error("Error fetching latest profile:", error);
+    }
+  };
+
   if (!currentUser) {
     console.error("UserMenu rendered with no user data!");
     return null;
   }
 
-  // Determine dashboard and profile routes based on user type
   const dashboardRoute = currentUser.user_type === "global_admin"
     ? "/admin/global"
     : currentUser.user_type === "professional"
@@ -130,7 +124,6 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     ? "/owner/profile"
     : "/client/profile";
 
-  // Extract first letter of name for avatar fallback
   const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
 
   const handleLogout = async () => {
@@ -144,10 +137,8 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         description: "Você foi desconectado com sucesso.",
       });
       
-      // Call the parent component's onLogout callback
       onLogout();
       
-      // Navigate to login page
       navigate("/login");
     } catch (error) {
       console.error("Error signing out:", error);
@@ -159,8 +150,12 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     }
   };
 
-  // Use the most up-to-date avatar URL
-  const displayAvatarUrl = avatarUrl || currentUser.avatarUrl;
+  const displayAvatarUrl = avatarUrl || 
+    (currentUser.avatarUrl ? 
+      (currentUser.avatarUrl.includes('?') 
+        ? `${currentUser.avatarUrl}&t=${Date.now()}` 
+        : `${currentUser.avatarUrl}${cacheBuster}`) 
+      : null);
 
   return (
     <div className="flex items-center gap-4">
@@ -171,6 +166,12 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
               src={displayAvatarUrl || undefined}
               alt={currentUser.name || "User"} 
               className="object-cover"
+              onError={() => {
+                console.error("Avatar failed to load, retrying with new URL");
+                if (currentUser.avatarUrl) {
+                  setAvatarUrl(`${currentUser.avatarUrl}?t=${Date.now()}`);
+                }
+              }}
             />
             <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
               {firstLetter}
