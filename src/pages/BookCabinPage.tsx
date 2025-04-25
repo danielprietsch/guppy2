@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import BookingCalendar from "@/components/booking/BookingCalendar";
 import { TermsOfUseModal } from "@/components/booking/TermsOfUseModal";
+import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();

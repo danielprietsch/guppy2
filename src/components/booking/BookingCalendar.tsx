@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -5,6 +6,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
 
 interface BookingCalendarProps {
   selectedTurns: { [date: string]: string[] };
@@ -24,10 +27,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const today = startOfDay(new Date());
   const [bookedTurns, setBookedTurns] = React.useState<{ [date: string]: { [turn: string]: boolean } }>({});
+  const [isLoadingBookings, setIsLoadingBookings] = React.useState<boolean>(true);
   
   React.useEffect(() => {
     const fetchBookings = async () => {
       if (!workspaceAvailability) return;
+      
+      setIsLoadingBookings(true);
       
       try {
         const startDate = format(new Date(), 'yyyy-MM-dd');
@@ -40,7 +46,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           .lte('date', endDate)
           .not('status', 'eq', 'cancelled');
           
-        if (error) throw error;
+        if (error) {
+          console.error("Erro ao buscar reservas existentes:", error);
+          toast({
+            title: "Erro ao carregar disponibilidade",
+            description: translateSupabaseError(error.message),
+            variant: "destructive"
+          });
+          return;
+        }
         
         const booked: { [date: string]: { [turn: string]: boolean } } = {};
         
@@ -56,6 +70,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         setBookedTurns(booked);
       } catch (error) {
         console.error("Erro ao buscar reservas existentes:", error);
+        if (error instanceof Error) {
+          toast({
+            title: "Erro ao carregar disponibilidade",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
+      } finally {
+        setIsLoadingBookings(false);
       }
     };
     
@@ -90,7 +113,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
           "w-full p-2 text-xs font-medium rounded-sm transition-colors",
           getButtonClasses()
         )}
-        disabled={isPastDate || isClosed || isBooked}
+        disabled={isPastDate || isClosed || isBooked || isLoadingBookings}
       >
         {getButtonText()}
         <div className="text-[10px] mt-0.5">
