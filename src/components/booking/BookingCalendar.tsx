@@ -118,17 +118,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         key={turn}
         onClick={() => !isPastDate && !isClosed && !isBooked && onSelectTurn(dateStr, turn)}
         className={cn(
-          "w-full h-[60px] flex flex-col items-center justify-center text-xs font-medium rounded-sm transition-colors",
+          "w-full h-[60px] flex flex-col items-center justify-center text-xs font-medium rounded-sm transition-colors text-center",
           getButtonClasses()
         )}
         disabled={isPastDate || isClosed || isBooked || isLoadingBookings}
       >
-        <span>{getButtonText()}</span>
-        {!isBooked && (
-          <span className="text-[10px] mt-0.5">
-            R$ {price.toFixed(2).replace('.', ',')}
-          </span>
-        )}
+        <div className="flex flex-col justify-center items-center h-full w-full">
+          <span className="text-xs">{getButtonText()}</span>
+          {!isBooked && (
+            <span className="text-[10px] mt-0.5">
+              R$ {price.toFixed(2).replace('.', ',')}
+            </span>
+          )}
+        </div>
       </Button>
     );
   };
