@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -75,10 +76,11 @@ const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardPro
       )}
       onClick={() => onCheckedChange(!checked)}
     >
-      <div className="absolute top-2 right-2">
+      <div className="absolute top-2 right-2" onClick={(e) => e.stopPropagation()}>
         <Checkbox
           checked={checked}
           onCheckedChange={onCheckedChange}
+          id={`checkbox-${id}`}
         />
       </div>
       <div className="mb-2 text-primary">
