@@ -1,4 +1,3 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -13,9 +12,9 @@ import {
   Sparkles,
   Star,
   HandHelping,
-  NailPolish,  // New icon for manicure
-  Footprints,  // New icon for pedicure
-  Razor        // New icon for beard
+  Hand,          // Usando Hand para manicure
+  FootPrints,    // Usando FootPrints para pedicure
+  ScissorsSquare // Usando ScissorsSquare para barba
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { serviceData } from "@/utils/serviceData";
@@ -61,10 +60,10 @@ const getIconForSpecialty = (id: string) => {
     // Mãos e Pés
     case "manicure_comum":
     case "manicure_gel":
-      return <NailPolish className="h-5 w-5" />;
+      return <Hand className="h-5 w-5" />;
     case "pedicure_comum":
     case "pedicure_spa":
-      return <Footprints className="h-5 w-5" />;
+      return <FootPrints className="h-5 w-5" />;
       
     // Maquiagem
     case "maquiagem_social":
@@ -80,7 +79,7 @@ const getIconForSpecialty = (id: string) => {
       
     // Barba
     case "barba":
-      return <Razor className="h-5 w-5" />;
+      return <ScissorsSquare className="h-5 w-5" />;
       
     // Bem-estar
     case "massagem_relaxante":
@@ -166,10 +165,14 @@ const SpecialtyCard = ({
         checked ? "border-primary bg-accent" : "border-input"
       )}
     >
-      <div className="absolute top-4 right-4">
+      {/* Checkbox maior e mais visível */}
+      <div 
+        className="absolute top-4 right-4 cursor-pointer p-2 rounded-lg hover:bg-accent-foreground/10"
+        onClick={() => onCheckedChange(!checked)}
+      >
         <Checkbox
           checked={checked}
-          onCheckedChange={onCheckedChange}
+          className="w-6 h-6 border-2"
           id={`checkbox-${id}`}
         />
       </div>
@@ -194,42 +197,41 @@ const SpecialtyCard = ({
         {getServiceDescription(id)}
       </p>
       
-      {checked && (
-        <div className="w-full space-y-4 mt-4 pt-4 border-t border-border">
-          <div className="space-y-2">
-            <Label htmlFor={`duration-${id}`} className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Duração (minutos)
-            </Label>
-            <Input
-              id={`duration-${id}`}
-              type="number"
-              min="1"
-              value={duration}
-              onChange={(e) => onDurationChange?.(Number(e.target.value))}
-              placeholder="Duração em minutos"
-              className="w-full"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor={`price-${id}`} className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Preço (R$)
-            </Label>
-            <Input
-              id={`price-${id}`}
-              type="number"
-              min="1"
-              step="0.01"
-              value={price}
-              onChange={(e) => onPriceChange?.(Number(e.target.value))}
-              placeholder="Valor em reais"
-              className="w-full"
-            />
-          </div>
+      {/* Campos de preço e duração sempre visíveis */}
+      <div className="w-full space-y-4 mt-4 pt-4 border-t border-border">
+        <div className="space-y-2">
+          <Label htmlFor={`duration-${id}`} className="flex items-center gap-2">
+            <Hand className="h-4 w-4" />
+            Duração (minutos)
+          </Label>
+          <Input
+            id={`duration-${id}`}
+            type="number"
+            min="1"
+            value={duration || serviceInfo.duration}
+            onChange={(e) => onDurationChange?.(Number(e.target.value))}
+            placeholder="Duração em minutos"
+            className="w-full text-lg p-4"
+          />
         </div>
-      )}
+
+        <div className="space-y-2">
+          <Label htmlFor={`price-${id}`} className="flex items-center gap-2">
+            <HandMetal className="h-4 w-4" />
+            Preço (R$)
+          </Label>
+          <Input
+            id={`price-${id}`}
+            type="number"
+            min="1"
+            step="0.01"
+            value={price || serviceInfo.price}
+            onChange={(e) => onPriceChange?.(Number(e.target.value))}
+            placeholder="Valor em reais"
+            className="w-full text-lg p-4"
+          />
+        </div>
+      </div>
     </div>
   );
 };
