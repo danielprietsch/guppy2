@@ -1,4 +1,3 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,7 +74,6 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     );
   };
 
-  // Construir a URL para o calendário da cabine, incluindo os parâmetros necessários
   const getCabinCalendarUrl = () => {
     // Incluir tanto o ID da cabine quanto da localização (se disponível)
     const params = new URLSearchParams();

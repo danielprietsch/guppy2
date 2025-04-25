@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isSameDay, parseISO } from "date-fns";
@@ -10,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useQuery, UseQueryResult } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailability, ShiftStatus } from "@/hooks/useAvailability";
 import { useWorkingHours } from "@/hooks/useWorkingHours";
@@ -48,11 +49,11 @@ interface CabinDetails {
   id: string;
   name: string;
   description: string | null;
-  availability: CabinAvailability | Json;
+  availability: CabinAvailability | Record<string, boolean>;
   equipment: string[] | null;
   image_url: string | null;
   location_id: string | null;
-  pricing: Json | null;
+  pricing: Record<string, any> | null;
   updated_at: string;
   created_at: string;
   locations?: {
@@ -71,6 +72,7 @@ interface RawAppointmentData {
   client_id: string;
   status: string;
   professional_id: string;
+  cabin_id?: string;
 }
 
 // Define interface for profile data from Supabase
@@ -108,8 +110,24 @@ const AvailabilityCalendar = () => {
         return null;
       }
       
-      // First convert to unknown, then to our CabinDetails type
-      return data as unknown as CabinDetails;
+      // Convert data to our CabinDetails type
+      const cabinDetails: CabinDetails = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        availability: typeof data.availability === 'object' 
+          ? data.availability as CabinAvailability 
+          : { morning: true, afternoon: true, evening: true },
+        equipment: data.equipment || [],
+        image_url: data.image_url,
+        location_id: data.location_id,
+        pricing: data.pricing,
+        updated_at: data.updated_at,
+        created_at: data.created_at,
+        locations: data.locations
+      };
+      
+      return cabinDetails;
     },
     enabled: !!cabinId,
   });
@@ -145,11 +163,11 @@ const AvailabilityCalendar = () => {
     }
   }, [userProfile]);
 
-  // Define the appointments query with explicit types to avoid infinite type instantiation
-  const appointmentsQuery: UseQueryResult<Appointment[], Error> = useQuery({
+  // Fetch appointments
+  const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
-    queryFn: async (): Promise<Appointment[]> => {
-      if (!user?.id) return [];
+    queryFn: async () => {
+      if (!user?.id) return [] as Appointment[];
       
       // Base query
       let query = supabase
@@ -166,15 +184,17 @@ const AvailabilityCalendar = () => {
 
       if (error) {
         console.error('Error fetching appointments:', error);
-        return [];
+        return [] as Appointment[];
       }
 
       // Type assertion for the raw data
       const rawAppointments = data as RawAppointmentData[];
       
       // Process appointments to include client information
-      const appointmentsWithClients: Appointment[] = await Promise.all(
-        rawAppointments.map(async (appointment) => {
+      const appointmentsWithClients = await Promise.all(
+        rawAppointments.map(async (appointment): Promise<Appointment> => {
+          let client: AppointmentClient = { name: 'Cliente não especificado', email: '' };
+          
           if (appointment.client_id) {
             const { data: clientData, error: clientError } = await supabase
               .from('profiles')
@@ -182,28 +202,17 @@ const AvailabilityCalendar = () => {
               .eq('id', appointment.client_id)
               .single();
             
-            const typedClientData = clientData as ProfileData | null;
-            
-            if (clientError || !typedClientData) {
-              console.error('Error fetching client:', clientError);
-              return {
-                ...appointment,
-                client: { name: 'Cliente não encontrado', email: '' }
+            if (!clientError && clientData) {
+              client = {
+                name: clientData.name || 'Nome não disponível',
+                email: clientData.email || 'Email não disponível'
               };
             }
-            
-            return {
-              ...appointment,
-              client: {
-                name: typedClientData.name || 'Nome não disponível',
-                email: typedClientData.email || 'Email não disponível'
-              }
-            };
           }
           
           return {
             ...appointment,
-            client: { name: 'Cliente não especificado', email: '' }
+            client
           };
         })
       );
@@ -213,11 +222,8 @@ const AvailabilityCalendar = () => {
     enabled: !!user?.id
   });
 
-  // Use the data from the query
-  const appointments = appointmentsQuery.data || [];
-
   const getAppointmentsForDay = (date: Date): Appointment[] => {
-    return appointments.filter(app => 
+    return (appointments || []).filter(app => 
       isSameDay(new Date(app.date), date)
     );
   };
@@ -248,14 +254,8 @@ const AvailabilityCalendar = () => {
   const getCabinShiftAvailability = (shift: 'morning' | 'afternoon' | 'evening'): boolean => {
     if (!cabinData || !cabinData.availability) return false;
     
-    // Handle both Json and CabinAvailability types
-    if (typeof cabinData.availability === 'object' && !Array.isArray(cabinData.availability)) {
-      // If it's a Json object with the expected properties
-      const availability = cabinData.availability as any;
-      return availability[shift] === true;
-    }
-    
-    return false;
+    const availability = cabinData.availability;
+    return !!availability[shift];
   };
 
   if (!selectedDate) {
