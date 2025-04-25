@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -185,7 +184,7 @@ const BookCabinPage = () => {
           date, 
           shift: turn, 
           price,
-          status: 'payment_pending' // Explicitly use the new allowed status
+          status: 'payment_pending'
         }
       );
 
