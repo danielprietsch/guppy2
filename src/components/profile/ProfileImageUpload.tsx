@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Loader2, Camera } from "lucide-react";
@@ -21,7 +20,6 @@ export function ProfileImageUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Update preview URL when currentAvatarUrl changes
   useEffect(() => {
     if (currentAvatarUrl) {
       console.log("ProfileImageUpload: Setting preview from currentAvatarUrl:", currentAvatarUrl);
@@ -34,23 +32,19 @@ export function ProfileImageUpload({
       setIsUploading(true);
       console.log("Starting upload for user:", userId);
 
-      // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         throw new Error("Arquivo muito grande. Máximo permitido: 5MB");
       }
 
-      // Check file type
       if (!file.type.startsWith('image/')) {
         throw new Error("Por favor, selecione apenas arquivos de imagem");
       }
 
-      // Create unique filename using userId and timestamp
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
       console.log(`Uploading to path: ${filePath} in 'avatars' bucket`);
 
-      // Upload file to 'avatars' bucket
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
@@ -62,14 +56,12 @@ export function ProfileImageUpload({
 
       console.log("Upload successful:", uploadData);
 
-      // Get public URL for the file
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
-      // Use the security definer function to update both profile and user metadata
       const { data: updateResult, error: updateError } = await supabase.rpc(
         'update_avatar_everywhere',
         { user_id: userId, avatar_url: publicUrl }
@@ -82,7 +74,6 @@ export function ProfileImageUpload({
 
       console.log("Avatar updated successfully via RPC function, result:", updateResult);
 
-      // Update local state and notify parent
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);
     } catch (error: any) {
@@ -119,7 +110,6 @@ export function ProfileImageUpload({
           </AvatarFallback>
         </Avatar>
 
-        {/* Overlay with text */}
         <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div className="text-white flex flex-col items-center gap-2">
             <Camera className="h-6 w-6" />
@@ -127,22 +117,22 @@ export function ProfileImageUpload({
           </div>
         </div>
 
-        {/* Loading overlay */}
         {isUploading && (
           <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
             <Loader2 className="h-6 w-6 text-white animate-spin" />
           </div>
         )}
-        
+
         <label 
-          className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
+          className="absolute bottom-0 right-0 -translate-x-1/4 -translate-y-1/4 p-2 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
           title="Alterar foto de perfil"
         >
           {isUploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-6 w-6 animate-spin" />
           ) : (
-            <Camera className="h-5 w-5" />
+            <Camera className="h-6 w-6" />
           )}
+          <div className="absolute inset-0 -m-4 rounded-full" />
           <input
             type="file"
             onChange={handleFileChange}
