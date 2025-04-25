@@ -75,8 +75,8 @@ export const CabinManagement = ({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between border-b">
         <CardTitle>Cabines de {selectedLocation?.name}</CardTitle>
         <Button
           variant="default"
@@ -87,20 +87,20 @@ export const CabinManagement = ({
           Adicionar Cabine
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {locationCabins.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
             Este local ainda não possui cabines cadastradas.
           </p>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {locationCabins.map((cabin) => (
-              <Card key={cabin.id} className="relative">
-                <CardContent className="p-4">
-                  <div className="flex flex-col">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-semibold">{cabin.name}</h3>
-                      <div className="flex space-x-1">
+              <Card key={cabin.id} className="group hover:shadow-lg transition-all duration-300 ease-in-out border-2 hover:border-guppy-primary/20">
+                <CardContent className="p-5">
+                  <div className="flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-4">
+                      <h3 className="text-lg font-semibold tracking-tight">{cabin.name}</h3>
+                      <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="icon" onClick={() => handleEditCabin(cabin)}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -114,23 +114,29 @@ export const CabinManagement = ({
                         </Button>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">{cabin.description}</p>
-                    <div className="mt-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Equipamentos:</span>
-                        <span>{cabin.equipment.length}</span>
+                    
+                    <p className="text-sm text-muted-foreground line-clamp-2 mb-4">{cabin.description}</p>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+                      <div className="bg-muted/50 rounded-lg p-3">
+                        <span className="block text-muted-foreground mb-1">Equipamentos</span>
+                        <span className="font-medium">{cabin.equipment.length}</span>
                       </div>
                       {cabin.price && (
-                        <div className="flex justify-between mt-1">
-                          <span>Preço base:</span>
-                          <span>R$ {cabin.price.toFixed(2)}</span>
+                        <div className="bg-muted/50 rounded-lg p-3">
+                          <span className="block text-muted-foreground mb-1">Preço base</span>
+                          <span className="font-medium">R$ {cabin.price.toFixed(2)}</span>
                         </div>
                       )}
                     </div>
-                    <CabinAvailabilityCard 
-                      cabinId={cabin.id}
-                      pricing={cabin.pricing}
-                    />
+                    
+                    <div className="mt-auto">
+                      <h4 className="font-medium text-sm mb-3">Disponibilidade da Semana</h4>
+                      <CabinAvailabilityCard 
+                        cabinId={cabin.id}
+                        pricing={cabin.pricing}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
