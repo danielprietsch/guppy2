@@ -95,10 +95,23 @@ export const LocationApprovals = () => {
           };
         }
         
+        // Fetch the latest cabins count directly to ensure accuracy
+        const { count: currentCabinsCount, error: cabinsCountError } = await supabase
+          .from('cabins')
+          .select('id', { count: true })
+          .eq('location_id', location.id);
+          
+        if (cabinsCountError) {
+          debugError(`LocationApprovals: Error fetching cabins count for location ${location.id}:`, cabinsCountError);
+        }
+        
+        // Use the directly queried cabins count if available, otherwise fall back to the stored value
+        const cabinsCount = cabinsCountError ? (location.cabins_count || 0) : (currentCabinsCount || 0);
+        
         return {
           id: location.id,
           name: location.name,
-          cabins_count: location.cabins_count || 0,
+          cabins_count: cabinsCount,
           active: location.active,
           owner_name: profileData?.name || "Desconhecido",
           owner_email: profileData?.email || "Desconhecido",
