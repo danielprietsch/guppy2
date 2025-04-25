@@ -11,14 +11,18 @@ import {
   DollarSign,
   Star,
   PieChart,
+  Loader2,
 } from "lucide-react";
 import { services, bookings, appointments, reviews } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
+import { useServices } from "@/hooks/useServices";
+import ServiceEditCard from "@/components/ServiceEditCard";
 
 const ProfessionalDashboardPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  
+  const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
+
   // Stats data
   const [stats, setStats] = useState({
     upcomingAppointments: 0,
@@ -26,7 +30,7 @@ const ProfessionalDashboardPage = () => {
     totalRevenue: 0,
     averageRating: 0,
   });
-  
+
   useEffect(() => {
     if (user) {
       // In a real app, this would fetch data from the API based on the current user
@@ -45,17 +49,17 @@ const ProfessionalDashboardPage = () => {
         const professionalReviews = reviews.filter(
           (review) => review.professionalId === user.id
         );
-        
+
         // Calculate relevant statistics
         const uniqueClients = [...new Set(professionalAppointments.map((app) => app.clientId))];
         const totalRevenue = professionalAppointments.reduce((sum, app) => sum + app.price, 0);
-        
+
         let avgRating = 0;
         if (professionalReviews.length > 0) {
-          avgRating = professionalReviews.reduce((sum, review) => sum + review.rating, 0) / 
+          avgRating = professionalReviews.reduce((sum, review) => sum + review.rating, 0) /
             professionalReviews.length;
         }
-        
+
         setStats({
           upcomingAppointments: professionalAppointments.filter(
             (app) => app.status === "confirmed"
@@ -64,12 +68,12 @@ const ProfessionalDashboardPage = () => {
           totalRevenue: totalRevenue,
           averageRating: avgRating,
         });
-        
+
         setLoading(false);
       }, 1000);
     }
   }, [user]);
-  
+
   if (loading) {
     return (
       <div className="container py-12 flex items-center justify-center">
@@ -77,7 +81,7 @@ const ProfessionalDashboardPage = () => {
       </div>
     );
   }
-  
+
   return (
     <div className="container py-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -91,7 +95,7 @@ const ProfessionalDashboardPage = () => {
           <Link to="/services/new">Adicionar Novo Serviço</Link>
         </Button>
       </div>
-      
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
@@ -107,7 +111,7 @@ const ProfessionalDashboardPage = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -121,7 +125,7 @@ const ProfessionalDashboardPage = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -133,7 +137,7 @@ const ProfessionalDashboardPage = () => {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="pt-6">
             <div className="flex justify-between items-center">
@@ -151,7 +155,7 @@ const ProfessionalDashboardPage = () => {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Main Content */}
       <Tabs defaultValue="appointments" className="space-y-4">
         <TabsList>
@@ -160,7 +164,7 @@ const ProfessionalDashboardPage = () => {
           <TabsTrigger value="bookings">Reservas de Cabine</TabsTrigger>
           <TabsTrigger value="reviews">Avaliações</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="appointments" className="space-y-4">
           <Card>
             <CardHeader>
@@ -201,7 +205,7 @@ const ProfessionalDashboardPage = () => {
                       </div>
                     </div>
                   ))}
-                
+
                 {appointments.filter(
                   (app) => app.professionalId === user?.id && app.status === "confirmed"
                 ).length === 0 && (
@@ -210,7 +214,7 @@ const ProfessionalDashboardPage = () => {
                   </div>
                 )}
               </div>
-              
+
               {appointments.filter(
                 (app) => app.professionalId === user?.id && app.status === "confirmed"
               ).length > 0 && (
@@ -221,40 +225,48 @@ const ProfessionalDashboardPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="services" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Meus Serviços</CardTitle>
+              <CardTitle className="flex justify-between items-center">
+                <span>Meus Serviços</span>
+                <Button asChild variant="default">
+                  <Link to="/services/new">Adicionar Novo Serviço</Link>
+                </Button>
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid sm:grid-cols-2 gap-4">
-                {services.filter((service) => service.professionalId === user?.id).map((service) => (
-                  <div key={service.id} className="border rounded-md p-4">
-                    <h3 className="font-semibold">{service.name}</h3>
-                    <p className="text-sm text-muted-foreground">{service.description}</p>
-                    <div className="mt-2 flex justify-between items-center">
-                      <span>R$ {service.price}</span>
-                      <Button variant="outline" size="sm">
-                        Editar
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                
-                {services.filter((service) => service.professionalId === user?.id).length === 0 && (
-                  <div className="text-center py-6 text-muted-foreground col-span-full">
+              {servicesLoading ? (
+                <div className="text-center py-6">
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                  <p className="text-muted-foreground">Carregando seus serviços...</p>
+                </div>
+              ) : services.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-muted-foreground mb-4">
                     Você ainda não cadastrou nenhum serviço.
-                  </div>
-                )}
-              </div>
+                  </p>
+                  <Button asChild>
+                    <Link to="/services/new">Adicionar Primeiro Serviço</Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {services.map((service) => (
+                    <ServiceEditCard
+                      key={service.id}
+                      service={service}
+                      onServiceUpdated={refetchServices}
+                      onServiceDeleted={refetchServices}
+                    />
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
-          <Button asChild>
-            <Link to="/services/new">Adicionar Novo Serviço</Link>
-          </Button>
         </TabsContent>
-        
+
         <TabsContent value="bookings" className="space-y-4">
           <Card>
             <CardHeader>
@@ -286,7 +298,7 @@ const ProfessionalDashboardPage = () => {
                       </div>
                     </div>
                   ))}
-                
+
                 {bookings.filter((booking) => booking.professionalId === user?.id).length === 0 && (
                   <div className="text-center py-6 text-muted-foreground">
                     Você não tem reservas de cabine.
@@ -296,7 +308,7 @@ const ProfessionalDashboardPage = () => {
             </CardContent>
           </Card>
         </TabsContent>
-        
+
         <TabsContent value="reviews" className="space-y-4">
           <Card>
             <CardHeader>
@@ -328,7 +340,7 @@ const ProfessionalDashboardPage = () => {
                       <p>{review.comment}</p>
                     </div>
                   ))}
-                
+
                 {reviews.filter((review) => review.professionalId === user?.id).length === 0 && (
                   <div className="text-center py-6 text-muted-foreground">
                     Você não tem avaliações.
