@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addDays, subDays } from "date-fns";
@@ -22,6 +23,24 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
     onDateChange(addDays(selectedDate, 1));
   };
 
+  const getHourStatus = (hour: number) => {
+    const hourAppointments = appointments.filter(app => {
+      const appHour = parseInt(app.time.split(':')[0]);
+      return appHour === hour;
+    });
+
+    if (hourAppointments.length > 0) {
+      return { status: 'scheduled', color: 'bg-red-100', label: 'Agendado' };
+    } else {
+      // This is simplified. In a real app, you'd check the professional's availability data
+      // For now, we'll randomly assign free or closed status for demonstration
+      const randomStatus = Math.random() > 0.2 ? 'free' : 'closed';
+      return randomStatus === 'free' 
+        ? { status: 'free', color: 'bg-green-100', label: 'Livre' } 
+        : { status: 'closed', color: 'bg-amber-100', label: 'Fechado' };
+    }
+  };
+
   return (
     <Card className="h-full">
       <CardContent className="p-4 h-full overflow-auto">
@@ -38,16 +57,8 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
         </div>
         <div className="space-y-2 h-[calc(100%-3rem)]">
           {hours.map((hour) => {
-            const hourAppointments = appointments.filter(app => {
-              const appHour = parseInt(app.time.split(':')[0]);
-              return appHour === hour;
-            });
-
-            let bgColorClass = "bg-accent/10";
-            if (hourAppointments.length > 0) {
-              bgColorClass = "bg-blue-50";
-            }
-
+            const hourStatus = getHourStatus(hour);
+            
             return (
               <div
                 key={hour}
@@ -56,15 +67,20 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
                 <div className="col-span-2 text-sm text-muted-foreground">
                   {`${hour.toString().padStart(2, '0')}:00`}
                 </div>
-                <div className={`col-span-10 min-h-[40px] rounded-md ${bgColorClass}`}>
-                  {hourAppointments.map((app) => (
-                    <div
-                      key={app.id}
-                      className="p-2 m-1 bg-primary/10 rounded-md text-sm"
-                    >
-                      {app.client.name} - {app.time}
-                    </div>
-                  ))}
+                <div className={`col-span-10 min-h-[40px] rounded-md ${hourStatus.color} relative`}>
+                  <div className="absolute top-1 right-2 text-xs font-medium px-1.5 py-0.5 rounded-full bg-white/80">
+                    {hourStatus.label}
+                  </div>
+                  {appointments
+                    .filter(app => parseInt(app.time.split(':')[0]) === hour)
+                    .map((app) => (
+                      <div
+                        key={app.id}
+                        className="p-2 m-1 bg-primary/10 rounded-md text-sm"
+                      >
+                        {app.client.name} - {app.time}
+                      </div>
+                    ))}
                 </div>
               </div>
             );

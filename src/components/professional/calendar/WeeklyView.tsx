@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
@@ -22,6 +23,25 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
 
   const handleNextWeek = () => {
     onDateChange(addWeeks(selectedDate, 1));
+  };
+
+  const getCellStatus = (date: Date, hour: number) => {
+    const cellAppointments = appointments.filter(app => {
+      const appDate = new Date(app.date);
+      const appHour = parseInt(app.time.split(':')[0]);
+      return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
+    });
+
+    if (cellAppointments.length > 0) {
+      return { status: 'scheduled', color: 'bg-red-100', label: 'Agendado' };
+    } else {
+      // This is simplified. In a real app, you'd check the professional's availability data
+      // For now, we'll randomly assign free or closed status for demonstration
+      const randomStatus = Math.random() > 0.2 ? 'free' : 'closed';
+      return randomStatus === 'free' 
+        ? { status: 'free', color: 'bg-green-100', label: 'Livre' } 
+        : { status: 'closed', color: 'bg-amber-100', label: 'Fechado' };
+    }
   };
 
   return (
@@ -62,23 +82,22 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
                 </div>
               </div>
               {hours.map((hour) => {
-                const hourAppointments = appointments.filter(app => {
+                const cellStatus = getCellStatus(date, hour);
+                const cellAppointments = appointments.filter(app => {
                   const appDate = new Date(app.date);
                   const appHour = parseInt(app.time.split(':')[0]);
                   return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
                 });
 
-                let bgColorClass = "bg-accent/10";
-                if (hourAppointments.length > 0) {
-                  bgColorClass = "bg-blue-50";
-                }
-
                 return (
                   <div
                     key={hour}
-                    className={`h-12 border rounded-md ${bgColorClass}`}
+                    className={`h-12 border rounded-md ${cellStatus.color} relative`}
                   >
-                    {hourAppointments.map((app) => (
+                    <div className="absolute top-0 right-0 text-xs font-medium px-1 py-0.5 rounded-bl bg-white/80">
+                      {cellStatus.label}
+                    </div>
+                    {cellAppointments.map((app) => (
                       <div
                         key={app.id}
                         className="p-1 m-0.5 bg-primary/10 rounded-sm text-xs truncate"
