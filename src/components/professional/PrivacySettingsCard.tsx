@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Globe, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,20 +35,22 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
     fetchPrivacySettings();
   }, [user, initialIsPublic]);
 
-  const handleTogglePrivacy = async () => {
+  const handleTogglePrivacy = async (value: string) => {
     if (!user) return;
+    
+    const newIsPublic = value === 'public';
     
     try {
       const { data: metadataData, error: metadataError } = await supabase.auth.updateUser({
-        data: { isPublic: !isPublic }
+        data: { isPublic: newIsPublic }
       });
       
       if (metadataError) throw metadataError;
       
-      setIsPublic(!isPublic);
+      setIsPublic(newIsPublic);
       toast({
         title: "Configurações de privacidade atualizadas",
-        description: !isPublic 
+        description: newIsPublic 
           ? "Seu perfil agora está visível para clientes." 
           : "Seu perfil agora está privado.",
       });
@@ -65,28 +67,39 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
   return (
     <Card className="mb-6">
       <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {isPublic ? (
-              <Globe className="h-5 w-5 text-primary" />
-            ) : (
-              <Lock className="h-5 w-5 text-primary" />
-            )}
-            <div>
-              <h3 className="font-medium">Visibilidade do Perfil</h3>
+        <Label className="text-lg font-medium mb-4 block">Visibilidade do Perfil</Label>
+        <ToggleGroup
+          type="single"
+          value={isPublic ? 'public' : 'private'}
+          onValueChange={handleTogglePrivacy}
+          className="grid grid-cols-2 gap-4"
+        >
+          <ToggleGroupItem 
+            value="public" 
+            className="flex flex-col items-center gap-3 p-6 data-[state=on]:bg-primary/10 border rounded-lg hover:bg-accent"
+          >
+            <Globe className="h-8 w-8 text-primary" />
+            <div className="text-center">
+              <div className="font-medium">Público</div>
               <p className="text-sm text-muted-foreground">
-                {isPublic 
-                  ? "Seu perfil está visível para os clientes"
-                  : "Seu perfil está privado"}
+                Visível para clientes
               </p>
             </div>
-          </div>
-          <Switch
-            checked={isPublic}
-            onCheckedChange={handleTogglePrivacy}
-            aria-label="Toggle profile visibility"
-          />
-        </div>
+          </ToggleGroupItem>
+          
+          <ToggleGroupItem 
+            value="private"
+            className="flex flex-col items-center gap-3 p-6 data-[state=on]:bg-primary/10 border rounded-lg hover:bg-accent"
+          >
+            <Lock className="h-8 w-8 text-primary" />
+            <div className="text-center">
+              <div className="font-medium">Privado</div>
+              <p className="text-sm text-muted-foreground">
+                Oculto para clientes
+              </p>
+            </div>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </CardContent>
     </Card>
   );
