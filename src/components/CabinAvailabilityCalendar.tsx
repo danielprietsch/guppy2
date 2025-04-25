@@ -6,6 +6,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
 import { useNavigate } from "react-router-dom";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
+import { toast } from "@/hooks/use-toast";
 
 interface CabinAvailabilityCalendarProps {
   selectedTurn: "morning" | "afternoon" | "evening";
@@ -46,6 +47,11 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     const dateObj = new Date(date);
     if (isBefore(dateObj, today)) {
       debugAreaCritical('AVAILABILITY', 'Cannot change status of past dates');
+      toast({
+        title: "Operação não permitida",
+        description: "Não é possível alterar status de datas passadas.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -54,12 +60,26 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     if (onStatusChange) {
       try {
         onStatusChange(date, turno, isManualClose);
+        toast({
+          title: isManualClose ? "Turno fechado" : "Turno liberado",
+          description: `${isManualClose ? "Fechado" : "Liberado"} o turno ${getTurnoLabel(turno)} para a data ${format(dateObj, "dd/MM/yyyy")}`,
+        });
         debugAreaCritical('AVAILABILITY', 'Status change callback executed successfully');
       } catch (error) {
         debugAreaCritical('AVAILABILITY', 'Error in status change callback:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível alterar o status do turno.",
+          variant: "destructive"
+        });
       }
     } else {
       debugAreaCritical('AVAILABILITY', 'No status change callback provided');
+      toast({
+        title: "Erro de configuração",
+        description: "Função de alteração de status não encontrada.",
+        variant: "destructive"
+      });
     }
   }, [onStatusChange, today]);
 
@@ -67,6 +87,11 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     const dateObj = new Date(date);
     if (isBefore(dateObj, today)) {
       debugAreaLog('PRICE_EDIT', 'Cannot edit price of past dates');
+      toast({
+        title: "Operação não permitida",
+        description: "Não é possível alterar preço de datas passadas.",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -75,12 +100,26 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
     if (onPriceChange) {
       try {
         onPriceChange(date, turno, newPrice);
+        toast({
+          title: "Preço atualizado",
+          description: `Preço do turno ${getTurnoLabel(turno)} atualizado para R$ ${newPrice.toFixed(2)}`,
+        });
         debugAreaLog('PRICE_EDIT', 'Price change callback executed successfully');
       } catch (error) {
         debugAreaCritical('PRICE_EDIT', 'Error in price change callback:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar o preço do turno.",
+          variant: "destructive"
+        });
       }
     } else {
       debugAreaLog('PRICE_EDIT', 'No price change callback provided');
+      toast({
+        title: "Erro de configuração",
+        description: "Função de alteração de preço não encontrada.",
+        variant: "destructive"
+      });
     }
   }, [onPriceChange, today]);
 
@@ -155,11 +194,4 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   );
 };
 
-export default React.memo(CabinAvailabilityCalendar, (prevProps, nextProps) => {
-  return (
-    prevProps.pricePerDay === nextProps.pricePerDay &&
-    JSON.stringify(prevProps.daysBooked) === JSON.stringify(nextProps.daysBooked) &&
-    JSON.stringify(prevProps.manuallyClosedDates) === JSON.stringify(nextProps.manuallyClosedDates) &&
-    JSON.stringify(prevProps.slotPrices) === JSON.stringify(nextProps.slotPrices)
-  );
-});
+export default React.memo(CabinAvailabilityCalendar);

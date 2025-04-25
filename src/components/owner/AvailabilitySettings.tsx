@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import {
 import { Location, Cabin } from "@/lib/types";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { toast } from "@/hooks/use-toast";
+import { debugAreaLog } from "@/utils/debugLogger";
 
 interface AvailabilitySettingsProps {
   selectedLocation: Location | null;
@@ -23,8 +24,39 @@ export const AvailabilitySettings = ({
   const [selectedCabin, setSelectedCabin] = useState<string | null>(null);
   const [manuallyClosedDates, setManuallyClosedDates] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
   const [slotPrices, setSlotPrices] = useState<{ [date: string]: { [turn: string]: number } }>({});
+  const [bookedDates, setBookedDates] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
+  
+  // Initialize the selected cabin when cabins are loaded
+  useEffect(() => {
+    if (locationCabins.length > 0 && !selectedCabin) {
+      setSelectedCabin(locationCabins[0].id);
+    }
+  }, [locationCabins, selectedCabin]);
+  
+  // Load cabin-specific data when a cabin is selected
+  useEffect(() => {
+    if (selectedCabin) {
+      const selectedCabinData = locationCabins.find(c => c.id === selectedCabin);
+      if (selectedCabinData) {
+        // Initialize slot prices from cabin data if available
+        const initialPrices: { [date: string]: { [turn: string]: number } } = {};
+        
+        // Initialize manually closed dates from cabin data if available
+        const initialClosedDates: { [date: string]: { [turn: string]: boolean } } = {};
+        
+        // TODO: Load booked dates from backend
+        const initialBookedDates: { [date: string]: { [turn: string]: boolean } } = {};
+        
+        setSlotPrices(initialPrices);
+        setManuallyClosedDates(initialClosedDates);
+        setBookedDates(initialBookedDates);
+      }
+    }
+  }, [selectedCabin, locationCabins]);
 
   const handleStatusChange = useCallback((date: string, turn: string, isManualClose: boolean) => {
+    debugAreaLog('AVAILABILITY', `Status change for ${date} ${turn} to ${isManualClose ? 'closed' : 'open'}`);
+    
     setManuallyClosedDates(prevState => {
       const newState = { ...prevState };
       
@@ -34,16 +66,16 @@ export const AvailabilitySettings = ({
       
       newState[date][turn] = isManualClose;
       
-      toast({
-        title: isManualClose ? "Turno fechado" : "Turno liberado",
-        description: `${isManualClose ? "Fechado" : "Liberado"} o turno para a data ${date}`,
-      });
+      // Here you would save this to your backend
+      // saveAvailabilityToBackend(selectedCabin, date, turn, isManualClose);
       
       return newState;
     });
   }, []);
 
   const handlePriceChange = useCallback((date: string, turn: string, price: number) => {
+    debugAreaLog('PRICE_EDIT', `Price change for ${date} ${turn} to ${price}`);
+    
     setSlotPrices(prevState => {
       const newState = { ...prevState };
       
@@ -53,10 +85,8 @@ export const AvailabilitySettings = ({
       
       newState[date][turn] = price;
       
-      toast({
-        title: "Preço atualizado",
-        description: `Preço do turno atualizado para R$ ${price.toFixed(2)}`,
-      });
+      // Here you would save this to your backend
+      // savePriceToBackend(selectedCabin, date, turn, price);
       
       return newState;
     });
@@ -111,7 +141,7 @@ export const AvailabilitySettings = ({
                     <div className="w-full overflow-x-auto">
                       <CabinAvailabilityCalendar
                         selectedTurn="morning"
-                        daysBooked={{}}
+                        daysBooked={bookedDates}
                         onSelectDates={() => {}}
                         selectedDates={[]}
                         pricePerDay={getCabinPrice(selectedCabin)}
