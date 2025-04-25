@@ -10,8 +10,11 @@ import {
   Heart,
   Sparkles,
   Star,
-  HandHelping
+  HandHelping,
+  Clock, 
+  DollarSign
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface SpecialtyCardProps {
   id: string;
@@ -20,6 +23,55 @@ interface SpecialtyCardProps {
   onCheckedChange: (checked: boolean) => void;
 }
 
+// Service data mapping (in a real app, this would come from an API)
+const serviceData = {
+  // Cabelo
+  "corte_cabelo": { duration: 30, price: 50, category: "Cabelo" },
+  "coloracao": { duration: 120, price: 150, category: "Cabelo" },
+  "luzes": { duration: 180, price: 200, category: "Cabelo" },
+  "escova": { duration: 40, price: 60, category: "Cabelo" },
+  "hidratacao": { duration: 60, price: 80, category: "Cabelo" },
+  
+  // Mãos e Pés
+  "manicure_comum": { duration: 40, price: 35, category: "Manicure" },
+  "manicure_gel": { duration: 60, price: 80, category: "Manicure" },
+  "pedicure_comum": { duration: 50, price: 45, category: "Pedicure" },
+  "pedicure_spa": { duration: 90, price: 90, category: "Pedicure" },
+  
+  // Maquiagem
+  "maquiagem_social": { duration: 60, price: 120, category: "Maquiagem" },
+  "maquiagem_noiva": { duration: 120, price: 250, category: "Maquiagem" },
+  
+  // Estética
+  "design_sobrancelhas": { duration: 30, price: 40, category: "Estética" },
+  "depilacao_cera": { duration: 60, price: 80, category: "Depilação" },
+  "depilacao_laser": { duration: 60, price: 150, category: "Depilação" },
+  
+  // Barba
+  "barba": { duration: 30, price: 40, category: "Barba" },
+  
+  // Bem-estar
+  "massagem_relaxante": { duration: 60, price: 120, category: "Massagem" },
+  "limpeza_pele": { duration: 60, price: 100, category: "Tratamento Facial" },
+};
+
+// Get category colors
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case "Cabelo": return "bg-purple-100 text-purple-800";
+    case "Manicure": 
+    case "Pedicure": return "bg-pink-100 text-pink-800";
+    case "Maquiagem": return "bg-orange-100 text-orange-800";
+    case "Estética": return "bg-blue-100 text-blue-800";
+    case "Depilação": return "bg-red-100 text-red-800";
+    case "Barba": return "bg-slate-100 text-slate-800";
+    case "Massagem": return "bg-green-100 text-green-800";
+    case "Tratamento Facial": return "bg-sky-100 text-sky-800";
+    default: return "bg-gray-100 text-gray-800";
+  }
+};
+
+// Get icon for service
 const getIconForSpecialty = (id: string) => {
   switch (id) {
     // Cabelo
@@ -65,33 +117,6 @@ const getIconForSpecialty = (id: string) => {
     default:
       return <Star className="h-5 w-5" />;
   }
-};
-
-const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardProps) => {
-  return (
-    <div
-      className={cn(
-        "relative flex flex-col items-center p-6 rounded-lg border-2 transition-colors cursor-pointer hover:bg-accent min-h-[200px] w-full",
-        checked ? "border-primary bg-accent" : "border-input"
-      )}
-      onClick={() => onCheckedChange(!checked)}
-    >
-      <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
-        <Checkbox
-          checked={checked}
-          onCheckedChange={onCheckedChange}
-          id={`checkbox-${id}`}
-        />
-      </div>
-      <div className="mb-4 text-primary p-4 bg-background rounded-full">
-        {getIconForSpecialty(id)}
-      </div>
-      <span className="text-lg font-semibold text-center mb-2">{label}</span>
-      <p className="text-sm text-muted-foreground text-center">
-        {getServiceDescription(id)}
-      </p>
-    </div>
-  );
 };
 
 const getServiceDescription = (id: string): string => {
@@ -145,6 +170,54 @@ const getServiceDescription = (id: string): string => {
     default:
       return "Serviço especializado";
   }
+};
+
+const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardProps) => {
+  const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
+  
+  return (
+    <div
+      className={cn(
+        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer hover:bg-accent min-h-[210px] w-full",
+        checked ? "border-primary bg-accent" : "border-input"
+      )}
+      onClick={() => onCheckedChange(!checked)}
+    >
+      <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          id={`checkbox-${id}`}
+        />
+      </div>
+      
+      <div className="flex items-center gap-2 mb-3 w-full">
+        <div className="text-primary p-3 bg-background rounded-full">
+          {getIconForSpecialty(id)}
+        </div>
+        <span className="text-lg font-semibold">{label}</span>
+      </div>
+      
+      <Badge className={cn("mb-3", getCategoryColor(serviceInfo.category))}>
+        {serviceInfo.category}
+      </Badge>
+      
+      <p className="text-sm text-muted-foreground mb-4">
+        {getServiceDescription(id)}
+      </p>
+      
+      <div className="mt-auto w-full flex justify-between items-center pt-2 border-t border-border">
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <Clock className="h-4 w-4" />
+          <span className="text-sm">{serviceInfo.duration} min</span>
+        </div>
+        <div className="flex items-center gap-1 font-medium">
+          <DollarSign className="h-4 w-4" />
+          <span>R$ {serviceInfo.price}</span>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default SpecialtyCard;

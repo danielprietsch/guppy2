@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -9,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,12 +22,12 @@ const serviceSchema = z.object({
   duration: z.coerce.number().min(5, "Duração mínima de 5 minutos").max(480, "Duração máxima de 8 horas (480 minutos)"),
   price: z.coerce.number().min(1, "Preço deve ser maior que zero"),
   category: z.string().min(1, "Selecione uma categoria"),
-  specialties: z.array(z.string()).min(1, "Selecione pelo menos uma especialidade"),
+  services: z.array(z.string()).min(1, "Selecione pelo menos um serviço"),
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
 
-const specialties = [
+const availableServices = [
   { id: "corte_cabelo", label: "Corte de Cabelo" },
   { id: "coloracao", label: "Coloração" },
   { id: "luzes", label: "Luzes/Mechas" },
@@ -73,7 +73,7 @@ const NewServicePage = () => {
       duration: 30,
       price: 50,
       category: "",
-      specialties: [],
+      services: [],
     },
   });
 
@@ -99,7 +99,7 @@ const NewServicePage = () => {
           price: values.price,
           category: values.category,
           professional_id: user.id,
-          specialties: values.specialties,
+          specialties: values.services, // Keep field name as specialties for backend compatibility
         })
         .select();
 
@@ -250,21 +250,21 @@ const NewServicePage = () => {
 
               <FormField
                 control={form.control}
-                name="specialties"
+                name="services"
                 render={() => (
                   <FormItem>
                     <div className="mb-6">
-                      <FormLabel className="text-xl">Especialidades</FormLabel>
+                      <FormLabel className="text-xl">Serviços Oferecidos</FormLabel>
                       <FormDescription className="text-base">
-                        Selecione suas especialidades para este serviço
+                        Selecione os serviços específicos que você oferece
                       </FormDescription>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {specialties.map((item) => (
+                      {availableServices.map((item) => (
                         <FormField
                           key={item.id}
                           control={form.control}
-                          name="specialties"
+                          name="services"
                           render={({ field }) => (
                             <SpecialtyCard
                               id={item.id}
