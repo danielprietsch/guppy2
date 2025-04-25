@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
@@ -45,9 +44,9 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
   };
 
   return (
-    <Card className="h-full w-full">
-      <CardContent className="p-2 sm:p-4 h-full">
-        <div className="flex items-center justify-between mb-4 sticky top-0 bg-background z-10 py-2">
+    <Card className="h-full">
+      <CardContent className="p-0 h-full flex flex-col">
+        <div className="flex items-center justify-between px-4 py-2 border-b bg-background sticky top-0 z-10">
           <Button variant="ghost" size="sm" onClick={handlePreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -58,58 +57,60 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-8 gap-1 sm:gap-2 w-full overflow-x-auto h-[calc(100%-3rem)]">
-          <div className="space-y-1 sm:space-y-2">
-            <div className="h-10 sm:h-12"></div>
-            {hours.map((hour) => (
-              <div
-                key={hour}
-                className="h-10 sm:h-12 text-xs sm:text-sm text-muted-foreground flex items-center justify-end pr-2"
-              >
-                {`${hour.toString().padStart(2, '0')}:00`}
+        <div className="flex-1 overflow-auto">
+          <div className="grid grid-cols-8 gap-1 p-4 min-w-[800px]">
+            <div className="space-y-1">
+              <div className="h-10"></div>
+              {hours.map((hour) => (
+                <div
+                  key={hour}
+                  className="h-10 text-xs text-muted-foreground flex items-center justify-end pr-2"
+                >
+                  {`${hour.toString().padStart(2, '0')}:00`}
+                </div>
+              ))}
+            </div>
+
+            {weekDays.map((date) => (
+              <div key={date.toString()} className="space-y-1 min-w-[100px]">
+                <div className="text-center h-10">
+                  <div className="font-semibold text-xs">
+                    {format(date, 'EEEE', { locale: ptBR })}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {format(date, 'd MMM', { locale: ptBR })}
+                  </div>
+                </div>
+                {hours.map((hour) => {
+                  const cellStatus = getCellStatus(date, hour);
+                  const cellAppointments = appointments.filter(app => {
+                    const appDate = new Date(app.date);
+                    const appHour = parseInt(app.time.split(':')[0]);
+                    return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
+                  });
+
+                  return (
+                    <div
+                      key={hour}
+                      className={`h-10 border rounded-md ${cellStatus.color} relative`}
+                    >
+                      <div className="absolute top-0 right-0 text-[10px] font-medium px-1 py-0.5 rounded-bl bg-white/80">
+                        {cellStatus.label}
+                      </div>
+                      {cellAppointments.map((app) => (
+                        <div
+                          key={app.id}
+                          className="p-0.5 bg-primary/10 rounded-sm text-[10px] truncate"
+                        >
+                          {app.client.name}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             ))}
           </div>
-
-          {weekDays.map((date) => (
-            <div key={date.toString()} className="space-y-1 sm:space-y-2 min-w-[100px]">
-              <div className="text-center h-10 sm:h-12">
-                <div className="font-semibold text-xs sm:text-sm">
-                  {format(date, 'EEEE', { locale: ptBR })}
-                </div>
-                <div className="text-xs sm:text-sm text-muted-foreground">
-                  {format(date, 'd MMM', { locale: ptBR })}
-                </div>
-              </div>
-              {hours.map((hour) => {
-                const cellStatus = getCellStatus(date, hour);
-                const cellAppointments = appointments.filter(app => {
-                  const appDate = new Date(app.date);
-                  const appHour = parseInt(app.time.split(':')[0]);
-                  return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
-                });
-
-                return (
-                  <div
-                    key={hour}
-                    className={`h-10 sm:h-12 border rounded-md ${cellStatus.color} relative`}
-                  >
-                    <div className="absolute top-0 right-0 text-[10px] sm:text-xs font-medium px-1 py-0.5 rounded-bl bg-white/80">
-                      {cellStatus.label}
-                    </div>
-                    {cellAppointments.map((app) => (
-                      <div
-                        key={app.id}
-                        className="p-0.5 sm:p-1 m-0.5 bg-primary/10 rounded-sm text-[10px] sm:text-xs truncate"
-                      >
-                        {app.client.name}
-                      </div>
-                    ))}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
         </div>
       </CardContent>
     </Card>

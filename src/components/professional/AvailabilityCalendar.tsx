@@ -151,37 +151,39 @@ const AvailabilityCalendar = () => {
           Calendário de Disponibilidade
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-[calc(100%-5rem)] overflow-auto">
-        <div className="h-full space-y-6">
-          <Tabs defaultValue="day" className="w-full h-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6">
+      <CardContent className="p-0 h-[calc(100%-5rem)]">
+        <Tabs defaultValue="day" className="h-full flex flex-col">
+          <div className="px-6 pt-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="day">Dia</TabsTrigger>
               <TabsTrigger value="week">Semana</TabsTrigger>
               <TabsTrigger value="month">Mês</TabsTrigger>
             </TabsList>
-            <TabsContent value="day" className="h-[calc(100%-4rem)]">
+          </div>
+          <div className="flex-1 p-6 pt-4 min-h-0">
+            <TabsContent value="day" className="h-full m-0 outline-none">
               <DailyView 
                 selectedDate={selectedDate || today}
                 appointments={appointments || []}
                 onDateChange={handleDateChange}
               />
             </TabsContent>
-            <TabsContent value="week" className="h-[calc(100%-4rem)]">
+            <TabsContent value="week" className="h-full m-0 outline-none">
               <WeeklyView 
                 selectedDate={selectedDate || today}
                 appointments={appointments || []}
                 onDateChange={handleDateChange}
               />
             </TabsContent>
-            <TabsContent value="month" className="h-[calc(100%-4rem)]">
-              <div className="mb-6">
+            <TabsContent value="month" className="h-full m-0 outline-none">
+              <div className="h-full flex flex-col space-y-6">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   locale={ptBR}
                   showOutsideDays
-                  className="border rounded-md p-3 w-full"
+                  className="w-full border rounded-md p-3"
                   components={{
                     DayContent: ({ date }) => (
                       <div className={dayClass(date)}>
@@ -206,38 +208,38 @@ const AvailabilityCalendar = () => {
                 />
               </div>
             </TabsContent>
-          </Tabs>
+          </div>
+        </Tabs>
 
-          <WorkingHoursSettings />
+        <WorkingHoursSettings />
 
-          <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Detalhes do Agendamento</DialogTitle>
-              </DialogHeader>
-              {selectedAppointment && (
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Data e Hora</p>
-                    <p className="font-medium">
-                      {format(new Date(selectedAppointment.date), "dd/MM/yyyy")} às{' '}
-                      {formatAppointmentTime(selectedAppointment.time)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Cliente</p>
-                    <p className="font-medium">{selectedAppointment.client.name}</p>
-                    <p className="text-sm text-gray-600">{selectedAppointment.client.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Status</p>
-                    <p className="font-medium capitalize">{selectedAppointment.status}</p>
-                  </div>
+        <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Detalhes do Agendamento</DialogTitle>
+            </DialogHeader>
+            {selectedAppointment && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-500">Data e Hora</p>
+                  <p className="font-medium">
+                    {format(new Date(selectedAppointment.date), "dd/MM/yyyy")} às{' '}
+                    {formatAppointmentTime(selectedAppointment.time)}
+                  </p>
                 </div>
-              )}
-            </DialogContent>
-          </Dialog>
-        </div>
+                <div>
+                  <p className="text-sm text-gray-500">Cliente</p>
+                  <p className="font-medium">{selectedAppointment.client.name}</p>
+                  <p className="text-sm text-gray-600">{selectedAppointment.client.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Status</p>
+                  <p className="font-medium capitalize">{selectedAppointment.status}</p>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
