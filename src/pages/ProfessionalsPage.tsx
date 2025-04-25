@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -116,15 +117,17 @@ const ProfessionalsPage = () => {
           ))}
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="mt-8">
           {filteredProfessionals.length > 0 ? (
-            filteredProfessionals.map((professional) => (
-              <ProfessionalCard key={professional.id} professional={professional} />
-            ))
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {filteredProfessionals.map((professional) => (
+                <ProfessionalCard key={professional.id} professional={professional} />
+              ))}
+            </div>
           ) : (
-            <div className="col-span-full text-center py-12">
-              <h3 className="text-lg font-medium">Nenhum profissional disponível</h3>
-              <p className="mt-1 text-gray-500">
+            <div className="mt-12 text-center py-16 border rounded-lg bg-gray-50">
+              <h3 className="text-xl font-medium text-gray-700 mb-2">Não foram encontrados profissionais disponíveis</h3>
+              <p className="text-gray-500 max-w-md mx-auto">
                 Não foram encontrados profissionais disponíveis com cabines reservadas na data solicitada
               </p>
             </div>

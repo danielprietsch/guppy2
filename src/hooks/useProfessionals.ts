@@ -35,6 +35,11 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           throw availabilityError;
         }
 
+        if (!availabilityData || availabilityData.length === 0) {
+          console.log('No professionals available on this date');
+          return [];
+        }
+
         const availableProfessionalIds = availabilityData.map(a => a.professional_id);
         console.log('Available professional IDs:', availableProfessionalIds);
 
@@ -48,6 +53,11 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         if (bookingsError) {
           console.error('Error fetching bookings:', bookingsError);
           throw bookingsError;
+        }
+
+        if (!bookingsData || bookingsData.length === 0) {
+          console.log('No confirmed bookings found for any professionals');
+          return [];
         }
 
         const professionalIdsWithBookings = bookingsData.map(b => b.professional_id);
@@ -73,6 +83,12 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         if (profilesError) {
           console.error('Error fetching professional profiles:', profilesError);
           throw profilesError;
+        }
+
+        // If no professionals found, return empty array
+        if (!professionals || professionals.length === 0) {
+          console.log('No professional profiles found');
+          return [];
         }
 
         // 5. If withSpecialties is true, fetch their specialties
