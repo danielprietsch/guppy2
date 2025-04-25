@@ -249,7 +249,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   size="sm"
                   onClick={(e) => handleButtonClick(e, onRelease)}
                   className={cn(
-                    "text-xs h-6 py-0 w-full bg-green-500 hover:bg-green-600 text-white"
+                    "text-xs h-6 py-0 w-full bg-yellow-300 hover:bg-yellow-400 text-black"
                   )}
                 >
                   Liberar
@@ -260,7 +260,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                   size="sm"
                   onClick={(e) => handleButtonClick(e, onManualClose)}
                   className={cn(
-                    "text-xs h-6 py-0 w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                    "text-xs h-6 py-0 w-full bg-yellow-300 hover:bg-yellow-400 text-black"
                   )}
                 >
                   Fechar
