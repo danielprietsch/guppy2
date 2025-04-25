@@ -13,7 +13,7 @@ import {
   Star,
   HandHelping,
   Hand,          // Usando Hand para manicure
-  FootPrints,    // Usando FootPrints para pedicure
+  Footprints,    // Corrected from FootPrints to Footprints
   ScissorsSquare // Usando ScissorsSquare para barba
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,7 @@ const getIconForSpecialty = (id: string) => {
       return <Hand className="h-5 w-5" />;
     case "pedicure_comum":
     case "pedicure_spa":
-      return <FootPrints className="h-5 w-5" />;
+      return <Footprints className="h-5 w-5" />;
       
     // Maquiagem
     case "maquiagem_social":
