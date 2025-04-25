@@ -4,22 +4,22 @@ import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, AlertCircle } from "lucide-react";
 import { addDays } from "date-fns";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { useServices } from "@/hooks/useServices";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "@/components/ui/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedService, setSelectedService] = useState<string>("all");
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const today = new Date();
   const nextWeek = addDays(today, 7);
   
@@ -34,18 +34,25 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
 
-  // Log the professional count only once during render
   console.log("Professional count:", professionals?.length || 0);
 
   const filteredProfessionals = professionals?.filter(professional => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesService = selectedService === "all" || 
-      (professional.specialties && professional.specialties.includes(selectedService));
+    const matchesService = selectedServices.length === 0 || 
+      professional.specialties?.some(specialty => selectedServices.includes(specialty));
     return matchesSearch && matchesService;
   }) || [];
   
   const uniqueCategories = Array.from(new Set(services.map(service => service.category)));
   
+  const toggleService = (category: string) => {
+    setSelectedServices(current => 
+      current.includes(category)
+        ? current.filter(s => s !== category)
+        : [...current, category]
+    );
+  };
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
@@ -74,18 +81,53 @@ const ProfessionalsPage = () => {
           />
         </div>
         
-        <Select value={selectedService} onValueChange={setSelectedService}>
-          <SelectTrigger className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-muted-foreground" />
-            <SelectValue placeholder="Filtrar por serviço" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os serviços</SelectItem>
-            {uniqueCategories.map((category) => (
-              <SelectItem key={category} value={category}>{category}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="flex items-center gap-2 w-full p-2 border rounded-lg bg-background hover:bg-accent/50 transition-colors">
+              <Filter className="h-5 w-5 text-muted-foreground" />
+              <span className="text-muted-foreground">
+                {selectedServices.length === 0 
+                  ? "Filtrar por serviços" 
+                  : `${selectedServices.length} serviço(s) selecionado(s)`
+                }
+              </span>
+              <div className="ml-auto flex gap-1">
+                {selectedServices.length > 0 && selectedServices.slice(0, 2).map((service) => (
+                  <Badge key={service} variant="secondary" className="max-w-[100px] truncate">
+                    {service}
+                  </Badge>
+                ))}
+                {selectedServices.length > 2 && (
+                  <Badge variant="secondary">+{selectedServices.length - 2}</Badge>
+                )}
+              </div>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80">
+            <ScrollArea className="h-80">
+              <div className="space-y-4 p-2">
+                <h4 className="font-medium">Serviços disponíveis</h4>
+                <div className="space-y-2">
+                  {uniqueCategories.map((category) => (
+                    <div key={category} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={category}
+                        checked={selectedServices.includes(category)}
+                        onCheckedChange={() => toggleService(category)}
+                      />
+                      <label
+                        htmlFor={category}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {category}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
       </div>
       
       {isError && (
