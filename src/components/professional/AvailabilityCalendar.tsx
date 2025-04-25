@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,14 +18,12 @@ interface AvailabilityCalendarProps {
   initialAvailability?: DayAvailability[];
 }
 
-// Mock data for demonstration
 const generateMockAvailability = (startDate: Date, days: number): DayAvailability[] => {
   const availability: DayAvailability[] = [];
   for (let i = 0; i < days; i++) {
     const date = new Date(startDate);
     date.setDate(date.getDate() + i);
     
-    // Set Sunday as closed and randomize other days for demonstration
     const isSunday = date.getDay() === 0;
     const isMonday = date.getDay() === 1;
     
@@ -40,12 +37,10 @@ const generateMockAvailability = (startDate: Date, days: number): DayAvailabilit
   return availability;
 };
 
-// Custom CSS to apply to the calendar day cells
 const dayClass = (day: Date, availability: DayAvailability[]) => {
   const dayAvail = availability.find(a => isSameDay(a.date, day));
   if (!dayAvail) return "";
   
-  // Count status for visualization
   let freeCount = 0;
   let busyCount = 0;
   let closedCount = 0;
@@ -66,7 +61,6 @@ const dayClass = (day: Date, availability: DayAvailability[]) => {
   if (busyCount === 3) return "bg-red-100 text-gray-500";
   if (freeCount === 3) return "bg-green-100 text-gray-900";
   
-  // Mixed availability
   if (freeCount > 0) return "bg-gradient-to-br from-green-100 via-white to-amber-100";
   return "bg-gradient-to-br from-amber-100 via-white to-red-100";
 };
@@ -162,12 +156,12 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
                 }
               }}
               modifiersStyles={{
-                booked: { backgroundColor: "#FEE2E2" }, // Light red for busy days
-                available: { backgroundColor: "#DCFCE7" }, // Light green for free days
-                closed: { backgroundColor: "#FEF9C3" }, // Light yellow for closed days
+                booked: { backgroundColor: "#FEE2E2" },
+                available: { backgroundColor: "#DCFCE7" },
+                closed: { backgroundColor: "#FEF9C3" }
               }}
               components={{
-                Day: ({ day, ...props }: React.ComponentProps<typeof Calendar.Day> & { day: Date }) => (
+                Day: ({ day, ...props }) => (
                   <button
                     {...props}
                     className={`${props.className || ''} ${dayClass(day, availability)}`}
