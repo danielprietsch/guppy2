@@ -7,6 +7,7 @@ import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
+import { DailyAvailabilityCell } from "./location/DailyAvailabilityCell";
 
 const beautySalonImages = [
   "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
@@ -29,13 +30,33 @@ type AvailabilityMap = {
   };
 };
 
+type ShiftAvailabilityMap = {
+  [date: string]: {
+    morning: {
+      totalCabins: number;
+      availableCabins: number;
+      manuallyClosedCount: number;
+    };
+    afternoon: {
+      totalCabins: number;
+      availableCabins: number;
+      manuallyClosedCount: number;
+    };
+    evening: {
+      totalCabins: number;
+      availableCabins: number;
+      manuallyClosedCount: number;
+    };
+  };
+};
+
 interface LocationCardProps {
   location: Location;
 }
 
 const LocationCard = ({ location }: LocationCardProps) => {
-  const [showAvailability, setShowAvailability] = useState(true); // Changed to true by default
-  const [availabilityData, setAvailabilityData] = useState<AvailabilityMap>({});
+  const [showAvailability, setShowAvailability] = useState(true);
+  const [availabilityData, setAvailabilityData] = useState<ShiftAvailabilityMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate] = useState(new Date());
 
@@ -50,16 +71,16 @@ const LocationCard = ({ location }: LocationCardProps) => {
     const fetchAvailabilityData = async () => {
       setIsLoading(true);
       const startDate = new Date();
-      const availabilityMap: AvailabilityMap = {};
+      const availabilityMap: ShiftAvailabilityMap = {};
 
       // Generate next 7 days
       for (let i = 0; i < 7; i++) {
         const date = addDays(startDate, i);
         const dateStr = format(date, "yyyy-MM-dd");
-        availabilityMap[dateStr] = { 
-          totalCabins: location.cabinsCount, 
-          availableCabins: 0,
-          manuallyClosedCount: 0
+        availabilityMap[dateStr] = {
+          morning: { totalCabins: location.cabinsCount, availableCabins: 0, manuallyClosedCount: 0 },
+          afternoon: { totalCabins: location.cabinsCount, availableCabins: 0, manuallyClosedCount: 0 },
+          evening: { totalCabins: location.cabinsCount, availableCabins: 0, manuallyClosedCount: 0 }
         };
       }
 
@@ -80,11 +101,21 @@ const LocationCard = ({ location }: LocationCardProps) => {
             const date = addDays(startDate, i);
             const dateStr = format(date, "yyyy-MM-dd");
             
-            // Count manually closed cabins
-            const manuallyClosedCount = cabins.filter(cabin => {
+            // Count manually closed cabins per shift
+            const manuallyClosedCounts = {
+              morning: 0,
+              afternoon: 0,
+              evening: 0
+            };
+
+            cabins.forEach(cabin => {
               const availability = cabin.availability as any;
-              return availability && !availability.morning && !availability.afternoon && !availability.evening;
-            }).length;
+              if (availability) {
+                if (!availability.morning) manuallyClosedCounts.morning++;
+                if (!availability.afternoon) manuallyClosedCounts.afternoon++;
+                if (!availability.evening) manuallyClosedCounts.evening++;
+              }
+            });
             
             // Get bookings for this date
             const { data: bookings, error: bookingsError } = await supabase
@@ -96,14 +127,36 @@ const LocationCard = ({ location }: LocationCardProps) => {
               
             if (bookingsError) throw bookingsError;
             
-            // Calculate available cabins
-            const bookedCabinIds = new Set(bookings?.map(b => b.cabin_id) || []);
-            const availableCabins = cabinIds.length - bookedCabinIds.size - manuallyClosedCount;
+            // Count bookings per shift
+            const bookedCounts = {
+              morning: new Set(),
+              afternoon: new Set(),
+              evening: new Set()
+            };
+
+            bookings?.forEach(booking => {
+              if (booking.shift === 'morning') bookedCounts.morning.add(booking.cabin_id);
+              if (booking.shift === 'afternoon') bookedCounts.afternoon.add(booking.cabin_id);
+              if (booking.shift === 'evening') bookedCounts.evening.add(booking.cabin_id);
+            });
             
+            // Calculate available cabins per shift
             availabilityMap[dateStr] = {
-              totalCabins: cabinIds.length,
-              availableCabins: availableCabins > 0 ? availableCabins : 0,
-              manuallyClosedCount
+              morning: {
+                totalCabins: cabinIds.length,
+                availableCabins: Math.max(0, cabinIds.length - bookedCounts.morning.size - manuallyClosedCounts.morning),
+                manuallyClosedCount: manuallyClosedCounts.morning
+              },
+              afternoon: {
+                totalCabins: cabinIds.length,
+                availableCabins: Math.max(0, cabinIds.length - bookedCounts.afternoon.size - manuallyClosedCounts.afternoon),
+                manuallyClosedCount: manuallyClosedCounts.afternoon
+              },
+              evening: {
+                totalCabins: cabinIds.length,
+                availableCabins: Math.max(0, cabinIds.length - bookedCounts.evening.size - manuallyClosedCounts.evening),
+                manuallyClosedCount: manuallyClosedCounts.evening
+              }
             };
           }
         }
@@ -119,31 +172,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
     fetchAvailabilityData();
   }, [location.id, location.cabinsCount]);
 
-  // Generate dates for the next 7 days
-  const nextDays = Array.from({ length: 7 }, (_, i) => {
-    return addDays(currentDate, i);
-  });
-
-  // Function to determine availability status and color
-  const getAvailabilityStatus = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    const data = availabilityData[dateStr];
-    
-    if (!data) return { color: "bg-gray-200", text: "Indisponível" };
-    
-    if (data.manuallyClosedCount === data.totalCabins) {
-      return { color: "bg-red-500", text: "Fechado" };
-    }
-    
-    if (data.availableCabins === 0) {
-      return { color: "bg-yellow-500", text: "Reservado" };
-    }
-    
-    return { 
-      color: "bg-green-500", 
-      text: `${data.availableCabins} disponível${data.availableCabins > 1 ? 'is' : ''}`
-    };
-  };
+  const nextDays = Array.from({ length: 7 }, (_, i) => addDays(currentDate, i));
 
   return (
     <div className="relative">
@@ -177,21 +206,19 @@ const LocationCard = ({ location }: LocationCardProps) => {
                     <p className="text-xs">Carregando...</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-7 gap-1 text-center">
+                  <div className="grid grid-cols-7 gap-1">
                     {nextDays.map((date, i) => {
-                      const status = getAvailabilityStatus(date);
+                      const dateStr = format(date, "yyyy-MM-dd");
                       return (
-                        <div key={i} className="text-xs">
-                          <div className="font-medium mb-1">
-                            {format(date, "EEE", { locale: ptBR })}
-                          </div>
-                          <div className="text-[10px] mb-1">
-                            {format(date, "dd/MM")}
-                          </div>
-                          <div className={`h-8 mx-auto rounded-md flex items-center justify-center p-1 ${status.color} text-white text-[10px] leading-tight`}>
-                            {status.text}
-                          </div>
-                        </div>
+                        <DailyAvailabilityCell
+                          key={i}
+                          date={date}
+                          shifts={availabilityData[dateStr] || {
+                            morning: { totalCabins: 0, availableCabins: 0, manuallyClosedCount: 0 },
+                            afternoon: { totalCabins: 0, availableCabins: 0, manuallyClosedCount: 0 },
+                            evening: { totalCabins: 0, availableCabins: 0, manuallyClosedCount: 0 }
+                          }}
+                        />
                       );
                     })}
                   </div>
