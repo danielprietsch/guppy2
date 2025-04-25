@@ -128,7 +128,7 @@ const NewServicePage = () => {
   };
 
   return (
-    <div className="container py-12">
+    <div className="container max-w-7xl py-12">
       <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" onClick={handleCancel}>
           <ArrowLeft className="h-5 w-5" />
@@ -253,13 +253,13 @@ const NewServicePage = () => {
                 name="specialties"
                 render={() => (
                   <FormItem>
-                    <div className="mb-4">
-                      <FormLabel>Especialidades</FormLabel>
-                      <FormDescription>
+                    <div className="mb-6">
+                      <FormLabel className="text-xl">Especialidades</FormLabel>
+                      <FormDescription className="text-base">
                         Selecione suas especialidades para este serviço
                       </FormDescription>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {specialties.map((item) => (
                         <FormField
                           key={item.id}
