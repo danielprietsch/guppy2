@@ -25,6 +25,7 @@ const WeeklyView = ({
   createdAt
 }: WeeklyViewProps) => {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  // Filtrar dias da semana para garantir que nenhuma data anterior à data de criação seja exibida
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
     .filter(date => !createdAt || !isBefore(startOfDay(date), startOfDay(parseISO(createdAt))));
 
@@ -32,8 +33,9 @@ const WeeklyView = ({
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
+    // Impedir navegação para semanas anteriores à data de criação
     if (createdAt && isBefore(startOfDay(newDate), startOfDay(parseISO(createdAt)))) {
-      return; // Don't allow navigation before creation date
+      return;
     }
     onDateChange(newDate);
   };

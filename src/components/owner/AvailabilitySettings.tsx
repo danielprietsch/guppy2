@@ -26,12 +26,14 @@ export const AvailabilitySettings = ({
   const [slotPrices, setSlotPrices] = useState<{ [date: string]: { [turn: string]: number } }>({});
   const [bookedDates, setBookedDates] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
   
+  // Selecionar primeira cabine automaticamente ao carregar
   useEffect(() => {
     if (locationCabins.length > 0 && !selectedCabin) {
       setSelectedCabin(locationCabins[0].id);
     }
   }, [locationCabins, selectedCabin]);
   
+  // Inicializar dados da cabine selecionada
   useEffect(() => {
     if (selectedCabin) {
       const selectedCabinData = locationCabins.find(c => c.id === selectedCabin);

@@ -17,12 +17,16 @@ export const CabinAvailabilityCard = ({ cabinId, pricing, createdAt }: CabinAvai
   
   useEffect(() => {
     if (createdAt) {
-      const cabinCreationDate = new Date(createdAt);
-      setStartDate(cabinCreationDate);
+      const cabinCreationDate = parseISO(createdAt);
+      // Garantir que a data de início é pelo menos a data de criação
+      if (isBefore(startDate, cabinCreationDate)) {
+        setStartDate(cabinCreationDate);
+      }
     }
-  }, [createdAt]);
+  }, [createdAt, startDate]);
   
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
+  // Filtra dias da semana para garantir que nenhuma data anterior à criação da cabine seja exibida
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
     .filter(date => !createdAt || !isBefore(date, parseISO(createdAt)));
   const currentDay = startOfDay(new Date());
