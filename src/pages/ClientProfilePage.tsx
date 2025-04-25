@@ -1,4 +1,3 @@
-
 import { useClientProfile } from "@/hooks/useClientProfile";
 import { ClientProfileForm } from "@/components/client/ClientProfileForm";
 import { Button } from "@/components/ui/button";
@@ -47,9 +46,10 @@ const ClientProfilePage = () => {
       
       if (updateProfile && currentUser) {
         await updateProfile({ 
-          ...currentUser, 
           avatarUrl: url 
         });
+        
+        debugAreaLog("CLIENT_PROFILE", "Avatar updated successfully to:", url);
         
         toast({
           title: "Foto atualizada",

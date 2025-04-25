@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -102,7 +101,6 @@ export const useClientProfile = () => {
         
         debugAreaLog("CLIENT_PROFILE", "Setting currentUser from database:", userData);
         setCurrentUser(userData);
-        
       } catch (error: any) {
         debugAreaCritical("CLIENT_PROFILE", "Error in checkAuthStatus:", error);
         setError(error.message || "Ocorreu um erro ao verificar suas credenciais.");
@@ -149,45 +147,83 @@ export const useClientProfile = () => {
       
       debugAreaLog("CLIENT_PROFILE", "Updating profile with data:", data);
       
-      // Update the profile in the database
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          name: data.name,
-          email: data.email,
-          phone_number: data.phoneNumber,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentUser.id);
+      // Prepare update data, handling optional fields
+      const updateData: any = {};
+      
+      // Only include fields that were provided
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.email !== undefined) updateData.email = data.email;
+      if (data.phoneNumber !== undefined) updateData.phone_number = data.phoneNumber;
+      
+      // Always set updated_at
+      updateData.updated_at = new Date().toISOString();
+      
+      // Only update avatar if provided
+      if (data.avatarUrl !== undefined) {
+        debugAreaLog("CLIENT_PROFILE", "Avatar URL included in update:", data.avatarUrl);
         
-      if (error) {
-        debugAreaCritical("CLIENT_PROFILE", "Error updating profile in database:", error);
-        throw new Error(`Erro ao atualizar perfil: ${error.message}`);
-      }
-      
-      // Also update user metadata to keep things in sync
-      const { error: metadataError } = await supabase.auth.updateUser({
-        data: {
-          name: data.name,
-          phone_number: data.phoneNumber
+        // Use the security definer function for avatar updates if only updating the avatar
+        if (Object.keys(data).length === 1 && data.avatarUrl) {
+          const { data: result, error: avatarError } = await supabase.rpc(
+            'update_avatar_everywhere',
+            { user_id: currentUser.id, avatar_url: data.avatarUrl }
+          );
+          
+          if (avatarError) {
+            debugAreaCritical("CLIENT_PROFILE", "Error in update_avatar_everywhere:", avatarError);
+            throw new Error(`Erro ao atualizar avatar: ${avatarError.message}`);
+          }
+          
+          // Update local state with new avatar
+          setCurrentUser(prev => prev ? { ...prev, avatarUrl: data.avatarUrl } : null);
+          
+          debugAreaLog("CLIENT_PROFILE", "Avatar updated successfully via RPC function");
+          
+          return { success: true };
+        } else {
+          // If updating avatar along with other fields, include it in the profiles update
+          updateData.avatar_url = data.avatarUrl;
         }
-      });
-      
-      if (metadataError) {
-        debugAreaCritical("CLIENT_PROFILE", "Error updating user metadata:", metadataError);
-        // Don't fail the whole operation if metadata update fails
-        console.warn("Metadata update failed but profile was updated successfully");
       }
       
-      // Update local state
-      setCurrentUser(prev => prev ? { ...prev, ...data } : null);
+      // Only proceed with profile update if there are fields to update
+      if (Object.keys(updateData).length > 0) {
+        debugAreaLog("CLIENT_PROFILE", "Updating profile with data:", updateData);
+        
+        // Update the profile in the database
+        const { error } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', currentUser.id);
+          
+        if (error) {
+          debugAreaCritical("CLIENT_PROFILE", "Error updating profile in database:", error);
+          throw new Error(`Erro ao atualizar perfil: ${error.message}`);
+        }
+        
+        // Also update user metadata to keep things in sync
+        if (data.name || data.phoneNumber || data.avatarUrl) {
+          const metadataUpdate: any = {};
+          if (data.name) metadataUpdate.name = data.name;
+          if (data.phoneNumber) metadataUpdate.phone_number = data.phoneNumber;
+          if (data.avatarUrl) metadataUpdate.avatar_url = data.avatarUrl;
+          
+          const { error: metadataError } = await supabase.auth.updateUser({
+            data: metadataUpdate
+          });
+          
+          if (metadataError) {
+            debugAreaCritical("CLIENT_PROFILE", "Error updating user metadata:", metadataError);
+            // Don't fail the whole operation if metadata update fails
+            console.warn("Metadata update failed but profile was updated successfully");
+          }
+        }
+        
+        // Update local state
+        setCurrentUser(prev => prev ? { ...prev, ...data } : null);
+      }
       
       debugAreaLog("CLIENT_PROFILE", "Profile successfully updated");
-      
-      toast({
-        title: "Perfil atualizado",
-        description: "Suas informações foram atualizadas com sucesso.",
-      });
       
       return { success: true };
     } catch (error: any) {

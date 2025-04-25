@@ -86,11 +86,6 @@ export function ProfileImageUpload({
       // Update local state and notify parent
       setPreviewUrl(publicUrl);
       onImageUploaded(publicUrl);
-      
-      toast({
-        title: "Foto atualizada",
-        description: "Sua foto de perfil foi atualizada com sucesso.",
-      });
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);
       toast({
@@ -129,7 +124,11 @@ export function ProfileImageUpload({
           className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-white cursor-pointer hover:bg-primary/90 transition-colors"
           title="Alterar foto de perfil"
         >
-          <Camera className="h-5 w-5" />
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Camera className="h-5 w-5" />
+          )}
           <input
             type="file"
             onChange={handleFileChange}
