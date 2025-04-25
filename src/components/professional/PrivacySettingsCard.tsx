@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Check, X, Eye, EyeOff } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -54,7 +54,7 @@ const PrivacySettingsCard = () => {
   }, [user]);
 
   const handleTogglePrivacy = async (value: string) => {
-    if (!user) return;
+    if (!user || !value) return;
     
     const newIsPublic = value === 'available';
     
@@ -94,12 +94,14 @@ const PrivacySettingsCard = () => {
         </Label>
         <ToggleGroup
           type="single"
+          defaultValue={isPublic ? 'available' : 'unavailable'} 
           value={isPublic ? 'available' : 'unavailable'}
           onValueChange={handleTogglePrivacy}
           className="grid grid-cols-2 gap-4"
         >
           <ToggleGroupItem 
             value="available" 
+            aria-label="Disponível"
             className="flex flex-col items-center justify-between p-6 rounded-xl data-[state=on]:bg-[#F2FCE2] h-48"
           >
             <div className="bg-green-100 rounded-full p-4 mb-4">
@@ -118,6 +120,7 @@ const PrivacySettingsCard = () => {
           
           <ToggleGroupItem 
             value="unavailable"
+            aria-label="Indisponível"
             className="flex flex-col items-center justify-between p-6 rounded-xl data-[state=on]:bg-[#F1F0FB] h-48"
           >
             <div className="bg-red-100 rounded-full p-4 mb-4">
