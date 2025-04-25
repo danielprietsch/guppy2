@@ -14,7 +14,6 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
 import { BatchPriceEditor } from "@/components/owner/pricing/BatchPriceEditor";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface CabinPricing {
   defaultPricing: {
@@ -52,7 +51,6 @@ export const AvailabilitySettings = ({
   const [slotPrices, setSlotPrices] = useState<{ [cabinId: string]: { [date: string]: { [turn: string]: number } } }>({});
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [selectedCabin, setSelectedCabin] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("calendar");
 
   useEffect(() => {
     if (selectedLocation) {
@@ -521,7 +519,7 @@ export const AvailabilitySettings = ({
         </CardHeader>
         <CardContent>
           {locationCabins.length > 0 && (
-            <div className="space-y-4">
+            <div className="space-y-8">
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                 {locationCabins.map((cabin) => (
                   <button
@@ -539,37 +537,44 @@ export const AvailabilitySettings = ({
               </div>
 
               {selectedCabin && (
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid grid-cols-2 w-full">
-                    <TabsTrigger value="batch">Edição em Massa</TabsTrigger>
-                    <TabsTrigger value="calendar">Calendário</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="batch" className="mt-4">
-                    <BatchPriceEditor 
-                      defaultPrice={cabinPrices[selectedCabin] || 100}
-                      onPriceChange={(dates, turns, price) => 
-                        handleBatchPriceUpdate(selectedCabin, dates, turns, price)
-                      }
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="calendar" className="mt-4">
-                    <div className="w-full overflow-x-auto">
-                      <CabinAvailabilityCalendar
-                        selectedTurn="morning"
-                        daysBooked={daysBooked[selectedCabin] || {}}
-                        onSelectDates={(dates) => setSelectedDates({ ...selectedDates, [selectedCabin]: dates })}
-                        selectedDates={selectedDates[selectedCabin] || []}
-                        pricePerDay={cabinPrices[selectedCabin] || 100}
-                        onPriceChange={(date, turn, price) => handlePriceUpdate(selectedCabin, date, turn, price)}
-                        onStatusChange={(date, turn, isManualClose) => handleStatusChange(selectedCabin, date, turn, isManualClose)}
-                        manuallyClosedDates={manuallyClosedDates[selectedCabin] || {}}
-                        slotPrices={slotPrices[selectedCabin]}
+                <div className="space-y-8">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Edição em Massa</CardTitle>
+                      <CardDescription>Configure preços para múltiplos dias e turnos</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <BatchPriceEditor 
+                        defaultPrice={cabinPrices[selectedCabin] || 100}
+                        onPriceChange={(dates, turns, price) => 
+                          handleBatchPriceUpdate(selectedCabin, dates, turns, price)
+                        }
                       />
-                    </div>
-                  </TabsContent>
-                </Tabs>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Calendário</CardTitle>
+                      <CardDescription>Visualize e configure a disponibilidade por dia</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="w-full overflow-x-auto">
+                        <CabinAvailabilityCalendar
+                          selectedTurn="morning"
+                          daysBooked={daysBooked[selectedCabin] || {}}
+                          onSelectDates={(dates) => setSelectedDates({ ...selectedDates, [selectedCabin]: dates })}
+                          selectedDates={selectedDates[selectedCabin] || []}
+                          pricePerDay={cabinPrices[selectedCabin] || 100}
+                          onPriceChange={(date, turn, price) => handlePriceUpdate(selectedCabin, date, turn, price)}
+                          onStatusChange={(date, turn, isManualClose) => handleStatusChange(selectedCabin, date, turn, isManualClose)}
+                          manuallyClosedDates={manuallyClosedDates[selectedCabin] || {}}
+                          slotPrices={slotPrices[selectedCabin]}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               )}
             </div>
           )}
