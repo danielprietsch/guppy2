@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -58,13 +59,17 @@ export const useOwnerProfile = () => {
           return;
         }
         
-        // Se metadados não confirmarem status, usar função de verificação do tipo de usuário
+        // Se metadados não confirmarem status, usar consulta direta para evitar recursão
         try {
-          const { data: userType, error: userTypeError } = await supabase
-            .rpc('get_profile_user_type', { user_id: session.user.id });
+          // Direct query to avoid recursion instead of using RPC function
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
             
-          if (userTypeError) {
-            debugError("useOwnerProfile: Error checking user type:", userTypeError);
+          if (profileError) {
+            debugError("useOwnerProfile: Error checking user type:", profileError);
             setError("Ocorreu um erro ao verificar seu perfil.");
             toast({
               title: "Erro",
@@ -74,6 +79,8 @@ export const useOwnerProfile = () => {
             navigate("/login");
             return;
           }
+          
+          const userType = profileData?.user_type;
           
           // Verificar se o tipo de usuário está na lista de tipos permitidos
           if (!allowedUserTypes.includes(userType)) {
@@ -106,8 +113,8 @@ export const useOwnerProfile = () => {
             title: "Erro",
             description: "Ocorreu um erro ao verificar seu perfil.",
             variant: "destructive",
-          });
-          navigate("/login");
+            });
+            navigate("/login");
         }
       } catch (error) {
         debugError("useOwnerProfile: Error checking auth status:", error);

@@ -13,6 +13,7 @@ export const useAuth = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
+          // Direct query instead of using an RPC function to avoid recursion
           const { data: profileData } = await supabase
             .from('profiles')
             .select('*')

@@ -54,8 +54,7 @@ export const BookingConfirmationDialog = ({
         return;
       }
       
-      // Using a direct query to check user type, rather than using RPC function
-      // This avoids the TypeScript error since we're not using the RPC function
+      // Using a direct query instead of an RPC function to avoid recursion
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('user_type')
