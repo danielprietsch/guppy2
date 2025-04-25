@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Pencil, ArrowUp, ArrowDown } from "lucide-react";
+import { Check, Lock, Pencil, ArrowUp, ArrowDown, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugLog, debugAreaLog } from "@/utils/debugLogger";
 
@@ -15,6 +15,7 @@ interface TimeSlotCardProps {
   onManualClose: () => void;
   onRelease: () => void;
   onViewBooking?: () => void;
+  isPastDate?: boolean;
 }
 
 export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
@@ -25,7 +26,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   onPriceEdit,
   onManualClose,
   onRelease,
-  onViewBooking
+  onViewBooking,
+  isPastDate = false
 }) => {
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(price.toString());
@@ -91,13 +93,14 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const getStatusColor = () => {
+    if (isPastDate) return "bg-gray-400"; // Cor para datas passadas
     if (isBooked) return "bg-red-500";
     if (isManuallyClosed) return "bg-yellow-300";
     return "bg-green-500";
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
-    if (isBooked && onViewBooking) {
+    if (isBooked && onViewBooking && !isPastDate) {
       onViewBooking();
     }
   };
@@ -113,7 +116,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       className={cn(
         "p-2 rounded-lg shadow-sm transition-colors",
         getStatusColor(),
-        isBooked ? "cursor-pointer" : ""
+        isBooked && !isPastDate ? "cursor-pointer" : "",
+        isPastDate ? "opacity-70" : ""
       )} 
       onClick={handleCardClick}
     >
@@ -122,7 +126,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         
         <div className="flex items-center gap-2 mb-1">
           <span className="text-white text-sm">R$</span>
-          {isEditingPrice ? (
+          {isEditingPrice && !isPastDate ? (
             <div className="relative flex items-center gap-1">
               <Input
                 ref={inputRef}
@@ -174,7 +178,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               )}>
                 {parseFloat(price.toString()).toFixed(2)}
               </span>
-              {!isBooked && (
+              {!isBooked && !isPastDate && (
                 <button
                   type="button"
                   className="h-5 w-5 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
@@ -191,7 +195,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
           )}
         </div>
 
-        {isBooked ? (
+        {isPastDate ? (
+          <div className="flex items-center gap-1 text-white text-xs">
+            <Clock className="w-3 h-3" />
+            <span>Data passada</span>
+          </div>
+        ) : isBooked ? (
           <div className="flex items-center gap-1 text-white text-xs">
             <Lock className="w-3 h-3" />
             <span>Reservado</span>
@@ -203,6 +212,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               size="sm"
               onClick={(e) => handleButtonClick(e, onManualClose)}
               className="text-xs h-6 py-0 flex-1"
+              disabled={isPastDate}
             >
               {isManuallyClosed ? "Fechado" : "Fechar"}
             </Button>
@@ -211,6 +221,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
               size="sm"
               onClick={(e) => handleButtonClick(e, onRelease)}
               className="text-xs h-6 py-0 flex-1"
+              disabled={isPastDate}
             >
               Liberar
             </Button>

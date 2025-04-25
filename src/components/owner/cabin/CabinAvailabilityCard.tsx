@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { DailyAvailabilityCell } from "@/components/location/DailyAvailabilityCell";
-import { format, addDays, startOfWeek } from "date-fns";
+import { format, addDays, startOfWeek, isBefore, startOfDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 
 interface CabinAvailabilityCardProps {
@@ -14,14 +14,16 @@ export const CabinAvailabilityCard = ({ cabinId, pricing }: CabinAvailabilityCar
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const currentDay = startOfDay(new Date());
 
   const getShiftAvailability = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayPricing = pricing?.specificDates?.[dateStr] || {};
+    const isPastDate = isBefore(date, currentDay);
     
     const defaultAvailability = {
       totalCabins: 1,
-      availableCabins: 1,
+      availableCabins: isPastDate ? 0 : 1,
       manuallyClosedCount: 0,
     };
 
@@ -29,19 +31,19 @@ export const CabinAvailabilityCard = ({ cabinId, pricing }: CabinAvailabilityCar
       morning: {
         ...defaultAvailability,
         price: dayPricing.morning?.price,
-        availableCabins: dayPricing.morning?.available === false ? 0 : 1,
+        availableCabins: isPastDate || dayPricing.morning?.available === false ? 0 : 1,
         manuallyClosedCount: dayPricing.morning?.available === false ? 1 : 0,
       },
       afternoon: {
         ...defaultAvailability,
         price: dayPricing.afternoon?.price,
-        availableCabins: dayPricing.afternoon?.available === false ? 0 : 1,
+        availableCabins: isPastDate || dayPricing.afternoon?.available === false ? 0 : 1,
         manuallyClosedCount: dayPricing.afternoon?.available === false ? 1 : 0,
       },
       evening: {
         ...defaultAvailability,
         price: dayPricing.evening?.price,
-        availableCabins: dayPricing.evening?.available === false ? 0 : 1,
+        availableCabins: isPastDate || dayPricing.evening?.available === false ? 0 : 1,
         manuallyClosedCount: dayPricing.evening?.available === false ? 1 : 0,
       }
     };

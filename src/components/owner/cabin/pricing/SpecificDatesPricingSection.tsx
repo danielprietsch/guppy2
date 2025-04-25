@@ -1,5 +1,6 @@
+
 import * as React from "react";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,8 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
   turnoDisponibilidade,
   setTurnoDisponibilidade,
 }) => {
+  const today = startOfDay(new Date());
+
   const handleTurnoInputChange = (turno: keyof TurnoInputs, value: string) => {
     setTurnoInputs({
       ...turnoInputs,
@@ -55,6 +58,16 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
   };
 
   const handleRemoveDate = (date: string) => {
+    const dateObj = new Date(date);
+    if (isBefore(dateObj, today)) {
+      toast({ 
+        title: "Não é possível remover datas passadas", 
+        description: "Datas passadas não podem ser modificadas.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const novosPrecos = { ...precosPorDia };
     delete novosPrecos[date];
     setPrecosPorDia(novosPrecos);
@@ -63,6 +76,15 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
   const handleAddPriceByDay = () => {
     if (!selectedDate) {
       toast({ title: "Selecione uma data!", variant: "destructive" });
+      return;
+    }
+
+    if (isBefore(selectedDate, today)) {
+      toast({ 
+        title: "Data inválida", 
+        description: "Não é possível definir preços para datas passadas.", 
+        variant: "destructive" 
+      });
       return;
     }
 
@@ -112,42 +134,49 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
       return <span className="text-muted-foreground text-xs">Nenhum preço específico definido</span>;
     }
 
-    return Object.entries(precosPorDia).map(([date, turnos]) => (
-      <div key={date} className="mb-2 border-b pb-2">
-        <div className="flex justify-between items-center">
-          <span className="font-semibold">
-            {format(new Date(date), "dd/MM/yyyy (EEEE)", { locale: ptBR })}
-          </span>
-          <button 
-            type="button" 
-            onClick={() => handleRemoveDate(date)} 
-            className="ml-1 hover:text-destructive"
-          >
-            <Trash className="h-4 w-4" />
-          </button>
+    return Object.entries(precosPorDia).map(([date, turnos]) => {
+      const dateObj = new Date(date);
+      const isPastDate = isBefore(dateObj, today);
+      
+      return (
+        <div key={date} className={`mb-2 border-b pb-2 ${isPastDate ? 'opacity-70' : ''}`}>
+          <div className="flex justify-between items-center">
+            <span className="font-semibold">
+              {format(dateObj, "dd/MM/yyyy (EEEE)", { locale: ptBR })}
+              {isPastDate && <span className="ml-2 text-xs text-muted-foreground">(Data passada)</span>}
+            </span>
+            <button 
+              type="button" 
+              onClick={() => handleRemoveDate(date)} 
+              className={`ml-1 ${isPastDate ? 'text-muted-foreground cursor-not-allowed' : 'hover:text-destructive'}`}
+              disabled={isPastDate}
+            >
+              <Trash className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2 ml-2 mt-1 mb-1">
+            {TURNOS.map(turno => {
+              const disponivel = turnos.availability?.[turno.key] !== false;
+              const price = turnos[turno.key];
+              const formattedPrice = typeof price === 'number' ? price.toFixed(2) : '0.00';
+              
+              return (
+                <span
+                  key={turno.key}
+                  className={`px-2 py-0.5 rounded text-xs ${
+                    disponivel
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-destructive text-destructive-foreground'
+                  }`}
+                >
+                  {turno.label}: {disponivel ? `R$ ${formattedPrice}` : 'Indisponível'}
+                </span>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2 ml-2 mt-1 mb-1">
-          {TURNOS.map(turno => {
-            const disponivel = turnos.availability?.[turno.key] !== false;
-            const price = turnos[turno.key];
-            const formattedPrice = typeof price === 'number' ? price.toFixed(2) : '0.00';
-            
-            return (
-              <span
-                key={turno.key}
-                className={`px-2 py-0.5 rounded text-xs ${
-                  disponivel
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-destructive text-destructive-foreground'
-                }`}
-              >
-                {turno.label}: {disponivel ? `R$ ${formattedPrice}` : 'Indisponível'}
-              </span>
-            );
-          })}
-        </div>
-      </div>
-    ));
+      );
+    });
   };
 
   return (
@@ -171,6 +200,7 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
                     onSelect={setSelectedDate}
                     initialFocus
                     locale={ptBR}
+                    disabled={(date) => isBefore(date, today)}
                     className={cn("p-3 pointer-events-auto")}
                   />
                 </PopoverContent>
@@ -187,7 +217,7 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
                         onCheckedChange={(checked) =>
                           handleTurnoDisponibilidadeChange(turno.key, checked)
                         }
-                        disabled={!selectedDate}
+                        disabled={!selectedDate || (selectedDate && isBefore(selectedDate, today))}
                       />
                       <span className="text-xs">
                         {turnoDisponibilidade[turno.key] ? "Disponível" : "Indisponível"}
@@ -202,7 +232,7 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
                       value={turnoInputs[turno.key]}
                       onChange={(e) => handleTurnoInputChange(turno.key, e.target.value)}
                       className="w-24"
-                      disabled={!selectedDate || !turnoDisponibilidade[turno.key]}
+                      disabled={!selectedDate || !turnoDisponibilidade[turno.key] || (selectedDate && isBefore(selectedDate, today))}
                     />
                   </div>
                 </div>
@@ -211,7 +241,7 @@ export const SpecificDatesPricingSection: React.FC<SpecificDatesPricingSectionPr
             <Button
               type="button"
               onClick={handleAddPriceByDay}
-              disabled={!selectedDate}
+              disabled={!selectedDate || (selectedDate && isBefore(selectedDate, today))}
               className="w-full mt-4"
             >
               <CalendarCheck className="mr-2 h-4 w-4" />

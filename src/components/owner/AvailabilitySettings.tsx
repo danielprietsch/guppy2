@@ -9,7 +9,7 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { Location, Cabin } from "@/lib/types";
 import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { Json } from "@/integrations/supabase/types";
@@ -209,6 +209,18 @@ export const AvailabilitySettings = ({
   };
 
   const handleStatusChange = async (cabinId: string, date: string, turn: string, isManualClose: boolean) => {
+    const selectedDate = new Date(date);
+    const today = startOfDay(new Date());
+    
+    if (isBefore(selectedDate, today)) {
+      toast({
+        title: "Operação não permitida",
+        description: "Não é possível alterar a disponibilidade de datas passadas.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       setManuallyClosedDates(prev => {
         const updated = { ...prev };
@@ -297,6 +309,18 @@ export const AvailabilitySettings = ({
   };
 
   const handlePriceUpdate = async (cabinId: string, date: string, turn: string, price: number) => {
+    const selectedDate = new Date(date);
+    const today = startOfDay(new Date());
+    
+    if (isBefore(selectedDate, today)) {
+      toast({
+        title: "Operação não permitida",
+        description: "Não é possível alterar preços de datas passadas.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     try {
       setSlotPrices(prev => {
         const updated = { ...prev };
@@ -386,6 +410,26 @@ export const AvailabilitySettings = ({
   };
 
   const handleBatchPriceUpdate = async (cabinId: string, dates: string[], turns: string[], price: number) => {
+    const today = startOfDay(new Date());
+    const futureDates = dates.filter(date => !isBefore(new Date(date), today));
+    
+    if (futureDates.length < dates.length) {
+      const pastDatesCount = dates.length - futureDates.length;
+      toast({
+        title: "Aviso",
+        description: `${pastDatesCount} data(s) passada(s) foram ignoradas.`,
+      });
+      
+      if (futureDates.length === 0) {
+        toast({
+          title: "Operação cancelada",
+          description: "Todas as datas selecionadas são passadas.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     try {
       setIsUpdating(true);
       
@@ -400,7 +444,7 @@ export const AvailabilitySettings = ({
       if (cabinData) {
         const pricingData = parsePricingData(cabinData.pricing);
         
-        dates.forEach(date => {
+        futureDates.forEach(date => {
           if (!pricingData.specificDates) {
             pricingData.specificDates = {};
           }
@@ -452,7 +496,7 @@ export const AvailabilitySettings = ({
       
       toast({
         title: "Preços atualizados em massa",
-        description: `Os preços foram atualizados para ${dates.length} dia(s).`,
+        description: `Os preços foram atualizados para ${futureDates.length} dia(s).`,
       });
     } catch (error) {
       console.error("Error updating batch prices:", error);

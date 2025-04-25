@@ -1,5 +1,5 @@
 
-import { format } from "date-fns";
+import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useState } from "react";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
@@ -23,8 +23,10 @@ interface DailyAvailabilityCellProps {
 
 export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabilityCellProps) => {
   const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const isPastDate = isBefore(date, startOfDay(new Date()));
 
   const getStatusColor = (shift: ShiftAvailability) => {
+    if (isPastDate) return "bg-gray-400";
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "bg-yellow-500";
     }
@@ -32,6 +34,7 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
   };
 
   const getStatusText = (shift: ShiftAvailability) => {
+    if (isPastDate) return "Indisponível";
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "Fechado";
     }
@@ -39,7 +42,7 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
   };
 
   const handleShiftClick = (shift: ShiftAvailability) => {
-    if (shift.availableCabins > 0 && cabinId) {
+    if (shift.availableCabins > 0 && cabinId && !isPastDate) {
       setShowBookingDialog(true);
     }
   };
@@ -70,7 +73,7 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
             </div>
           )}
           <div 
-            className={`${getStatusColor(shifts.morning)} text-white text-xs p-1 rounded-sm shadow-sm cursor-pointer`}
+            className={`${getStatusColor(shifts.morning)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
             onClick={() => handleShiftClick(shifts.morning)}
           >
             {getStatusText(shifts.morning)}
@@ -84,7 +87,7 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
             </div>
           )}
           <div 
-            className={`${getStatusColor(shifts.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm cursor-pointer`}
+            className={`${getStatusColor(shifts.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
             onClick={() => handleShiftClick(shifts.afternoon)}
           >
             {getStatusText(shifts.afternoon)}
@@ -98,7 +101,7 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
             </div>
           )}
           <div 
-            className={`${getStatusColor(shifts.evening)} text-white text-xs p-1 rounded-sm shadow-sm cursor-pointer`}
+            className={`${getStatusColor(shifts.evening)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
             onClick={() => handleShiftClick(shifts.evening)}
           >
             {getStatusText(shifts.evening)}
