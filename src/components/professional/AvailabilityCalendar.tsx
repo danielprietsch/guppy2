@@ -167,10 +167,10 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
                 closed: { backgroundColor: "#FEF9C3" }, // Light yellow for closed days
               }}
               components={{
-                Day: ({ date, ...props }) => (
+                Day: ({ day, ...props }: React.ComponentProps<typeof Calendar.Day> & { day: Date }) => (
                   <button
                     {...props}
-                    className={`${props.className || ''} ${dayClass(date, availability)}`}
+                    className={`${props.className || ''} ${dayClass(day, availability)}`}
                   />
                 )
               }}
