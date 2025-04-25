@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +82,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const adjustPrice = (increment: boolean) => {
-    // Parse the current price value, defaulting to 0 if not a valid number
     const currentPrice = parseFloat(priceValue) || 0;
     debugAreaLog('PRICE_EDIT', 'Adjusting price:', { currentPrice, increment });
     
@@ -94,12 +92,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
-        // Convert newPrice to a string for setPriceValue - FIX: Convertido para string
-        const newPriceString = newPrice.toString();
-        setPriceValue(newPriceString);
-        
-        // Call onPriceEdit with the numeric value
         onPriceEdit(newPrice);
+        setPriceValue(newPrice.toFixed(2));
         
         setAnimatePrice(true);
         setTimeout(() => setAnimatePrice(false), 700);
