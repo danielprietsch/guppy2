@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,12 +21,15 @@ import { supabase } from "@/integrations/supabase/client";
 import ServiceEditCard from "@/components/ServiceEditCard";
 import PrivacySettingsCard from "@/components/professional/PrivacySettingsCard";
 import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar";
+import WorkingHoursSettings from "@/components/professional/WorkingHoursSettings";
+import { toast } from "@/hooks/use-toast";
 
 const ProfessionalDashboardPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
   const [isPublicProfile, setIsPublicProfile] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   // Stats data
   const [stats, setStats] = useState({
@@ -36,69 +40,111 @@ const ProfessionalDashboardPage = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      // Fetch user profile to get privacy settings
-      const fetchUserProfile = async () => {
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (loading) {
+        console.log("Loading timeout reached, forcing dashboard display");
+        setLoading(false);
+        setLoadingError("Timeout ao carregar dados. Alguns dados podem não estar disponíveis.");
+      }
+    }, 5000); // 5 second timeout
+
+    return () => clearTimeout(loadingTimeout);
+  }, [loading]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchUserProfileAndData = async () => {
+      try {
+        if (!user) {
+          console.log("No user found, aborting fetch");
+          if (isMounted) {
+            setLoading(false);
+          }
+          return;
+        }
+
+        console.log("Fetching user profile for:", user.id);
+        
+        // Fetch user profile to get privacy settings
         try {
-          // Buscar configurações de privacidade dos metadados do usuário
-          const { data: { user } } = await supabase.auth.getUser();
+          const { data: { user: authUser } } = await supabase.auth.getUser();
           
-          if (user && user.user_metadata) {
-            const isPublic = user.user_metadata.isPublic !== false; // Default to public if not set
-            setIsPublicProfile(isPublic);
+          if (authUser && authUser.user_metadata) {
+            const isPublic = authUser.user_metadata.isPublic !== false; // Default to public if not set
+            if (isMounted) {
+              setIsPublicProfile(isPublic);
+            }
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
+          // Continue anyway to show the dashboard
         }
-      };
-      
-      fetchUserProfile();
-      
-      // In a real app, this would fetch data from the API based on the current user
-      // Simulating loading behavior
-      setTimeout(() => {
-        // Filter the data for the current professional
-        const professionalAppointments = appointments.filter(
-          (app) => app.professionalId === user.id
-        );
-        const professionalBookings = bookings.filter(
-          (booking) => booking.professionalId === user.id
-        );
-        const professionalServices = services.filter(
-          (service) => service.professionalId === user.id
-        );
-        const professionalReviews = reviews.filter(
-          (review) => review.professionalId === user.id
-        );
+        
+        // Simulate loading behavior with mock data
+        // In a real app, this would fetch data from API based on current user
+        if (isMounted) {
+          const professionalAppointments = appointments.filter(
+            (app) => app.professionalId === user.id
+          );
+          const professionalReviews = reviews.filter(
+            (review) => review.professionalId === user.id
+          );
 
-        // Calculate relevant statistics
-        const uniqueClients = [...new Set(professionalAppointments.map((app) => app.clientId))];
-        const totalRevenue = professionalAppointments.reduce((sum, app) => sum + app.price, 0);
+          // Calculate relevant statistics
+          const uniqueClients = [...new Set(professionalAppointments.map((app) => app.clientId))];
+          const totalRevenue = professionalAppointments.reduce((sum, app) => sum + app.price, 0);
 
-        let avgRating = 0;
-        if (professionalReviews.length > 0) {
-          avgRating = professionalReviews.reduce((sum, review) => sum + review.rating, 0) /
-            professionalReviews.length;
+          let avgRating = 0;
+          if (professionalReviews.length > 0) {
+            avgRating = professionalReviews.reduce((sum, review) => sum + review.rating, 0) /
+              professionalReviews.length;
+          }
+
+          setStats({
+            upcomingAppointments: professionalAppointments.filter(
+              (app) => app.status === "confirmed"
+            ).length,
+            totalClients: uniqueClients.length,
+            totalRevenue: totalRevenue,
+            averageRating: avgRating,
+          });
         }
+      } catch (error) {
+        console.error("Error loading dashboard data:", error);
+        if (isMounted) {
+          setLoadingError("Erro ao carregar dados do dashboard");
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+    
+    fetchUserProfileAndData();
 
-        setStats({
-          upcomingAppointments: professionalAppointments.filter(
-            (app) => app.status === "confirmed"
-          ).length,
-          totalClients: uniqueClients.length,
-          totalRevenue: totalRevenue,
-          averageRating: avgRating,
-        });
-
-        setLoading(false);
-      }, 1000);
-    }
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
+
+  // If there's a loading error, show it and display the dashboard anyway
+  if (loadingError) {
+    toast({
+      title: "Aviso",
+      description: loadingError,
+      variant: "destructive",
+    });
+  }
 
   if (loading) {
     return (
-      <div className="container py-12 flex items-center justify-center">
-        <div>Carregando informações do dashboard...</div>
+      <div className="container py-12 flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+        <div className="text-lg">Carregando informações do dashboard...</div>
       </div>
     );
   }
@@ -183,6 +229,7 @@ const ProfessionalDashboardPage = () => {
       <Tabs defaultValue="availability" className="space-y-4">
         <TabsList>
           <TabsTrigger value="availability">Disponibilidade</TabsTrigger>
+          <TabsTrigger value="working-hours">Horários de Trabalho</TabsTrigger>
           <TabsTrigger value="appointments">Agendamentos</TabsTrigger>
           <TabsTrigger value="services">Meus Serviços</TabsTrigger>
           <TabsTrigger value="bookings">Reservas de Cabine</TabsTrigger>
@@ -191,6 +238,10 @@ const ProfessionalDashboardPage = () => {
 
         <TabsContent value="availability" className="space-y-4">
           <AvailabilityCalendar />
+        </TabsContent>
+        
+        <TabsContent value="working-hours" className="space-y-4">
+          <WorkingHoursSettings />
         </TabsContent>
 
         <TabsContent value="appointments" className="space-y-4">
