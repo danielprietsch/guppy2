@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -55,7 +56,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
     const dateObj = new Date(date);
     
-    // Only block past dates, not today
+    // Apenas bloqueamos datas antes de hoje, não o próprio dia atual
     if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('AVAILABILITY', 'Não é possível alterar status de datas passadas');
       toast({
@@ -97,7 +98,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: string) => {
     const dateObj = new Date(date);
     
-    // Only block past dates, not today
+    // Apenas bloqueamos datas antes de hoje, não o próprio dia atual
     if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('PRICE_EDIT', 'Não é possível alterar preço de datas passadas');
       toast({
@@ -149,7 +150,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const renderDayContent = React.useCallback((day: Date) => {
     const dateStr = fmtDate(day);
     const turnos = ["morning", "afternoon", "evening"];
-    const isPastDate = isBefore(day, startOfDay(new Date())) && !isToday(day);
+    // Alterando a lógica aqui: apenas considerar como "passada" se a data for antes de hoje
+    // e NÃO for o dia de hoje (isToday retorna false)
+    const isPastDate = isBefore(day, today) && !isToday(day);
 
     return (
       <div className="flex flex-col p-1 h-full">
@@ -173,7 +176,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         </div>
       </div>
     );
-  }, [daysBooked, getSlotPrice, handlePriceEdit, handleStatusChange, isSlotManuallyClosed, navigate]);
+  }, [daysBooked, getSlotPrice, handlePriceEdit, handleStatusChange, isSlotManuallyClosed, navigate, today]);
 
   const MemoizedCalendar = React.useMemo(() => (
     <Calendar

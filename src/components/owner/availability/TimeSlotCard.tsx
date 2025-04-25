@@ -109,13 +109,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const canCloseTimeSlot = () => {
-    if (!isToday(date)) return true;
+    // Corrigindo: Essa função não deve levar em conta a data, apenas a hora
+    // A verificação de "hoje" já é feita antes de chamar essa função
+    debugAreaLog('TIME_CLOSURE', `Verificando horário para fechamento - Turno: ${turno}, Hora atual: ${new Date().getHours()}`);
     
     const now = new Date();
     const currentHour = now.getHours();
-    
-    // Debug logged for visibility
-    debugAreaLog('TIME_CLOSURE', `Checking if can close - Turno: ${turno}, Current hour: ${currentHour}, Is today: ${isToday(date)}`);
     
     switch(turno.toLowerCase()) {
       case 'manhã':
@@ -132,8 +131,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   const handleManualClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    debugAreaLog('TIME_CLOSURE', `Attempting to close - Date: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
+    debugAreaLog('TIME_CLOSURE', `Tentando fechar - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
     
+    // Removendo a verificação que impede o fechamento no dia atual
+    // O fechamento deve ser permitido baseado apenas na hora, não na data
     if (!canCloseTimeSlot()) {
       toast({
         title: "Não é possível fechar este turno",
