@@ -51,13 +51,23 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     }
   }, [isEditingPrice]);
 
-  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    debugAreaLog('PRICE_EDIT', 'Price input changed:', e.target.value);
-    setPriceValue(e.target.value);
+  const formatToCurrency = (value: string): string => {
+    const numericValue = value.replace(/\D/g, '');
+    const numberValue = parseInt(numericValue) / 100;
+    return numberValue.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+    });
+  };
+
+  const handlePriceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    setPriceValue(rawValue);
   };
 
   const handlePriceSubmit = () => {
-    const newPrice = parseFloat(priceValue);
+    const newPrice = parseInt(priceValue) / 100;
     debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
@@ -127,12 +137,11 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         <div className="flex items-center justify-center gap-2 mb-1">
           {isEditingPrice && !isPastDate ? (
             <div className="flex items-center gap-2 justify-center w-full">
-              <span className="text-white text-sm">R$</span>
               <Input
                 ref={inputRef}
-                type="number"
-                value={priceValue}
-                onChange={handlePriceChange}
+                type="text"
+                value={formatToCurrency(priceValue)}
+                onChange={handlePriceInputChange}
                 className="w-24 h-7 text-xs text-black py-1 border border-white/50 focus:border-white transition-all text-center"
               />
               <div className="flex gap-1">
@@ -162,12 +171,15 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
           ) : (
             <div className="flex flex-col items-center gap-1 w-full">
               <div className="flex items-center justify-center gap-1 w-full">
-                <span className="text-white text-sm">R$</span>
                 <span className={cn(
                   "text-white text-sm transition-all",
                   animatePrice && "animate-bounce text-yellow-200 font-bold"
                 )}>
-                  {parseFloat(price.toString()).toFixed(2)}
+                  {parseFloat(price).toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                    minimumFractionDigits: 2,
+                  })}
                 </span>
               </div>
             </div>
