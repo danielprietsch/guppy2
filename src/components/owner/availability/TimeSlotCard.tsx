@@ -94,8 +94,9 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
-        // Ensure newPrice is converted to a string for setPriceValue
-        setPriceValue(newPrice.toString());
+        // Convert newPrice to a string for setPriceValue
+        const newPriceString = newPrice.toString();
+        setPriceValue(newPriceString);
         
         // Call onPriceEdit with the numeric value
         onPriceEdit(newPrice);
