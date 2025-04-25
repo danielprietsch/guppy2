@@ -31,7 +31,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         }
 
         // If no professionals found, return empty array
-        if (!data || data.length === 0) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
           console.log('No professional profiles found');
           return [];
         }
@@ -48,10 +48,10 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
           if (servicesError) {
             console.error('Error fetching services:', servicesError);
-          } else {
+          } else if (Array.isArray(services)) {
             // Group specialties by professional
             const specialtiesByProfessional: Record<string, string[]> = {};
-            services?.forEach(service => {
+            services.forEach(service => {
               if (!service.professional_id) return;
               if (!specialtiesByProfessional[service.professional_id]) {
                 specialtiesByProfessional[service.professional_id] = [];
@@ -65,7 +65,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             return professionals.map(prof => ({
               ...prof,
               specialties: specialtiesByProfessional[prof.id] || []
-            })) as User[];
+            }));
           }
         }
 

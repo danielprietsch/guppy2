@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -40,13 +39,8 @@ interface ProfessionalCardProps {
 }
 
 const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
-  const gender = detectGender(professional.name);
-  const avatars = professionalAvatars[gender];
-  const imageIndex = parseInt(professional.id.replace(/\D/g, ""), 10) % avatars.length;
-  
-  // Use the user's real avatar if available, otherwise use the generated one
-  const avatarUrl = professional.avatarUrl || professional.avatar_url || avatars[imageIndex];
-
+  // Use the user's real avatar if available
+  const avatarUrl = professional.avatarUrl || professional.avatar_url;
   const rating = 4.5;
 
   // Make sure specialties is always an array
@@ -56,11 +50,17 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
     <Link to={`/professional/${professional.id}`} className="block">
       <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
         <div className="aspect-square overflow-hidden">
-          <img
-            src={avatarUrl}
-            alt={professional.name}
-            className="h-full w-full object-cover transition-transform hover:scale-105"
-          />
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={professional.name}
+              className="h-full w-full object-cover transition-transform hover:scale-105"
+            />
+          ) : (
+            <div className="h-full w-full bg-gray-200 flex items-center justify-center">
+              <span className="text-gray-400 text-lg">Sem foto</span>
+            </div>
+          )}
         </div>
         <CardContent className="p-4">
           <h3 className="font-semibold text-lg">{professional.name}</h3>
