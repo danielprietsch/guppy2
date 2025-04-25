@@ -95,7 +95,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
         // Ensure we pass a number with 2 decimal places
-        const formattedPrice = Number(newPrice.toFixed(2));
+        const formattedPrice = Number((newPrice / 100).toFixed(2));
         onPriceEdit(formattedPrice);
         setPriceValue(formattedPrice.toString());
         
