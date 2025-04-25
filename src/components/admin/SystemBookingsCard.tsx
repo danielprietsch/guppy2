@@ -16,11 +16,11 @@ interface Booking {
   price: number;
   status: string | null;
   created_at: string;
-  professional?: {
+  professional: {
     name: string | null;
   } | null;
-  cabin?: {
-    name: string;
+  cabin: {
+    name: string | null;
   } | null;
 }
 
@@ -42,12 +42,14 @@ export function SystemBookingsCard() {
 
         if (error) throw error;
         
-        // Transform the data to match our Booking interface
-        const formattedData = (data || []).map(item => ({
-          ...item,
-          professional: item.professional as Booking['professional'],
-          cabin: item.cabin as Booking['cabin']
-        }));
+        // Transform the data to properly handle types
+        const formattedData = (data || []).map(item => {
+          return {
+            ...item,
+            professional: item.professional || null,
+            cabin: item.cabin || null
+          } as Booking;
+        });
         
         setBookings(formattedData);
       } catch (error) {
