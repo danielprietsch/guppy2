@@ -9,6 +9,8 @@ import { AddCabinModal } from "@/components/owner/AddCabinModal";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 const OwnerDashboardPage = () => {
   const navigate = useNavigate();
