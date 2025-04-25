@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ interface TimeSlotCardProps {
   price: number;
   isBooked: boolean;
   isManuallyClosed: boolean;
-  onPriceEdit: (newPrice: string) => void;
+  onPriceEdit: (newPrice: number) => void; // Changed back to number
   onManualClose: () => void;
   onRelease: () => void;
   onViewBooking?: () => void;
@@ -71,7 +72,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
-      onPriceEdit(newPrice.toFixed(2));
+      // Ensure a number is passed with 2 decimal places
+      onPriceEdit(Number(newPrice.toFixed(2)));
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
     } else {
@@ -92,10 +94,13 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
-        const formattedPrice = (newPrice / 100).toFixed(2);
+        // Explicitly convert to a number with 2 decimal places
+        const formattedPrice = Number((newPrice / 100).toFixed(2));
         
+        // Call onPriceEdit with the formatted number
         onPriceEdit(formattedPrice);
         
+        // Convert to string for display
         setPriceValue(newPrice.toString());
         
         setAnimatePrice(true);
