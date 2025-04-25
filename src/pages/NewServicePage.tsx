@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -11,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import SpecialtyCard from "@/components/SpecialtyCard";
+import { serviceData } from "@/utils/serviceData";
 
 const availableServices = [
   { id: "corte_cabelo", label: "Corte de Cabelo" },
