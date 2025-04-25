@@ -76,7 +76,7 @@ export const CabinManagement = ({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between border-b">
+      <CardHeader className="flex flex-row items-center justify-between border-b bg-gradient-to-r from-guppy-primary/5 to-guppy-secondary/5">
         <CardTitle>Cabines de {selectedLocation?.name}</CardTitle>
         <Button
           variant="default"
@@ -87,16 +87,19 @@ export const CabinManagement = ({
           Adicionar Cabine
         </Button>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-8">
         {locationCabins.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
             Este local ainda não possui cabines cadastradas.
           </p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 place-items-stretch">
             {locationCabins.map((cabin) => (
-              <Card key={cabin.id} className="group hover:shadow-lg transition-all duration-300 ease-in-out border-2 hover:border-guppy-primary/20">
-                <CardContent className="p-5">
+              <Card 
+                key={cabin.id} 
+                className="group hover:shadow-xl transition-all duration-300 ease-in-out border border-guppy-primary/10 hover:border-guppy-primary/30 rounded-xl overflow-hidden transform hover:-translate-y-1"
+              >
+                <CardContent className="p-6 h-full">
                   <div className="flex flex-col h-full">
                     <div className="flex justify-between items-start mb-4">
                       <h3 className="text-lg font-semibold tracking-tight">{cabin.name}</h3>
