@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -34,7 +33,11 @@ const availableServices = [
 ];
 
 const serviceSchema = z.object({
-  services: z.array(z.string()).min(1, "Selecione pelo menos um serviço para se tornar elegível nas pesquisas"),
+  services: z.array(z.object({
+    id: z.string(),
+    price: z.number().min(1, "O preço deve ser maior que zero"),
+    duration: z.number().min(1, "A duração deve ser maior que zero")
+  })).min(1, "Selecione pelo menos um serviço para se tornar elegível nas pesquisas"),
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
@@ -43,6 +46,7 @@ const NewServicePage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<{ id: string; price: number; duration: number; }[]>([]);
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
@@ -55,7 +59,7 @@ const NewServicePage = () => {
     if (!user) {
       toast({
         title: "Erro",
-        description: "Você precisa estar logado para criar um serviço",
+        description: "Você precisa estar logado para criar serviços",
         variant: "destructive",
       });
       return;
@@ -64,15 +68,21 @@ const NewServicePage = () => {
     try {
       setIsSubmitting(true);
 
-      const { data: serviceData, error } = await supabase
-        .from("services")
-        .insert({
-          professional_id: user.id,
-          specialties: values.services,
-        })
-        .select();
+      // Insert each service as a separate row
+      for (const service of selectedServices) {
+        const { error } = await supabase
+          .from("services")
+          .insert({
+            professional_id: user.id,
+            name: availableServices.find(s => s.id === service.id)?.label || '',
+            description: getServiceDescription(service.id),
+            duration: service.duration,
+            price: service.price,
+            category: getServiceCategory(service.id)
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
 
       toast({
         title: "Serviços cadastrados",
@@ -81,7 +91,7 @@ const NewServicePage = () => {
 
       navigate("/professional/dashboard");
     } catch (error: any) {
-      console.error("Error creating service:", error);
+      console.error("Error creating services:", error);
       toast({
         title: "Erro ao cadastrar serviços",
         description: error.message || "Ocorreu um erro ao cadastrar os serviços. Tente novamente.",
@@ -94,6 +104,41 @@ const NewServicePage = () => {
 
   const handleCancel = () => {
     navigate(-1);
+  };
+
+  const handleServiceToggle = (serviceId: string, checked: boolean, defaultPrice: number, defaultDuration: number) => {
+    if (checked) {
+      setSelectedServices(prev => [...prev, { id: serviceId, price: defaultPrice, duration: defaultDuration }]);
+    } else {
+      setSelectedServices(prev => prev.filter(s => s.id !== serviceId));
+    }
+  };
+
+  const updateServiceDetails = (serviceId: string, price: number, duration: number) => {
+    setSelectedServices(prev => 
+      prev.map(service => 
+        service.id === serviceId ? { ...service, price, duration } : service
+      )
+    );
+  };
+
+  const getServiceCategory = (id: string) => {
+    const service = availableServices.find(s => s.id === id);
+    if (!service) return "";
+    
+    if (id.includes("corte") || id.includes("cabelo") || id.includes("escova") || id.includes("hidratacao")) return "Cabelo";
+    if (id.includes("manicure") || id.includes("pedicure")) return "Mãos e Pés";
+    if (id.includes("maquiagem")) return "Maquiagem";
+    if (id.includes("depilacao")) return "Depilação";
+    if (id.includes("barba")) return "Barba";
+    if (id.includes("massagem") || id.includes("limpeza")) return "Bem-estar";
+    return "Outros";
+  };
+
+  const getServiceDescription = (id: string) => {
+    const service = availableServices.find(s => s.id === id);
+    if (!service) return "";
+    return service.label;
   };
 
   return (
@@ -113,26 +158,23 @@ const NewServicePage = () => {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {availableServices.map((service) => (
-                  <div key={service.id}>
-                    <SpecialtyCard
-                      id={service.id}
-                      label={service.label}
-                      checked={form.watch("services")?.includes(service.id)}
-                      onCheckedChange={(checked) => {
-                        const currentServices = form.getValues("services") || [];
-                        if (checked) {
-                          form.setValue("services", [...currentServices, service.id]);
-                        } else {
-                          form.setValue(
-                            "services",
-                            currentServices.filter((id) => id !== service.id)
-                          );
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
+                {availableServices.map((service) => {
+                  const selectedService = selectedServices.find(s => s.id === service.id);
+                  return (
+                    <div key={service.id}>
+                      <SpecialtyCard
+                        id={service.id}
+                        label={service.label}
+                        checked={!!selectedService}
+                        onCheckedChange={(checked) => handleServiceToggle(service.id, checked, serviceData[service.id].price, serviceData[service.id].duration)}
+                        price={selectedService?.price}
+                        duration={selectedService?.duration}
+                        onPriceChange={(price) => selectedService && updateServiceDetails(service.id, price, selectedService.duration)}
+                        onDurationChange={(duration) => selectedService && updateServiceDetails(service.id, selectedService.price, duration)}
+                      />
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex justify-end space-x-4">
@@ -146,7 +188,7 @@ const NewServicePage = () => {
                 
                 <Button 
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || selectedServices.length === 0}
                 >
                   {isSubmitting ? (
                     <>
@@ -159,9 +201,9 @@ const NewServicePage = () => {
                 </Button>
               </div>
 
-              {form.formState.errors.services && (
+              {selectedServices.length === 0 && (
                 <p className="text-sm font-medium text-destructive mt-2">
-                  {form.formState.errors.services.message}
+                  Selecione pelo menos um serviço para se tornar elegível nas pesquisas
                 </p>
               )}
             </form>

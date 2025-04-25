@@ -1,7 +1,8 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   Scissors, 
   SprayCan, 
@@ -11,7 +12,7 @@ import {
   Sparkles,
   Star,
   HandHelping,
-  Clock, 
+  Clock,
   DollarSign
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,9 +22,12 @@ interface SpecialtyCardProps {
   label: string;
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
+  price?: number;
+  duration?: number;
+  onPriceChange?: (price: number) => void;
+  onDurationChange?: (duration: number) => void;
 }
 
-// Service data mapping (in a real app, this would come from an API)
 const serviceData = {
   // Cabelo
   "corte_cabelo": { duration: 30, price: 50, category: "Cabelo" },
@@ -55,7 +59,6 @@ const serviceData = {
   "limpeza_pele": { duration: 60, price: 100, category: "Tratamento Facial" },
 };
 
-// Get category colors
 const getCategoryColor = (category: string) => {
   switch (category) {
     case "Cabelo": return "bg-purple-100 text-purple-800";
@@ -71,7 +74,6 @@ const getCategoryColor = (category: string) => {
   }
 };
 
-// Get icon for service
 const getIconForSpecialty = (id: string) => {
   switch (id) {
     // Cabelo
@@ -172,18 +174,26 @@ const getServiceDescription = (id: string): string => {
   }
 };
 
-const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardProps) => {
+const SpecialtyCard = ({ 
+  id, 
+  label, 
+  checked, 
+  onCheckedChange,
+  price,
+  duration,
+  onPriceChange,
+  onDurationChange
+}: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
   return (
     <div
       className={cn(
-        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer hover:bg-accent min-h-[250px] w-full",
+        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors",
         checked ? "border-primary bg-accent" : "border-input"
       )}
-      onClick={() => onCheckedChange(!checked)}
     >
-      <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
+      <div className="absolute top-4 right-4">
         <Checkbox
           checked={checked}
           onCheckedChange={onCheckedChange}
@@ -211,16 +221,42 @@ const SpecialtyCard = ({ id, label, checked, onCheckedChange }: SpecialtyCardPro
         {getServiceDescription(id)}
       </p>
       
-      <div className="mt-auto w-full flex justify-between items-center pt-3 border-t border-border">
-        <div className="flex items-center gap-1.5 text-muted-foreground">
-          <Clock className="h-4 w-4" />
-          <span className="text-sm font-medium">{serviceInfo.duration} min</span>
+      {checked && (
+        <div className="w-full space-y-4 mt-4 pt-4 border-t border-border">
+          <div className="space-y-2">
+            <Label htmlFor={`duration-${id}`} className="flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Duração (minutos)
+            </Label>
+            <Input
+              id={`duration-${id}`}
+              type="number"
+              min="1"
+              value={duration}
+              onChange={(e) => onDurationChange?.(Number(e.target.value))}
+              placeholder="Duração em minutos"
+              className="w-full"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor={`price-${id}`} className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              Preço (R$)
+            </Label>
+            <Input
+              id={`price-${id}`}
+              type="number"
+              min="1"
+              step="0.01"
+              value={price}
+              onChange={(e) => onPriceChange?.(Number(e.target.value))}
+              placeholder="Valor em reais"
+              className="w-full"
+            />
+          </div>
         </div>
-        <div className="flex items-center gap-1.5 font-medium">
-          <DollarSign className="h-4 w-4" />
-          <span>R$ {serviceInfo.price}</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
