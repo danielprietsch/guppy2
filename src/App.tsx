@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import NavBar from './components/NavBar';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LocationsPage from './pages/LocationsPage';
@@ -15,6 +16,7 @@ import ProfessionalReservationsPage from './pages/ProfessionalReservationsPage';
 function App() {
   return (
     <BrowserRouter>
+      <NavBar />
       <Routes>
         <Route path="/" element={<LocationsPage />} />
         <Route path="/login" element={<LoginPage />} />
