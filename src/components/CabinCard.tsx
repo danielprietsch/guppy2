@@ -1,3 +1,4 @@
+
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ interface CabinCardProps {
 const CabinCard = ({ cabin, location }: CabinCardProps) => {
   const [isProfessional, setIsProfessional] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
 
   useEffect(() => {
     const checkUserType = async () => {
@@ -28,6 +30,8 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
       try {
         // Verificar se há uma sessão ativa
         const { data: { session } } = await supabase.auth.getSession();
+        
+        setIsLoggedIn(!!session?.user);
         
         if (session?.user) {
           // Verificar primeiro nos metadados do usuário (mais confiável)
@@ -125,6 +129,12 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
           <p className="text-sm text-muted-foreground text-center w-full">
             Verificando permissões...
           </p>
+        ) : !isLoggedIn ? (
+          <Link to="/register?type=professional" className="w-full">
+            <Button size="sm" variant="outline" className="w-full">
+              Cadastre-se para poder reservar uma cabine
+            </Button>
+          </Link>
         ) : isProfessional ? (
           <Link to={`/book-cabin/${cabin.id}`} className="w-full">
             <Button size="sm" className="w-full">
