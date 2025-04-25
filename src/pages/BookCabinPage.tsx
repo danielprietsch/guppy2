@@ -1,11 +1,18 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Check } from "lucide-react";
 import { useCabinSearch } from "@/hooks/useCabinSearch";
+import { supabase } from "@/integrations/supabase/client";
+import { Calendar } from "@/components/ui/calendar";
+import { Separator } from "@/components/ui/separator";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { toast } from "@/hooks/use-toast";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,6 +22,11 @@ const BookCabinPage = () => {
   const [cabin, setCabin] = useState<Cabin | null>(cabinDetails || null);
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "evening" | "">("");
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [price, setPrice] = useState(0);
+  const [isWeekend, setIsWeekend] = useState(false);
 
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
@@ -35,7 +47,21 @@ const BookCabinPage = () => {
             .single();
 
           if (cabinError) throw cabinError;
-          setCabin(cabinData);
+          
+          // Transform the data to match our Cabin type
+          const transformedCabin: Cabin = {
+            id: cabinData.id,
+            locationId: cabinData.location_id,
+            name: cabinData.name,
+            description: cabinData.description || '',
+            equipment: cabinData.equipment || [],
+            imageUrl: cabinData.image_url,
+            availability: cabinData.availability || { morning: true, afternoon: true, evening: true },
+            price: cabinData.pricing?.defaultPrice,
+            pricing: cabinData.pricing
+          };
+          
+          setCabin(transformedCabin);
 
           // Fetch location data if we have a cabin
           if (cabinData?.location_id) {
@@ -46,7 +72,25 @@ const BookCabinPage = () => {
               .single();
 
             if (locError) throw locError;
-            setLocationData(locData);
+            
+            // Transform the location data
+            const transformedLocation: Location = {
+              id: locData.id,
+              name: locData.name,
+              address: locData.address,
+              city: locData.city,
+              state: locData.state,
+              zipCode: locData.zip_code,
+              cabinsCount: locData.cabins_count || 0,
+              openingHours: locData.opening_hours || { open: "09:00", close: "18:00" },
+              amenities: locData.amenities || [],
+              imageUrl: locData.image_url,
+              description: locData.description,
+              ownerId: locData.owner_id,
+              active: locData.active
+            };
+            
+            setLocationData(transformedLocation);
           }
         }
       } catch (error) {
@@ -58,6 +102,39 @@ const BookCabinPage = () => {
 
     loadCabinData();
   }, [id, cabinDetails]);
+
+  useEffect(() => {
+    if (cabin && date) {
+      const day = date.getDay();
+      const isWeekend = day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
+      setIsWeekend(isWeekend);
+      
+      // Set price based on cabin pricing and day
+      const basePrice = cabin.price || 50;
+      const weekendMultiplier = isWeekend ? 1.2 : 1;
+      setPrice(basePrice * weekendMultiplier);
+    }
+  }, [cabin, date]);
+
+  const handleBookCabin = () => {
+    if (!cabin || !date || !selectedShift || !acceptTerms) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos e aceite os termos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Logic for booking cabin would go here
+    toast({
+      title: "Reserva solicitada",
+      description: "Sua reserva foi enviada com sucesso e está sendo processada.",
+    });
+    
+    // Navigate to a confirmation page or dashboard
+    navigate("/professional-dashboard");
+  };
 
   if (loading) {
     return (
@@ -158,7 +235,7 @@ const BookCabinPage = () => {
                 <Button
                   variant={selectedShift === "morning" ? "default" : "outline"}
                   onClick={() => setSelectedShift("morning")}
-                  disabled={!cabin.availability.morning}
+                  disabled={cabin && !cabin.availability.morning}
                   className="flex flex-col h-auto py-3"
                 >
                   <span>Manhã</span>
@@ -167,7 +244,7 @@ const BookCabinPage = () => {
                 <Button
                   variant={selectedShift === "afternoon" ? "default" : "outline"}
                   onClick={() => setSelectedShift("afternoon")}
-                  disabled={!cabin.availability.afternoon}
+                  disabled={cabin && !cabin.availability.afternoon}
                   className="flex flex-col h-auto py-3"
                 >
                   <span>Tarde</span>
@@ -176,7 +253,7 @@ const BookCabinPage = () => {
                 <Button
                   variant={selectedShift === "evening" ? "default" : "outline"}
                   onClick={() => setSelectedShift("evening")}
-                  disabled={!cabin.availability.evening}
+                  disabled={cabin && !cabin.availability.evening}
                   className="flex flex-col h-auto py-3"
                 >
                   <span>Noite</span>
@@ -230,10 +307,12 @@ const BookCabinPage = () => {
             <CardContent className="p-6">
               <h2 className="text-xl font-semibold">Resumo da reserva</h2>
               <div className="mt-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">{cabin.name}</span>
-                  <span>{location.name}</span>
-                </div>
+                {cabin && (
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">{cabin.name}</span>
+                    {locationData && <span>{locationData.name}</span>}
+                  </div>
+                )}
                 
                 <div className="mt-4">
                   <div className="flex items-center gap-2">
@@ -251,16 +330,18 @@ const BookCabinPage = () => {
                 
                 <Separator className="my-4" />
                 
-                <div className="space-y-2">
-                  <h3 className="font-medium">O que está incluso:</h3>
-                  <ul className="grid gap-1 text-sm">
-                    {cabin.equipment.map((item, index) => (
-                      <li key={index} className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-primary" /> {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {cabin && cabin.equipment && (
+                  <div className="space-y-2">
+                    <h3 className="font-medium">O que está incluso:</h3>
+                    <ul className="grid gap-1 text-sm">
+                      {cabin.equipment.map((item, index) => (
+                        <li key={index} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 text-primary" /> {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 
                 <Separator className="my-4" />
                 

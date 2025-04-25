@@ -27,7 +27,18 @@ export const useCabinSearch = (locationId?: string) => {
         return [];
       }
 
-      return data as Cabin[];
+      // Transform the response to match our Cabin type
+      return data.map(cabin => ({
+        id: cabin.id,
+        locationId: cabin.location_id,
+        name: cabin.name,
+        description: cabin.description || '',
+        equipment: cabin.equipment || [],
+        imageUrl: cabin.image_url,
+        availability: cabin.availability || { morning: true, afternoon: true, evening: true },
+        price: cabin.pricing?.defaultPrice,
+        pricing: cabin.pricing
+      })) as Cabin[];
     },
   });
 
