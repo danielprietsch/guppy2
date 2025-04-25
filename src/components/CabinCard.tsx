@@ -1,3 +1,4 @@
+
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +83,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
       params.append("location", location.id);
     }
     
-    return `/professional/calendar?${params.toString()}`;
+    return `/professional/dashboard?${params.toString()}`;
   };
 
   return (

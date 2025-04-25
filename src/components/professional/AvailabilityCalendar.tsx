@@ -49,7 +49,7 @@ interface CabinDetails {
   id: string;
   name: string;
   description: string | null;
-  availability: CabinAvailability | Record<string, boolean>;
+  availability: CabinAvailability;
   equipment: string[] | null;
   image_url: string | null;
   location_id: string | null;
@@ -79,6 +79,7 @@ interface RawAppointmentData {
 interface ProfileData {
   name: string | null;
   email: string | null;
+  created_at?: string;
 }
 
 const AvailabilityCalendar = () => {
@@ -110,18 +111,16 @@ const AvailabilityCalendar = () => {
         return null;
       }
       
-      // Convert data to our CabinDetails type
+      // Convert data to our CabinDetails type with proper type checking
       const cabinDetails: CabinDetails = {
         id: data.id,
         name: data.name,
         description: data.description,
-        availability: typeof data.availability === 'object' 
-          ? data.availability as CabinAvailability 
-          : { morning: true, afternoon: true, evening: true },
+        availability: parseAvailability(data.availability),
         equipment: data.equipment || [],
         image_url: data.image_url,
         location_id: data.location_id,
-        pricing: data.pricing,
+        pricing: parsePricing(data.pricing),
         updated_at: data.updated_at,
         created_at: data.created_at,
         locations: data.locations
@@ -131,6 +130,66 @@ const AvailabilityCalendar = () => {
     },
     enabled: !!cabinId,
   });
+
+  // Helper function to safely parse availability data
+  const parseAvailability = (data: unknown): CabinAvailability => {
+    // Default availability if parsing fails
+    const defaultAvailability: CabinAvailability = {
+      morning: true,
+      afternoon: true,
+      evening: true
+    };
+    
+    if (!data) return defaultAvailability;
+    
+    try {
+      // Handle string JSON
+      if (typeof data === 'string') {
+        const parsed = JSON.parse(data);
+        // Verify the parsed object has required fields
+        if (typeof parsed === 'object' && parsed !== null &&
+            'morning' in parsed && 'afternoon' in parsed && 'evening' in parsed) {
+          return {
+            morning: Boolean(parsed.morning),
+            afternoon: Boolean(parsed.afternoon),
+            evening: Boolean(parsed.evening)
+          };
+        }
+      } 
+      // Handle object
+      else if (typeof data === 'object' && data !== null) {
+        const obj = data as Record<string, unknown>;
+        if ('morning' in obj && 'afternoon' in obj && 'evening' in obj) {
+          return {
+            morning: Boolean(obj.morning),
+            afternoon: Boolean(obj.afternoon),
+            evening: Boolean(obj.evening)
+          };
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing cabin availability:", e);
+    }
+    
+    return defaultAvailability;
+  };
+  
+  // Helper function to safely parse pricing data
+  const parsePricing = (data: unknown): Record<string, any> => {
+    if (!data) return {};
+    
+    try {
+      if (typeof data === 'string') {
+        return JSON.parse(data);
+      } else if (data && typeof data === 'object') {
+        return data as Record<string, any>;
+      }
+    } catch (e) {
+      console.error("Error parsing cabin pricing:", e);
+    }
+    
+    return {};
+  };
 
   // Fetch user profile to get creation date
   const { data: userProfile } = useQuery({
@@ -149,7 +208,7 @@ const AvailabilityCalendar = () => {
         return null;
       }
       
-      return data;
+      return data as ProfileData;
     },
     enabled: !!user?.id,
   });
@@ -163,10 +222,10 @@ const AvailabilityCalendar = () => {
     }
   }, [userProfile]);
 
-  // Fetch appointments
+  // Fetch appointments with proper TypeScript typing
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Appointment[]> => {
       if (!user?.id) return [] as Appointment[];
       
       // Base query
