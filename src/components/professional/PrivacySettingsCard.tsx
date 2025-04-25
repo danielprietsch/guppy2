@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -97,7 +96,7 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
               <Clock className="h-16 w-16 text-primary" />
             </div>
             <div className="text-center">
-              <div className="font-semibold text-xl mb-2">Indisponível</div>
+              <div className="font-semibold text-xl mb-2">Indisponível (Oculto)</div>
               <p className="text-sm text-muted-foreground max-w-[200px]">
                 Você não está aceitando novos agendamentos
               </p>
