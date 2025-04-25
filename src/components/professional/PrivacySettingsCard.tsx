@@ -9,9 +9,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
 
-const PrivacySettingsCard = () => {
+// Define prop types for the component
+interface PrivacySettingsCardProps {
+  // Make initialIsPublic optional with a default value
+  initialIsPublic?: boolean;
+}
+
+const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {}) => {
   const { user } = useAuth();
-  const [isPublic, setIsPublic] = useState(true);
+  const [isPublic, setIsPublic] = useState(initialIsPublic ?? true);
   const [isLoading, setIsLoading] = useState(true);
   const queryClient = useQueryClient();
 

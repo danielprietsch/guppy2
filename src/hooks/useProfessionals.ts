@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
