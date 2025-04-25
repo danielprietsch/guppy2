@@ -30,7 +30,7 @@ export const BookingConfirmationDialog = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Reservar cabine</DialogTitle>
+          <DialogTitle>Reservar espaço</DialogTitle>
         </DialogHeader>
         <div className="flex justify-end space-x-2 pt-4">
           <Button variant="outline" onClick={onClose}>

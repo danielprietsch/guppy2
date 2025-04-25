@@ -29,6 +29,7 @@ const BookCabinPage = () => {
   const [total, setTotal] = useState(0);
   const [subtotalTurns, setSubtotalTurns] = useState(0);
   const [serviceFee, setServiceFee] = useState(0);
+  const [bookingInProgress, setBookingInProgress] = useState(false);
 
   useEffect(() => {
     const loadCabinData = async () => {
@@ -77,7 +78,8 @@ const BookCabinPage = () => {
             imageUrl: cabinData.image_url,
             availability,
             price,
-            pricing
+            pricing,
+            created_at: cabinData.created_at
           };
           
           setCabin(transformedCabin);
@@ -166,7 +168,35 @@ const BookCabinPage = () => {
     setTotal(calculatedSubtotal + calculatedServiceFee);
   }, [selectedTurns, cabin]);
 
-  const handleBookCabin = () => {
+  const createBooking = async (date: string, turn: string, price: number) => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      if (!session || !session.session) {
+        throw new Error("Usuário não autenticado");
+      }
+
+      const { data, error } = await supabase
+        .from('bookings')
+        .insert([
+          { 
+            date, 
+            shift: turn, 
+            cabin_id: cabin?.id, 
+            professional_id: session.session.user.id,
+            price: price,
+            status: 'payment_pending'
+          }
+        ]);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error("Erro ao criar reserva:", error);
+      return false;
+    }
+  };
+
+  const handleBookCabin = async () => {
     if (!cabin || Object.keys(selectedTurns).length === 0 || !acceptTerms) {
       toast({
         title: "Erro",
@@ -176,12 +206,46 @@ const BookCabinPage = () => {
       return;
     }
 
-    toast({
-      title: "Reserva solicitada",
-      description: "Sua reserva foi enviada com sucesso e está sendo processada.",
-    });
+    setBookingInProgress(true);
     
-    navigate("/professional-dashboard");
+    try {
+      let allBookingsSuccessful = true;
+      const bookingPromises = [];
+      
+      // Criar uma reserva para cada data/turno selecionado
+      for (const [date, turns] of Object.entries(selectedTurns)) {
+        for (const turn of turns) {
+          const turnPrice = cabin.pricing?.defaultPricing?.[turn] || cabin.price || 50;
+          bookingPromises.push(createBooking(date, turn, turnPrice));
+        }
+      }
+      
+      const results = await Promise.all(bookingPromises);
+      allBookingsSuccessful = results.every(result => result === true);
+      
+      if (allBookingsSuccessful) {
+        toast({
+          title: "Reserva realizada com sucesso",
+          description: "Sua reserva foi enviada e está aguardando pagamento.",
+        });
+        navigate("/professional-dashboard");
+      } else {
+        toast({
+          title: "Erro parcial",
+          description: "Algumas reservas não puderam ser realizadas. Verifique seu painel.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao realizar reservas:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível completar sua reserva. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setBookingInProgress(false);
+    }
   };
 
   if (loading) {
@@ -344,9 +408,9 @@ const BookCabinPage = () => {
                 <Button 
                   className="w-full" 
                   onClick={handleBookCabin}
-                  disabled={!acceptTerms || Object.keys(selectedTurns).length === 0}
+                  disabled={!acceptTerms || Object.keys(selectedTurns).length === 0 || bookingInProgress}
                 >
-                  Reservar Espaço
+                  {bookingInProgress ? "Processando..." : "Reservar Espaço"}
                 </Button>
               </div>
 

@@ -1,9 +1,11 @@
+
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 interface BookingCalendarProps {
   selectedTurns: { [date: string]: string[] };
@@ -22,31 +24,77 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const today = startOfDay(new Date());
+  const [bookedTurns, setBookedTurns] = React.useState<{ [date: string]: { [turn: string]: boolean } }>({});
+  
+  // Fetch existing bookings for this workspace when component mounts
+  React.useEffect(() => {
+    const fetchBookings = async () => {
+      if (!cabinAvailability) return;
+      
+      try {
+        const startDate = format(new Date(), 'yyyy-MM-dd');
+        const endDate = format(addDays(new Date(), 60), 'yyyy-MM-dd');
+        
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('date, shift')
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .not('status', 'eq', 'cancelled');
+          
+        if (error) throw error;
+        
+        const booked: { [date: string]: { [turn: string]: boolean } } = {};
+        
+        if (data) {
+          data.forEach(booking => {
+            if (!booked[booking.date]) {
+              booked[booking.date] = { morning: false, afternoon: false, evening: false };
+            }
+            booked[booking.date][booking.shift as keyof typeof cabinAvailability] = true;
+          });
+        }
+        
+        setBookedTurns(booked);
+      } catch (error) {
+        console.error("Erro ao buscar reservas existentes:", error);
+      }
+    };
+    
+    fetchBookings();
+  }, [cabinAvailability]);
 
   const renderTurnButton = (date: Date, turn: string, price: number) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const isSelected = selectedTurns[dateStr]?.includes(turn);
     const isPastDate = isBefore(date, today) && !isToday(date);
     const isClosed = !cabinAvailability[turn as keyof typeof cabinAvailability];
+    const isBooked = bookedTurns[dateStr]?.[turn as keyof typeof cabinAvailability];
 
     const getButtonClasses = () => {
       if (isPastDate) return "bg-gray-300 text-gray-500 cursor-not-allowed";
+      if (isBooked) return "bg-red-300 text-red-800 cursor-not-allowed";
       if (isClosed) return "bg-yellow-300 text-yellow-800 cursor-not-allowed";
       if (isSelected) return "bg-blue-500 text-white";
-      return "bg-green-500 text-white hover:bg-green-600"; // Changed default state to green
+      return "bg-green-500 text-white hover:bg-green-600";
+    };
+    
+    const getButtonText = () => {
+      if (isBooked) return turn === "morning" ? "Manhã (Reservado)" : turn === "afternoon" ? "Tarde (Reservado)" : "Noite (Reservado)";
+      return turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite";
     };
 
     return (
       <Button
         key={turn}
-        onClick={() => !isPastDate && !isClosed && onSelectTurn(dateStr, turn)}
+        onClick={() => !isPastDate && !isClosed && !isBooked && onSelectTurn(dateStr, turn)}
         className={cn(
           "w-full p-2 text-xs font-medium rounded-sm transition-colors",
           getButtonClasses()
         )}
-        disabled={isPastDate || isClosed}
+        disabled={isPastDate || isClosed || isBooked}
       >
-        {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
+        {getButtonText()}
         <div className="text-[10px] mt-0.5">
           R$ {price.toFixed(2).replace('.', ',')}
         </div>
