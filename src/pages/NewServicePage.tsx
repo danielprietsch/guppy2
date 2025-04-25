@@ -10,7 +10,7 @@ import { Form } from "@/components/ui/form";
 import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
 import SpecialtyCard from "@/components/SpecialtyCard";
 import { serviceData } from "@/utils/serviceData";
 
@@ -172,6 +172,28 @@ const NewServicePage = () => {
         </div>
       )}
 
+      {/* Sticky Save button at top of page for better visibility */}
+      <div className="sticky top-4 z-10 flex justify-end mb-6">
+        <Button 
+          onClick={form.handleSubmit(onSubmit)}
+          disabled={isSubmitting || selectedServices.length === 0}
+          className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold px-8 py-6 text-lg shadow-lg"
+          size="lg"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="mr-2 h-5 w-5" />
+              Salvar Serviços
+            </>
+          )}
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Selecione seus serviços</CardTitle>
@@ -199,26 +221,24 @@ const NewServicePage = () => {
                 })}
               </div>
 
-              <div className="flex justify-end space-x-4">
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={handleCancel}
-                >
-                  Cancelar
-                </Button>
-                
+              {/* Large, prominent save button at bottom of page as well */}
+              <div className="flex justify-center pt-8">
                 <Button 
                   type="submit"
                   disabled={isSubmitting || selectedServices.length === 0}
+                  className="bg-[#0EA5E9] hover:bg-[#0EA5E9]/90 text-white font-bold px-10 py-6 text-lg shadow-lg w-full md:w-1/2"
+                  size="lg"
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvando...
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Salvando Serviços...
                     </>
                   ) : (
-                    'Salvar Serviços'
+                    <>
+                      <Save className="mr-2 h-5 w-5" />
+                      Salvar Serviços
+                    </>
                   )}
                 </Button>
               </div>
