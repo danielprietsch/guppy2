@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,7 +71,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
     
     if (!isNaN(newPrice) && newPrice > 0) {
-      // Ensure a number is passed
+      // Ensure a number is passed with 2 decimal places
       onPriceEdit(Number(newPrice.toFixed(2)));
       setAnimatePrice(true);
       setTimeout(() => setAnimatePrice(false), 700);
