@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,10 +22,12 @@ import PrivacySettingsCard from "@/components/professional/PrivacySettingsCard";
 import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar";
 import WorkingHoursSettings from "@/components/professional/WorkingHoursSettings";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 const ProfessionalDashboardPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [userBookings, setUserBookings] = useState([]);
   const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
@@ -130,6 +131,79 @@ const ProfessionalDashboardPage = () => {
       isMounted = false;
     };
   }, [user]);
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!user?.id) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            cabin:cabins (
+              name,
+              location:locations (
+                name
+              )
+            )
+          `)
+          .eq('professional_id', user.id)
+          .order('date', { ascending: false });
+
+        if (error) throw error;
+        setUserBookings(data || []);
+      } catch (error) {
+        console.error("Error fetching bookings:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar suas reservas.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchBookings();
+  }, [user?.id]);
+
+  const getShiftText = (shift: string) => {
+    switch (shift) {
+      case "morning":
+        return "Manhã";
+      case "afternoon":
+        return "Tarde";
+      case "evening":
+        return "Noite";
+      default:
+        return shift;
+    }
+  };
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "Confirmada";
+      case "payment_pending":
+        return "Aguardando Pagamento";
+      case "cancelled":
+        return "Cancelada";
+      default:
+        return status;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "text-green-600";
+      case "payment_pending":
+        return "text-amber-600";
+      case "cancelled":
+        return "text-red-600";
+      default:
+        return "text-gray-600";
+    }
+  };
 
   // If there's a loading error, show it and display the dashboard anyway
   if (loadingError) {
@@ -353,35 +427,42 @@ const ProfessionalDashboardPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {bookings
-                  .filter((booking) => booking.professionalId === user?.id)
-                  .map((booking) => (
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : userBookings.length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    Você não tem reservas de cabine.
+                  </div>
+                ) : (
+                  userBookings.map((booking) => (
                     <div
                       key={booking.id}
                       className="flex justify-between items-center border-b pb-4"
                     >
                       <div>
-                        <p className="font-medium">Cabine #{booking.cabinId}</p>
+                        <p className="font-medium">{booking.cabin?.location?.name || 'Local não encontrado'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {booking.cabin?.name || 'Cabine não encontrada'}
+                        </p>
                         <div className="flex items-center text-sm text-muted-foreground">
                           <Calendar className="h-3 w-3 mr-1" />
-                          {booking.date}
+                          {format(new Date(booking.date), "dd/MM/yyyy")}
                           <Clock className="h-3 w-3 ml-2 mr-1" />
-                          {booking.shift}
+                          {getShiftText(booking.shift)}
                         </div>
                       </div>
-                      <div>
-                        <p className="font-semibold">R$ {booking.price}</p>
-                        <p className="text-sm text-right text-muted-foreground">
-                          Status: {booking.status}
+                      <div className="text-right">
+                        <p className="font-semibold">
+                          R$ {booking.price.toFixed(2).replace('.', ',')}
+                        </p>
+                        <p className={`text-sm ${getStatusColor(booking.status)}`}>
+                          {getStatusText(booking.status)}
                         </p>
                       </div>
                     </div>
-                  ))}
-
-                {bookings.filter((booking) => booking.professionalId === user?.id).length === 0 && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    Você não tem reservas de cabine.
-                  </div>
+                  ))
                 )}
               </div>
             </CardContent>
