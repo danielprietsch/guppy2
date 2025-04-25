@@ -148,13 +148,17 @@ const BookCabinPage = () => {
     if (!cabin) return;
 
     let newTotal = 0;
-    Object.entries(selectedTurns).forEach(([_, turns]) => {
-      turns.forEach(() => {
-        newTotal += cabin.price;
+    Object.entries(selectedTurns).forEach(([date, turns]) => {
+      turns.forEach(turn => {
+        const turnPrice = cabin.pricing?.defaultPricing?.[turn] || cabin.price || 50;
+        newTotal += turnPrice;
       });
     });
     
-    newTotal += 10;
+    if (Object.keys(selectedTurns).length > 0) {
+      newTotal += 10;
+    }
+    
     setTotal(newTotal);
   }, [selectedTurns, cabin]);
 
@@ -319,7 +323,7 @@ const BookCabinPage = () => {
                 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span>Valor total dos turnos</span>
+                    <span>Valor total da reserva</span>
                     <span>R$ {(total - 10).toFixed(2).replace('.', ',')}</span>
                   </div>
                   <div className="flex items-center justify-between">
