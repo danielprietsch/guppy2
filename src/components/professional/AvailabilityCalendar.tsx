@@ -149,14 +149,14 @@ const AvailabilityCalendar = () => {
   };
 
   return (
-    <Card className="h-[calc(100vh-10rem)]">
+    <Card className="mb-8">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
           Calendário de Disponibilidade
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-4 h-[calc(100%-5rem)] flex flex-col space-y-6">
+      <CardContent className="p-4 flex flex-col space-y-6">
         <Card>
           <CardContent className="p-6">
             <Label className="text-lg font-medium mb-6 block">Disponibilidade para Agendamentos</Label>
@@ -199,8 +199,8 @@ const AvailabilityCalendar = () => {
             ))}
           </TabsList>
 
-          <div className="flex-1 min-h-0">
-            <TabsContent value="day" className="h-full m-0 outline-none">
+          <div className="flex-1">
+            <TabsContent value="day" className="m-0 outline-none h-[500px]">
               <Card className="h-full border-0">
                 <CardContent className="p-0">
                   <DailyView
@@ -214,7 +214,7 @@ const AvailabilityCalendar = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="week" className="h-full m-0 outline-none">
+            <TabsContent value="week" className="m-0 outline-none h-[500px]">
               <Card className="h-full border-0">
                 <CardContent className="p-0">
                   <WeeklyView
@@ -228,7 +228,7 @@ const AvailabilityCalendar = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="month" className="h-full m-0 outline-none">
+            <TabsContent value="month" className="m-0 outline-none h-[500px]">
               <Card className="h-full border-0">
                 <CardContent className="p-4">
                   <div className="h-full flex flex-col space-y-4">

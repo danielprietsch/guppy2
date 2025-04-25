@@ -70,7 +70,7 @@ const WeeklyView = ({
               {hours.map((hour) => (
                 <div
                   key={hour}
-                  className="h-16 text-sm font-medium text-muted-foreground flex items-center justify-end pr-2"
+                  className="h-12 text-sm font-medium text-muted-foreground flex items-center justify-end pr-2"
                 >
                   {`${hour.toString().padStart(2, '0')}:00`}
                 </div>
@@ -98,7 +98,7 @@ const WeeklyView = ({
                   return (
                     <Card
                       key={hour}
-                      className={`h-16 ${cellStatus.color} relative`}
+                      className={`h-12 ${cellStatus.color} relative`}
                     >
                       <CardContent className="p-1 h-full">
                         <div className="absolute top-0 right-0 text-[10px] font-medium px-1.5 py-0.5 rounded-bl bg-white/90">
