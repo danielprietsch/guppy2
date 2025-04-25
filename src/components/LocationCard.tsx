@@ -227,7 +227,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
             )}
           </CardContent>
 
-          <div className="grid grid-cols-2 gap-4 p-4">
+          <div className="grid grid-cols-2 gap-2 p-2">
             <div className="aspect-square overflow-hidden rounded-lg">
               <img
                 src={displayImage}
