@@ -109,7 +109,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     };
     
     const getButtonText = () => {
-      if (isBooked) return turn === "morning" ? "Manhã (Reservado)" : turn === "afternoon" ? "Tarde (Reservado)" : "Noite (Reservado)";
+      if (isBooked) return "Reservado";
       return turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite";
     };
 
@@ -118,15 +118,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         key={turn}
         onClick={() => !isPastDate && !isClosed && !isBooked && onSelectTurn(dateStr, turn)}
         className={cn(
-          "w-full p-2 text-xs font-medium rounded-sm transition-colors",
+          "w-full h-[60px] flex flex-col items-center justify-center text-xs font-medium rounded-sm transition-colors",
           getButtonClasses()
         )}
         disabled={isPastDate || isClosed || isBooked || isLoadingBookings}
       >
-        {getButtonText()}
-        <div className="text-[10px] mt-0.5">
-          R$ {price.toFixed(2).replace('.', ',')}
-        </div>
+        <span>{getButtonText()}</span>
+        {!isBooked && (
+          <span className="text-[10px] mt-0.5">
+            R$ {price.toFixed(2).replace('.', ',')}
+          </span>
+        )}
       </Button>
     );
   };
