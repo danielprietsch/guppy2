@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
 import { Search, Filter, AlertCircle } from "lucide-react";
@@ -15,6 +15,7 @@ import { useProfessionals } from "@/hooks/useProfessionals";
 import { useServices } from "@/hooks/useServices";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/use-toast";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,7 +35,18 @@ const ProfessionalsPage = () => {
     date: nextWeek
   });
   
+  // Log the professional count to help with debugging
   console.log("Professional count:", professionals.length);
+
+  useEffect(() => {
+    if (isError) {
+      toast({
+        title: "Erro ao carregar profissionais",
+        description: "Não foi possível carregar a lista de profissionais. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    }
+  }, [isError]);
 
   const filteredProfessionals = professionals.filter(professional => {
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());

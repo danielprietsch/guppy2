@@ -15,7 +15,6 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { withSpecialties = true, withAvailability = false, date = null } = options;
   const { data: allProfessionals } = useUsers('professional');
 
-  // Updated to use object syntax for query configuration
   return useQuery({
     queryKey: ['professionals', date],
     queryFn: async () => {
@@ -35,6 +34,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           throw availabilityError;
         }
 
+        // Early return if no available professionals
         if (!availabilityData || availabilityData.length === 0) {
           console.log('No professionals available on this date');
           return [];
@@ -55,6 +55,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           throw bookingsError;
         }
 
+        // Early return if no confirmed bookings
         if (!bookingsData || bookingsData.length === 0) {
           console.log('No confirmed bookings found for any professionals');
           return [];
@@ -68,6 +69,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           professionalIdsWithBookings.includes(id)
         );
 
+        // Early return if no professionals match both criteria
         if (availableAndBookedIds.length === 0) {
           console.log('No professionals available with confirmed bookings');
           return [];
@@ -125,6 +127,12 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
         throw error;
+      }
+    },
+    // Force returning empty array on error
+    meta: {
+      onError: () => {
+        return [];
       }
     }
   });
