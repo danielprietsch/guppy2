@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -192,29 +191,29 @@ const ProfessionalDashboardPage = () => {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "confirmed":
-        return "Confirmada";
       case "payment_pending":
         return "Aguardando Pagamento";
+      case "confirmed":
+        return "Confirmada";
       case "cancelled":
         return "Cancelada";
       default:
         return status;
-    }
-  };
+  }
+};
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "text-green-600";
-      case "payment_pending":
-        return "text-amber-600";
-      case "cancelled":
-        return "text-red-600";
-      default:
-        return "text-gray-600";
-    }
-  };
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "confirmed":
+      return "text-green-600";
+    case "payment_pending":
+      return "text-amber-600";
+    case "cancelled":
+      return "text-red-600";
+    default:
+      return "text-gray-600";
+  }
+};
 
   // If there's a loading error, show it and display the dashboard anyway
   if (loadingError) {
