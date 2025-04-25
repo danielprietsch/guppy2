@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -171,7 +170,6 @@ const BookCabinPage = () => {
 
   const createBooking = async (date: string, turn: string, price: number) => {
     try {
-      // Get current session - NO profile queries!
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         throw new Error("Usuário não autenticado");
@@ -179,7 +177,6 @@ const BookCabinPage = () => {
 
       debugLog("Creating booking with professional_id:", data.session.user.id);
 
-      // Use RPC function to avoid RLS recursion
       const { error } = await supabase.rpc(
         'create_booking',
         { 
@@ -214,7 +211,6 @@ const BookCabinPage = () => {
       return;
     }
 
-    // Verify authentication with session only - NO profile queries!
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
       toast({
@@ -226,7 +222,6 @@ const BookCabinPage = () => {
       return;
     }
 
-    // Verify professional status only via metadata - avoid profile table
     const userType = data.session.user.user_metadata?.userType;
     if (userType !== 'professional' && userType !== 'provider') {
       toast({

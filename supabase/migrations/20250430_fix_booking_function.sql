@@ -36,3 +36,15 @@ BEGIN
   RETURN (SELECT user_type FROM profiles WHERE id = user_id);
 END;
 $$;
+
+-- Create a function to check if user is authenticated without recursion
+CREATE OR REPLACE FUNCTION public.is_authenticated()
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $$
+BEGIN
+  RETURN auth.uid() IS NOT NULL;
+END;
+$$;

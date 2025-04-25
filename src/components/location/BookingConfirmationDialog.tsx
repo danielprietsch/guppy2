@@ -31,7 +31,7 @@ export const BookingConfirmationDialog = ({
     setIsChecking(true);
     
     try {
-      // ULTIMATE SOLUTION: Only check auth session without any profile checks whatsoever
+      // Use only auth session - NO profile queries at all
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -47,10 +47,22 @@ export const BookingConfirmationDialog = ({
         return;
       }
 
-      debugLog("BookingConfirmation: Session found, proceeding to booking page");
+      // Check user type from user metadata - avoid profiles query
+      const userType = session.user.user_metadata?.userType;
       
-      // Proceed directly to booking page - we'll verify professional status there
-      // This avoids any potential RLS recursion at this stage
+      // Only allow professionals to proceed
+      if (userType !== 'professional' && userType !== 'provider') {
+        debugLog("BookingConfirmation: User is not a professional");
+        toast({
+          title: "Acesso restrito",
+          description: "Apenas profissionais podem reservar espaços.",
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+      
+      debugLog("BookingConfirmation: Professional user found, proceeding to booking page");
       onClose();
       navigate(`/book-cabin/${cabinId}`);
       
