@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types"; 
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,20 @@ const OwnerProfilePage = () => {
     companyName: currentUser?.companyName || "",
     cnpj: currentUser?.cnpj || "",
   });
+
+  // Effect to update form data when currentUser changes
+  useEffect(() => {
+    if (currentUser) {
+      setFormData({
+        name: currentUser.name || "",
+        email: currentUser.email || "",
+        phoneNumber: currentUser.phoneNumber || "",
+        bio: currentUser.bio || "",
+        companyName: currentUser.companyName || "",
+        cnpj: currentUser.cnpj || "",
+      });
+    }
+  }, [currentUser]);
 
   if (isLoading) {
     return (
@@ -175,10 +189,10 @@ const OwnerProfilePage = () => {
               userId={currentUser.id}
               currentAvatarUrl={currentUser.avatarUrl}
               onImageUploaded={(url) => {
+                console.log("Image uploaded in OwnerProfilePage, updating state with:", url);
                 setCurrentUser({
                   ...currentUser,
                   avatarUrl: url,
-                  avatar_url: url
                 });
               }}
             />
@@ -328,6 +342,6 @@ const OwnerProfilePage = () => {
       </div>
     </div>
   );
-};
+}
 
 export default OwnerProfilePage;

@@ -29,6 +29,37 @@ export function ProfileImageUpload({
     }
   }, [currentAvatarUrl]);
 
+  // Effect to add realtime subscription for avatar updates
+  useEffect(() => {
+    // Subscribe to profile changes to refresh the avatar when updated elsewhere
+    if (userId) {
+      console.log("Setting up realtime subscription for profile updates", userId);
+      
+      const channel = supabase
+        .channel('profile-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${userId}`,
+          },
+          (payload) => {
+            console.log("Received profile update via realtime:", payload);
+            if (payload.new && payload.new.avatar_url) {
+              setPreviewUrl(payload.new.avatar_url);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [userId]);
+
   const uploadAvatar = async (file: File) => {
     try {
       setIsUploading(true);
@@ -48,8 +79,10 @@ export function ProfileImageUpload({
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
+      console.log(`Uploading to path: ${filePath} in 'avatars' bucket`);
+
       // Upload file to 'avatars' bucket
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
@@ -57,6 +90,8 @@ export function ProfileImageUpload({
         console.error("Upload error:", uploadError);
         throw uploadError;
       }
+
+      console.log("Upload successful:", uploadData);
 
       // Get public URL for the file
       const { data: { publicUrl } } = supabase.storage
@@ -76,7 +111,20 @@ export function ProfileImageUpload({
         throw new Error("Não foi possível atualizar o avatar: " + error.message);
       }
 
-      console.log("Avatar updated successfully via RPC function");
+      console.log("Avatar updated successfully via RPC function, result:", data);
+
+      // Verify the update was successful by fetching the profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .single();
+        
+      if (profileError) {
+        console.error("Error verifying profile update:", profileError);
+      } else {
+        console.log("Profile verification:", profileData);
+      }
 
       // Update local state and notify parent
       setPreviewUrl(publicUrl);
