@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -19,7 +20,8 @@ import WorkingHoursSettings from './WorkingHoursSettings';
 import DailyView from './calendar/DailyView';
 import WeeklyView from './calendar/WeeklyView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ToggleGroup, Label } from "@/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Label } from "@/components/ui/label";
 
 interface AppointmentClient {
   name: string;
