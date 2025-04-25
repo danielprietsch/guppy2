@@ -1,12 +1,11 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Clock, AlertCircle, X } from "lucide-react";
+import { Lock, Clock, AlertCircle, Edit, Plus, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugAreaLog } from "@/utils/debugLogger";
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
-import { toast } from "@/hooks/use-toast";
 
 interface TimeSlotCardProps {
   turno: string;
@@ -35,97 +34,26 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
 }) => {
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(price.toString());
-  const [animatePrice, setAnimatePrice] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   
-  const lastPriceRef = useRef<number>(price);
-
-  useEffect(() => {
-    if (lastPriceRef.current !== price) {
-      debugAreaLog('PRICE_EDIT', 'Price prop updated:', price);
-      setPriceValue(price.toString());
-      lastPriceRef.current = price;
-    }
-  }, [price]);
-
-  useEffect(() => {
-    if (isEditingPrice && inputRef.current) {
-      debugAreaLog('PRICE_EDIT', 'Edit mode changed:', isEditingPrice);
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditingPrice]);
-
-  const formatToCurrency = (value: string): string => {
-    const numericValue = value.replace(/\D/g, '');
-    const numberValue = parseInt(numericValue) / 100;
-    return numberValue.toLocaleString('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 2,
-    });
-  };
-
-  const handlePriceInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawValue = e.target.value.replace(/\D/g, '');
-    setPriceValue(rawValue);
-  };
-
   const handlePriceSubmit = () => {
-    const newPrice = parseFloat(priceValue) / 100;
-    debugAreaLog('PRICE_EDIT', 'Submitting price:', newPrice);
-    
-    if (!isNaN(newPrice) && newPrice > 0) {
-      onPriceEdit(newPrice.toFixed(2));
-      setAnimatePrice(true);
-      setTimeout(() => setAnimatePrice(false), 700);
-    } else {
-      debugAreaLog('PRICE_EDIT', 'Invalid price, resetting:', priceValue);
-      setPriceValue(lastPriceRef.current.toString());
+    const numericPrice = parseFloat(priceValue);
+    if (!isNaN(numericPrice) && numericPrice >= 0) {
+      onPriceEdit(numericPrice.toFixed(2));
     }
     setIsEditingPrice(false);
   };
 
   const adjustPrice = (increment: boolean) => {
-    const currentPrice = parseFloat(priceValue) || 0;
-    debugAreaLog('PRICE_EDIT', 'Adjusting price:', { currentPrice, increment });
-    
+    const currentPrice = parseFloat(priceValue);
     if (!isNaN(currentPrice)) {
-      const step = 5;
-      const newPrice = increment ? currentPrice + step : currentPrice - step;
-      
-      if (newPrice > 0) {
-        debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
-        
-        const formattedPrice = (newPrice / 100).toFixed(2);
-        onPriceEdit(formattedPrice);
-        
-        setPriceValue(newPrice.toString());
-        
-        setAnimatePrice(true);
-        setTimeout(() => setAnimatePrice(false), 700);
-      }
+      const step = 10;
+      const newPrice = increment ? currentPrice + step : Math.max(0, currentPrice - step);
+      setPriceValue(newPrice.toString());
+      onPriceEdit(newPrice.toFixed(2));
     }
   };
 
-  // SOLUÇÃO MILAGROSA: Removemos toda a lógica complexa de verificação de horários
-  // e simplesmente permitimos o fechamento para qualquer turno no dia atual.
-  // A decisão de negócio é que os donos SEMPRE podem fechar os turnos, mesmo que estejam no meio ou final deles.
-  const handleManualClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    debugAreaLog('TIME_CLOSURE', `Tentativa de fechamento - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
-    
-    // Solução radical: SEMPRE permitir que o dono feche um turno, independentemente da hora
-    // Isso garante que as operações críticas de negócio possam ser realizadas
-    onManualClose();
-    
-    debugAreaLog('TIME_CLOSURE', `Fechamento executado com sucesso - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
-  };
-
   const getStatusColor = () => {
-    // Only consider dates before today as past dates
-    // The current day should not be considered a past date
     if (isBefore(date, startOfDay(new Date())) && !isToday(date)) {
       if (isBooked) return "bg-blue-400";
       if (isManuallyClosed) return "bg-gray-400";
@@ -147,9 +75,12 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     }
   };
 
-  const handleButtonClick = (e: React.MouseEvent, callback: () => void) => {
-    e.stopPropagation();
-    callback();
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2
+    }).format(value);
   };
 
   return (
@@ -191,12 +122,82 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-1 w-full">
+            {!isManuallyClosed && (
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className={cn("text-xs", getTextColor())}>{formatCurrency(price)}</span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adjustPrice(false);
+                    }}
+                    className="h-5 w-5 p-0"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      adjustPrice(true);
+                    }}
+                    className="h-5 w-5 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditingPrice(true);
+                    }}
+                    className="h-5 w-5 p-0"
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            {isEditingPrice && (
+              <div className="flex gap-1 mt-1">
+                <Input
+                  type="number"
+                  value={priceValue}
+                  onChange={(e) => setPriceValue(e.target.value)}
+                  className="h-6 text-xs"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handlePriceSubmit();
+                    }
+                  }}
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePriceSubmit();
+                  }}
+                  className="h-6 text-xs px-2"
+                >
+                  OK
+                </Button>
+              </div>
+            )}
             <div className="flex gap-1 w-full">
               {isManuallyClosed ? (
                 <Button
                   variant="default"
                   size="sm"
-                  onClick={(e) => handleButtonClick(e, onRelease)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRelease();
+                  }}
                   className={cn(
                     "text-xs h-6 py-0 w-full bg-green-500 hover:bg-green-600 text-white"
                   )}
@@ -207,7 +208,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 <Button
                   variant="secondary"
                   size="sm"
-                  onClick={handleManualClose}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onManualClose();
+                  }}
                   className={cn(
                     "text-xs h-6 py-0 w-full bg-yellow-300 hover:bg-yellow-400 text-black"
                   )}
