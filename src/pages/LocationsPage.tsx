@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import LocationCard from "@/components/LocationCard";
 import { Input } from "@/components/ui/input";
@@ -374,7 +373,7 @@ const LocationsPage = () => {
                       <SelectValue placeholder="Todas as cidades" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as cidades</SelectItem>
+                      <SelectItem value="all">Todas as cidades</SelectItem>
                       {allCities.map((city) => (
                         <SelectItem key={city} value={city}>{city}</SelectItem>
                       ))}

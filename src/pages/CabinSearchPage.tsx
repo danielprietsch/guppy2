@@ -477,7 +477,7 @@ const CabinSearchPage = () => {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">Todas as localizações</SelectItem>
+                            <SelectItem value="all">Todas as localizações</SelectItem>
                             {locations.map((location) => (
                               <SelectItem key={location.id} value={location.id}>
                                 {location.name} - {location.city}, {location.state}
