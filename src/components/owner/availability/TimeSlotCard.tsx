@@ -1,8 +1,7 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Clock, AlertCircle, Pencil } from "lucide-react";
+import { Check, Lock, Clock, AlertCircle, Pencil, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugLog, debugAreaLog } from "@/utils/debugLogger";
 
@@ -34,10 +33,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   const [animatePrice, setAnimatePrice] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Usando uma ref para controlar a última atualização de preço e evitar loops
   const lastPriceRef = useRef<number>(price);
 
-  // Atualizar o valor do preço apenas quando o preço prop realmente mudar
   useEffect(() => {
     if (lastPriceRef.current !== price) {
       debugAreaLog('PRICE_EDIT', 'Price prop updated:', price);
@@ -79,13 +76,13 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     debugAreaLog('PRICE_EDIT', 'Adjusting price:', { currentPrice, increment });
     
     if (!isNaN(currentPrice)) {
-      const step = 5; // Ajuste de R$5 por clique
+      const step = 5;
       const newPrice = increment ? currentPrice + step : currentPrice - step;
       
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         setPriceValue(newPrice.toString());
-        onPriceEdit(newPrice); // Aplica diretamente o preço ajustado
+        onPriceEdit(newPrice);
         setAnimatePrice(true);
         setTimeout(() => setAnimatePrice(false), 700);
       }
@@ -94,9 +91,9 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
 
   const getStatusColor = () => {
     if (isPastDate) {
-      if (isBooked) return "bg-blue-400"; // Azul para datas passadas alugadas
-      if (isManuallyClosed) return "bg-gray-400"; // Cinza para datas passadas fechadas manualmente
-      return "bg-red-400"; // Vermelho para datas passadas não alugadas (prejuízo)
+      if (isBooked) return "bg-blue-400";
+      if (isManuallyClosed) return "bg-gray-400";
+      return "bg-red-400";
     }
     if (isBooked) return "bg-red-500";
     if (isManuallyClosed) return "bg-yellow-300";
@@ -109,7 +106,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     }
   };
 
-  // Stop event propagation for buttons
   const handleButtonClick = (e: React.MouseEvent, callback: () => void) => {
     e.stopPropagation();
     callback();
@@ -128,60 +124,52 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       <div className="flex flex-col gap-1">
         <div className="text-sm font-medium text-white">{turno}</div>
         
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-white text-sm">R$</span>
+        <div className="flex items-center justify-center gap-2 mb-1">
           {isEditingPrice && !isPastDate ? (
-            <div className="relative flex items-center gap-1">
+            <div className="flex items-center gap-2 justify-center w-full">
+              <span className="text-white text-sm">R$</span>
               <Input
                 ref={inputRef}
                 type="number"
                 value={priceValue}
                 onChange={handlePriceChange}
-                onBlur={handlePriceSubmit}
-                onKeyDown={(e) => e.key === 'Enter' && handlePriceSubmit()}
-                className="w-20 h-7 text-xs text-black py-1 border border-white/50 focus:border-white transition-all"
+                className="w-24 h-7 text-xs text-black py-1 border border-white/50 focus:border-white transition-all text-center"
               />
-              <div className="flex flex-col gap-1">
+              <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    adjustPrice(true);
+                    handlePriceSubmit();
                   }}
-                  className="h-4 w-4 p-0 hover:bg-white/20 rounded transition-all flex items-center justify-center"
+                  className="h-7 w-7 p-0 hover:bg-green-600/20 rounded-full transition-all flex items-center justify-center"
                 >
-                  <span className="text-white hover:text-yellow-200">+</span>
+                  <Check className="h-4 w-4 text-white hover:text-green-400 transition-colors" />
                 </button>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    adjustPrice(false);
+                    setPriceValue(price.toString());
+                    setIsEditingPrice(false);
                   }}
-                  className="h-4 w-4 p-0 hover:bg-white/20 rounded transition-all flex items-center justify-center"
+                  className="h-7 w-7 p-0 hover:bg-red-600/20 rounded-full transition-all flex items-center justify-center"
                 >
-                  <span className="text-white hover:text-yellow-200">-</span>
+                  <X className="h-4 w-4 text-white hover:text-red-400 transition-colors" />
                 </button>
               </div>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePriceSubmit();
-                }}
-                className="h-7 w-7 p-0 hover:bg-white/20 rounded-full transition-all flex items-center justify-center"
-              >
-                <Check className="h-4 w-4 text-green-600 hover:text-green-400 transition-colors" />
-              </button>
             </div>
           ) : (
-            <div className="flex items-center gap-1">
-              <span className={cn(
-                "text-white text-sm transition-all",
-                animatePrice && "animate-bounce text-yellow-200 font-bold"
-              )}>
-                {parseFloat(price.toString()).toFixed(2)}
-              </span>
+            <div className="flex flex-col items-center gap-1 w-full">
+              <div className="flex items-center justify-center gap-1 w-full">
+                <span className="text-white text-sm">R$</span>
+                <span className={cn(
+                  "text-white text-sm transition-all",
+                  animatePrice && "animate-bounce text-yellow-200 font-bold"
+                )}>
+                  {parseFloat(price.toString()).toFixed(2)}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -222,7 +210,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
                 }}
                 className="text-xs h-6 py-0 bg-white hover:bg-gray-100 text-gray-800 w-full"
               >
-                <Pencil className="h-3 w-3 mr-1" /> Editar preço
+                Editar Preço
               </Button>
             )}
             
