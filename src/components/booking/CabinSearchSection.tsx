@@ -31,7 +31,9 @@ export const CabinSearchSection = ({
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-2xl font-bold">
-          {cabins.length > 0 ? 'Espaços Disponíveis' : 'Reservar Espaço de Trabalho'}
+          {locationDetails 
+            ? `Espaços disponíveis em ${locationDetails.name}` 
+            : 'Reservar Espaço de Trabalho'}
         </h1>
         
         <div className="relative w-full sm:max-w-xs">
@@ -48,7 +50,6 @@ export const CabinSearchSection = ({
 
       {cabins.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Espaços Disponíveis</h2>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
               <p>Carregando espaços...</p>
@@ -61,15 +62,9 @@ export const CabinSearchSection = ({
                   }`}
                 >
                   <div className="p-4">
-                    {/* Display Location Name at the top */}
-                    {locationDetails && (
-                      <h2 className="text-lg font-bold text-primary mb-1">
-                        {locationDetails.name}
-                      </h2>
-                    )}
-                    
-                    {/* Cabin Name */}
-                    <h3 className="font-semibold text-xl mb-2">{cabin.name}</h3>
+                    <h3 className="font-semibold text-lg mb-2">
+                      Nome do espaço: {cabin.name}
+                    </h3>
                     
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
                       {cabin.description}
