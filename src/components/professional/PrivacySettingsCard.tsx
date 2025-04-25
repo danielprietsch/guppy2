@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -23,12 +22,15 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
     
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ is_public: isPublic })
-        .eq('id', user.id);
+      const updates = {
+        user_type: user.user_type
+      };
+
+      const { data: metadataData, error: metadataError } = await supabase.auth.updateUser({
+        data: { isPublic }
+      });
       
-      if (error) throw error;
+      if (metadataError) throw metadataError;
       
       toast({
         title: "Configurações de privacidade atualizadas",

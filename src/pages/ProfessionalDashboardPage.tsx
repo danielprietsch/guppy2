@@ -17,6 +17,7 @@ import {
 import { services, bookings, appointments, reviews } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
+import { supabase } from "@/integrations/supabase/client"; // Added missing supabase import
 import ServiceEditCard from "@/components/ServiceEditCard";
 import PrivacySettingsCard from "@/components/professional/PrivacySettingsCard";
 import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar";

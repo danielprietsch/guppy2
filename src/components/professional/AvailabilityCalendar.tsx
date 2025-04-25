@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -166,10 +165,18 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
                 available: { backgroundColor: "#DCFCE7" }, // Light green for free days
                 closed: { backgroundColor: "#FEF9C3" }, // Light yellow for closed days
               }}
-              styles={{
-                day: (date) => ({
-                  className: dayClass(date, availability)
-                })
+              classNames={{
+                day_selected: dayClass(new Date(), availability)
+              }}
+              components={{
+                Day({ date, ...props }) {
+                  return (
+                    <button
+                      {...props}
+                      className={`${props.className} ${dayClass(date, availability)}`}
+                    />
+                  );
+                }
               }}
             />
             
