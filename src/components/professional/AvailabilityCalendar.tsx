@@ -21,6 +21,7 @@ import DailyView from './calendar/DailyView';
 import WeeklyView from './calendar/WeeklyView';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
+import { Json } from "@/integrations/supabase/types";
 
 interface AppointmentClient {
   name: string;
@@ -36,18 +37,25 @@ interface Appointment {
   client: AppointmentClient;
 }
 
-// Define an interface for cabin availability to avoid type errors
+// Define an interface for cabin availability
 interface CabinAvailability {
   morning: boolean;
   afternoon: boolean;
   evening: boolean;
 }
 
+// Define interface for cabin details from Supabase
 interface CabinDetails {
   id: string;
   name: string;
-  description: string;
-  availability: CabinAvailability;
+  description: string | null;
+  availability: CabinAvailability | Json;
+  equipment: string[] | null;
+  image_url: string | null;
+  location_id: string | null;
+  pricing: Json | null;
+  updated_at: string;
+  created_at: string;
   locations?: {
     id: string;
     name: string;
@@ -85,7 +93,8 @@ const AvailabilityCalendar = () => {
         return null;
       }
       
-      return data as CabinDetails;
+      // First convert to unknown, then to our CabinDetails type
+      return data as unknown as CabinDetails;
     },
     enabled: !!cabinId,
   });
@@ -212,9 +221,14 @@ const AvailabilityCalendar = () => {
   const getCabinShiftAvailability = (shift: 'morning' | 'afternoon' | 'evening'): boolean => {
     if (!cabinData || !cabinData.availability) return false;
     
-    // Type casting to access the properties safely
-    const cabinAvailability = cabinData.availability as CabinAvailability;
-    return cabinAvailability[shift] || false;
+    // Handle both Json and CabinAvailability types
+    if (typeof cabinData.availability === 'object' && !Array.isArray(cabinData.availability)) {
+      // If it's a Json object with the expected properties
+      const availability = cabinData.availability as any;
+      return availability[shift] === true;
+    }
+    
+    return false;
   };
 
   if (!selectedDate) {
