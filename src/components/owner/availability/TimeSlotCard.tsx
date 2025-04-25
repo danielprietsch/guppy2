@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,9 +94,8 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
+        // Always convert to string before calling onPriceEdit
         const formattedPrice = (newPrice / 100).toFixed(2);
-        
-        // Garantindo que onPriceEdit receba uma string
         onPriceEdit(formattedPrice);
         
         setPriceValue(newPrice.toString());
@@ -146,62 +146,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       <div className="flex flex-col gap-1">
         <div className={cn("text-sm font-medium", getTextColor())}>{turno}</div>
         
-        <div className="flex items-center justify-center gap-2 mb-1">
-          {isEditingPrice && !isPastDate ? (
-            <div className="flex items-center gap-2 justify-center w-full">
-              <Input
-                ref={inputRef}
-                type="text"
-                value={formatToCurrency(priceValue)}
-                onChange={handlePriceInputChange}
-                className={cn(
-                  "w-24 h-7 text-xs py-1 border border-white/50 focus:border-white transition-all text-center",
-                  getStatusColor() === "bg-yellow-300" ? "text-black" : "text-black"
-                )}
-              />
-              <div className="flex gap-1">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePriceSubmit();
-                  }}
-                  className="h-7 w-7 p-0 hover:bg-green-600/20 rounded-full transition-all flex items-center justify-center"
-                >
-                  <Check className={cn("h-4 w-4", getTextColor())} />
-                </button>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPriceValue(price.toString());
-                    setIsEditingPrice(false);
-                  }}
-                  className="h-7 w-7 p-0 hover:bg-red-600/20 rounded-full transition-all flex items-center justify-center"
-                >
-                  <X className={cn("h-4 w-4", getTextColor())} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-1 w-full">
-              <div className="flex items-center justify-center gap-1 w-full">
-                <span className={cn(
-                  "text-sm transition-all",
-                  getTextColor(),
-                  animatePrice && "animate-bounce text-yellow-200 font-bold"
-                )}>
-                  {parseFloat(price).toLocaleString('pt-BR', {
-                    style: 'currency',
-                    currency: 'BRL',
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-
         {isPastDate ? (
           <div className={cn("flex items-center gap-1 text-xs", getTextColor())}>
             {isBooked ? (
@@ -228,25 +172,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
           </div>
         ) : (
           <div className="flex flex-col gap-1 w-full">
-            {!isEditingPrice && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsEditingPrice(true);
-                }}
-                className={cn(
-                  "text-xs h-6 py-0 w-full",
-                  getStatusColor() === "bg-yellow-300" 
-                    ? "bg-white hover:bg-gray-100 text-black" 
-                    : "bg-white hover:bg-gray-100 text-gray-800"
-                )}
-              >
-                Editar Preço
-              </Button>
-            )}
-            
             <div className="flex gap-1 w-full">
               {isManuallyClosed ? (
                 <Button
