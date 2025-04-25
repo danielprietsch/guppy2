@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -197,27 +198,27 @@ const SpecialtyCard = ({
         {getServiceDescription(id)}
       </p>
       
-      {/* Campos de preço e duração sempre visíveis */}
-      <div className="w-full space-y-4 mt-4 pt-4 border-t border-border">
+      {/* SEMPRE MOSTRAR CAMPOS DE PREÇO E DURAÇÃO PARA EDIÇÃO */}
+      <div className="w-full space-y-4 mt-4 pt-4 border-t border-border bg-background/80 p-4 rounded-md shadow-sm">
         <div className="space-y-2">
-          <Label htmlFor={`duration-${id}`} className="flex items-center gap-2">
-            <Hand className="h-4 w-4" />
+          <Label htmlFor={`duration-${id}`} className="flex items-center gap-2 text-base font-semibold">
+            <HandMetal className="h-5 w-5" />
             Duração (minutos)
           </Label>
           <Input
             id={`duration-${id}`}
             type="number"
             min="1"
-            value={duration || serviceInfo.duration}
-            onChange={(e) => onDurationChange?.(Number(e.target.value))}
+            value={duration !== undefined ? duration : serviceInfo.duration}
+            onChange={(e) => onDurationChange && onDurationChange(Number(e.target.value))}
             placeholder="Duração em minutos"
-            className="w-full text-lg p-4"
+            className="w-full text-lg p-4 font-medium bg-white border-2 border-primary/20 focus:border-primary"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`price-${id}`} className="flex items-center gap-2">
-            <HandMetal className="h-4 w-4" />
+          <Label htmlFor={`price-${id}`} className="flex items-center gap-2 text-base font-semibold">
+            <HandMetal className="h-5 w-5" />
             Preço (R$)
           </Label>
           <Input
@@ -225,10 +226,10 @@ const SpecialtyCard = ({
             type="number"
             min="1"
             step="0.01"
-            value={price || serviceInfo.price}
-            onChange={(e) => onPriceChange?.(Number(e.target.value))}
+            value={price !== undefined ? price : serviceInfo.price}
+            onChange={(e) => onPriceChange && onPriceChange(Number(e.target.value))}
             placeholder="Valor em reais"
-            className="w-full text-lg p-4"
+            className="w-full text-lg p-4 font-medium bg-white border-2 border-primary/20 focus:border-primary"
           />
         </div>
       </div>
