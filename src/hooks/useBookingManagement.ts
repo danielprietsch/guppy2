@@ -1,9 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { debugLog, debugError } from "@/utils/debugLogger";
+import { debugLog, debugError, debugBooking, debugBookingError, debugInspect } from "@/utils/debugLogger";
 
 export const useBookingManagement = (cabinId: string, onClose: () => void) => {
   const navigate = useNavigate();
@@ -13,15 +13,50 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
   const [serviceFee, setServiceFee] = useState(0);
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
+  const [bookingErrors, setBookingErrors] = useState<string[]>([]);
+
+  // Log initial cabin ID for debugging
+  useEffect(() => {
+    debugBooking("Initial cabinId value:", cabinId);
+    
+    // Validate the cabin ID at initialization
+    if (!isValidUUID(cabinId)) {
+      debugBookingError("Invalid cabin ID at initialization:", cabinId);
+      setBookingErrors(prev => [...prev, `Cabin ID inválido: ${cabinId}`]);
+    }
+  }, [cabinId]);
 
   // Validate if cabinId is a proper UUID
   const isValidUUID = (id: string): boolean => {
-    if (!id || typeof id !== 'string' || id.trim() === "") return false;
+    if (!id) {
+      debugBookingError("isValidUUID: ID is null or undefined");
+      return false;
+    }
+    
+    if (typeof id !== 'string') {
+      debugBookingError("isValidUUID: ID is not a string", typeof id, id);
+      return false;
+    }
+    
+    if (id.trim() === "") {
+      debugBookingError("isValidUUID: ID is empty string");
+      return false;
+    }
+    
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(id);
+    const isValid = uuidRegex.test(id);
+    
+    if (!isValid) {
+      debugBookingError("isValidUUID: ID does not match UUID format:", id);
+    } else {
+      debugBooking("isValidUUID: Valid UUID confirmed:", id);
+    }
+    
+    return isValid;
   };
 
   const handleTurnSelection = (date: string, turn: string) => {
+    debugBooking("Turn selected:", date, turn);
     setSelectedTurns(prev => {
       const newTurns = { ...prev };
       if (newTurns[date]?.includes(turn)) {
@@ -35,12 +70,32 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
         }
         newTurns[date] = [...newTurns[date], turn];
       }
+      debugBooking("Updated selected turns:", newTurns);
       return newTurns;
     });
   };
 
   const handleBookCabin = async () => {
+    debugBooking("handleBookCabin called with cabinId:", cabinId);
+    
+    // Reset error state
+    setBookingErrors([]);
+    
+    // Deep validation before anything else
+    if (!cabinId) {
+      debugBookingError("handleBookCabin: cabinId is null or undefined");
+      toast({
+        title: "Erro grave",
+        description: "ID do espaço não foi fornecido. Por favor, reinicie o processo de reserva.",
+        variant: "destructive",
+      });
+      navigate("/locations");
+      return;
+    }
+    
     if (Object.keys(selectedTurns).length === 0 || !acceptTerms) {
+      debugBookingError("handleBookCabin: Missing selections or terms not accepted", 
+        { turnsSelected: Object.keys(selectedTurns).length > 0, acceptTerms });
       toast({
         title: "Erro",
         description: "Por favor, selecione pelo menos um turno e aceite os termos",
@@ -49,8 +104,10 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       return;
     }
 
+    // Get session first to validate authentication
     const { data } = await supabase.auth.getSession();
     if (!data.session) {
+      debugBookingError("handleBookCabin: No active session found");
       toast({
         title: "Login necessário",
         description: "Você precisa estar logado para reservar um espaço.",
@@ -60,8 +117,12 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       return;
     }
 
+    // Validate user type
     const userType = data.session.user.user_metadata?.userType;
+    debugBooking("User type:", userType);
+    
     if (userType !== 'professional' && userType !== 'provider') {
+      debugBookingError("handleBookCabin: User is not a professional or provider", userType);
       toast({
         title: "Acesso restrito",
         description: "Apenas profissionais podem reservar espaços.",
@@ -70,9 +131,9 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       return;
     }
 
-    // Validate cabin ID before proceeding
+    // Triple check cabin ID validity before proceeding
     if (!isValidUUID(cabinId)) {
-      debugError("handleBookCabin: Invalid cabin ID:", cabinId);
+      debugBookingError("handleBookCabin: Invalid cabin ID format:", cabinId);
       toast({
         title: "Erro",
         description: "ID do espaço inválido. Por favor, selecione um espaço válido.",
@@ -84,10 +145,13 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
     setBookingInProgress(true);
     
     try {
+      debugBooking("Starting booking process with cabin ID:", cabinId);
+      
       let allBookingsSuccessful = true;
       const bookingPromises = [];
       
       for (const [date, turns] of Object.entries(selectedTurns)) {
+        debugBooking(`Processing bookings for date: ${date}, turns: ${turns.join(', ')}`);
         for (const turn of turns) {
           const turnPrice = total / Object.values(selectedTurns).flat().length;
           bookingPromises.push(createBooking(date, turn, turnPrice));
@@ -96,6 +160,7 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       
       const results = await Promise.all(bookingPromises);
       allBookingsSuccessful = results.every(result => result === true);
+      debugBooking("Booking results:", results, "All successful:", allBookingsSuccessful);
       
       if (allBookingsSuccessful) {
         toast({
@@ -112,6 +177,7 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       }
     } catch (error) {
       console.error("Erro ao realizar reservas:", error);
+      debugBookingError("handleBookCabin exception:", error);
       toast({
         title: "Erro",
         description: "Não foi possível completar sua reserva. Tente novamente.",
@@ -126,26 +192,32 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
     try {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
+        debugBookingError("createBooking: No active session");
         throw new Error("Usuário não autenticado");
       }
 
-      // Verify all fields are valid before calling the RPC function
+      // Safety checks before proceeding
       if (!isValidUUID(cabinId)) {
-        debugError("createBooking: Invalid cabin ID:", cabinId);
+        debugBookingError("createBooking: Invalid cabin ID:", cabinId);
         throw new Error("ID do espaço inválido");
       }
 
       const professionalId = data.session.user.id;
       if (!isValidUUID(professionalId)) {
-        debugError("createBooking: Invalid professional ID:", professionalId);
+        debugBookingError("createBooking: Invalid professional ID:", professionalId);
         throw new Error("ID do profissional inválido");
       }
 
-      debugLog("Creating booking with professional_id:", professionalId);
-      debugLog("Creating booking with cabin_id:", cabinId);
-      debugLog("Creating booking for date:", date, "shift:", turn);
+      debugBooking("Creating booking with parameters:", {
+        professional_id: professionalId,
+        cabin_id: cabinId,
+        date,
+        shift: turn,
+        price
+      });
 
-      const { error } = await supabase.rpc(
+      // Use the RPC function to create the booking
+      const { data: bookingData, error } = await supabase.rpc(
         'create_booking',
         { 
           cabin_id: cabinId,
@@ -158,13 +230,14 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       );
 
       if (error) {
-        debugError("Erro ao criar reserva:", error);
+        debugBookingError("Erro ao criar reserva via RPC:", error);
         throw error;
       }
       
+      debugBooking("Booking created successfully:", bookingData);
       return true;
     } catch (error) {
-      debugError("Erro ao criar reserva:", error);
+      debugBookingError("Erro ao criar reserva:", error);
       return false;
     }
   };
@@ -176,6 +249,7 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
     serviceFee,
     bookingInProgress,
     acceptTerms,
+    bookingErrors,
     setAcceptTerms,
     handleTurnSelection,
     handleBookCabin,

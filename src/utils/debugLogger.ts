@@ -7,7 +7,8 @@ export const DEBUG_AREAS = {
   AVAILABILITY: true, // Enable debugging for availability changes
   USER_ACTIONS: true, // Enable debugging for user profile actions
   CLIENT_PROFILE: true, // Enable debugging specifically for client profile issues
-  TIME_CLOSURE: true // Enable debugging for time slot closure operations
+  TIME_CLOSURE: true, // Enable debugging for time slot closure operations
+  BOOKING_FLOW: true  // Enable debugging for booking process
 };
 
 // Control verbosity level for specific areas
@@ -16,7 +17,8 @@ export const DEBUG_VERBOSITY = {
   AVAILABILITY: 1, // Setting to 1 to ensure we see critical logs
   USER_ACTIONS: 2, // Medium verbosity for user actions
   CLIENT_PROFILE: 3, // High verbosity for client profile to catch all issues
-  TIME_CLOSURE: 2 // Medium verbosity for time closure operations
+  TIME_CLOSURE: 2, // Medium verbosity for time closure operations
+  BOOKING_FLOW: 3  // High verbosity for booking flow to catch all issues
 };
 
 export const debugLog = (...args: any[]) => {
@@ -28,6 +30,24 @@ export const debugLog = (...args: any[]) => {
 export const debugError = (...args: any[]) => {
   if (DEBUG_MODE) {
     console.error('[DEBUG ERROR]', ...args);
+  }
+};
+
+export const debugBooking = (...args: any[]) => {
+  if (DEBUG_MODE || DEBUG_AREAS.BOOKING_FLOW) {
+    console.log('[DEBUG:BOOKING]', ...args);
+  }
+};
+
+export const debugBookingWarning = (...args: any[]) => {
+  if (DEBUG_MODE || DEBUG_AREAS.BOOKING_FLOW) {
+    console.warn('[DEBUG:BOOKING:WARNING]', ...args);
+  }
+};
+
+export const debugBookingError = (...args: any[]) => {
+  if (DEBUG_MODE || DEBUG_AREAS.BOOKING_FLOW) {
+    console.error('[DEBUG:BOOKING:ERROR]', ...args);
   }
 };
 
@@ -66,3 +86,14 @@ export const debugGroup = (label: string, fn: () => void) => {
     console.groupEnd();
   }
 };
+
+// Object inspector for deep object logging
+export const debugInspect = (obj: any, label?: string) => {
+  if (DEBUG_MODE) {
+    if (label) {
+      console.log(`[DEBUG:INSPECT] ${label}:`);
+    }
+    console.dir(obj, { depth: null, colors: true });
+  }
+};
+

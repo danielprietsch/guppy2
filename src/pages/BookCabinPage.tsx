@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -36,7 +35,8 @@ const BookCabinPage = () => {
     handleBookCabin,
     setTotal,
     setSubtotalTurns,
-    setServiceFee
+    setServiceFee,
+    bookingErrors
   } = useBookingManagement(id || "", () => setIsTermsModalOpen(false));
 
   useEffect(() => {
@@ -47,6 +47,8 @@ const BookCabinPage = () => {
       }
 
       try {
+        debugBooking("Loading cabin data for ID:", id);
+        
         if (!cabinDetails) {
           const { data: cabinData, error: cabinError } = await supabase
             .from('cabins')
@@ -54,7 +56,12 @@ const BookCabinPage = () => {
             .eq('id', id)
             .single();
 
-          if (cabinError) throw cabinError;
+          if (cabinError) {
+            debugBookingError("Error loading cabin data:", cabinError);
+            throw cabinError;
+          }
+          
+          debugBooking("Cabin data loaded from database:", cabinData);
           
           let availability = { morning: true, afternoon: true, evening: true };
           if (cabinData.availability && typeof cabinData.availability === 'object') {
@@ -90,6 +97,7 @@ const BookCabinPage = () => {
             created_at: cabinData.created_at
           };
           
+          debugBooking("Transformed cabin data:", transformedCabin);
           setCabin(transformedCabin);
 
           if (cabinData?.location_id) {
@@ -99,7 +107,12 @@ const BookCabinPage = () => {
               .eq('id', cabinData.location_id)
               .single();
 
-            if (locError) throw locError;
+            if (locError) {
+              debugBookingError("Error loading location data:", locError);
+              throw locError;
+            }
+            
+            debugBooking("Location data loaded from database:", locData);
             
             let openingHours = { open: "09:00", close: "18:00" };
             if (locData.opening_hours && typeof locData.opening_hours === 'object') {
@@ -126,11 +139,13 @@ const BookCabinPage = () => {
               active: locData.active
             };
             
+            debugBooking("Transformed location data:", transformedLocation);
             setLocationData(transformedLocation);
           }
         }
       } catch (error) {
         console.error("Error loading cabin data:", error);
+        debugBookingError("Failed to load cabin data:", error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar os dados do espaço.",
@@ -231,6 +246,7 @@ const BookCabinPage = () => {
                   onOpenTerms={() => setIsTermsModalOpen(true)}
                   bookingInProgress={bookingInProgress}
                   onBookCabin={handleBookCabin}
+                  bookingErrors={bookingErrors}
                 />
               </CardContent>
             </Card>
