@@ -159,8 +159,10 @@ const SpecialtyCard = ({
 }: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
-  // Tornando o card todo clicável
-  const handleCardClick = () => {
+  // Tornando o card todo clicável, mas com prevenção de comportamento indesejado
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevenindo comportamento padrão para evitar redirecionamentos
+    e.preventDefault();
     onCheckedChange(!checked);
   };
   
@@ -181,10 +183,12 @@ const SpecialtyCard = ({
         }
       }}
     >
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4" onClick={(e) => e.stopPropagation()}>
         <Checkbox
+          id={`checkbox-${id}`}
           checked={checked}
-          className="w-8 h-8 border-2 pointer-events-none" // Impede que o checkbox receba cliques diretamente
+          onCheckedChange={() => onCheckedChange(!checked)}
+          className="w-8 h-8 border-2"
           aria-label={`Selecionar ${label}`}
         />
       </div>

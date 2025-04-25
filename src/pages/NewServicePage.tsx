@@ -118,9 +118,14 @@ const NewServicePage = () => {
     navigate(-1);
   };
 
-  const handleServiceToggle = (serviceId: string, checked: boolean, defaultPrice: number, defaultDuration: number) => {
+  const handleServiceToggle = (serviceId: string, checked: boolean) => {
     if (checked) {
-      setSelectedServices(prev => [...prev, { id: serviceId, price: defaultPrice, duration: defaultDuration }]);
+      const serviceInfo = serviceData[serviceId as keyof typeof serviceData];
+      setSelectedServices(prev => [...prev, { 
+        id: serviceId, 
+        price: serviceInfo?.price || 50, 
+        duration: serviceInfo?.duration || 30 
+      }]);
     } else {
       setSelectedServices(prev => prev.filter(s => s.id !== serviceId));
     }
@@ -135,9 +140,6 @@ const NewServicePage = () => {
   };
 
   const getServiceCategory = (id: string) => {
-    const service = availableServices.find(s => s.id === id);
-    if (!service) return "";
-    
     if (id.includes("corte") || id.includes("cabelo") || id.includes("escova") || id.includes("hidratacao")) return "Cabelo";
     if (id.includes("manicure") || id.includes("pedicure")) return "Mãos e Pés";
     if (id.includes("maquiagem")) return "Maquiagem";
@@ -186,7 +188,7 @@ const NewServicePage = () => {
                         id={service.id}
                         label={service.label}
                         checked={!!selectedService}
-                        onCheckedChange={(checked) => handleServiceToggle(service.id, checked, serviceData[service.id].price, serviceData[service.id].duration)}
+                        onCheckedChange={(checked) => handleServiceToggle(service.id, checked)}
                         price={selectedService?.price}
                         duration={selectedService?.duration}
                         onPriceChange={(price) => selectedService && updateServiceDetails(service.id, price, selectedService.duration)}
