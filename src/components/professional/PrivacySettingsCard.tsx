@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Calendar, Clock } from "lucide-react";
+import { Calendar, Clock, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -16,12 +16,12 @@ const PrivacySettingsCard = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchPrivacySettings = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
-      
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -30,9 +30,9 @@ const PrivacySettingsCard = () => {
           .maybeSingle();
         
         if (error) throw error;
-        
         setIsPublic(data?.is_public ?? true);
       } catch (error) {
+        console.error("Error fetching privacy settings:", error);
         toast({
           title: "Erro",
           description: "Não foi possível carregar suas configurações",
@@ -44,6 +44,13 @@ const PrivacySettingsCard = () => {
     };
     
     fetchPrivacySettings();
+    
+    // Add a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (isLoading) setIsLoading(false);
+    }, 3000);
+    
+    return () => clearTimeout(timeout);
   }, [user]);
 
   const handleTogglePrivacy = async (value: string) => {
@@ -95,7 +102,7 @@ const PrivacySettingsCard = () => {
             value="available" 
             className="flex flex-col items-center justify-between p-4 rounded-xl data-[state=on]:bg-[#F2FCE2]"
           >
-            <Calendar className="h-8 w-8 text-primary" />
+            <Eye className="h-8 w-8 text-primary mb-2" />
             <div className="text-center">
               <div className="font-semibold">Disponível</div>
               <p className="text-xs text-muted-foreground">
@@ -108,7 +115,7 @@ const PrivacySettingsCard = () => {
             value="unavailable"
             className="flex flex-col items-center justify-between p-4 rounded-xl data-[state=on]:bg-[#F1F0FB]"
           >
-            <Clock className="h-8 w-8 text-primary" />
+            <EyeOff className="h-8 w-8 text-primary mb-2" />
             <div className="text-center">
               <div className="font-semibold">Indisponível</div>
               <p className="text-xs text-muted-foreground">
