@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -161,11 +162,12 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
                 closed: { backgroundColor: "#FEF9C3" }
               }}
               components={{
-                Day: ({ date, ...props }: any) => (
-                  <button
-                    {...props}
-                    className={`${props.className || ''} ${dayClass(date, availability)}`}
-                  />
+                IconLeft: ({ ...props }) => <span {...props}>«</span>,
+                IconRight: ({ ...props }) => <span {...props}>»</span>,
+                DayContent: ({ date, ...props }) => (
+                  <div className={dayClass(date, availability)}>
+                    {date.getDate()}
+                  </div>
                 )
               }}
             />
