@@ -176,20 +176,23 @@ const BookCabinPage = () => {
         throw new Error("Usuário não autenticado");
       }
 
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert([
-          { 
-            date, 
-            shift: turn, 
-            cabin_id: cabin?.id, 
-            professional_id: session.session.user.id,
-            price: price,
-            status: 'payment_pending'
-          }
-        ]);
+      const { data, error } = await supabase.rpc(
+        'create_booking',
+        { 
+          cabin_id: cabin?.id,
+          professional_id: session.session.user.id,
+          date, 
+          shift: turn, 
+          price,
+          status: 'payment_pending'
+        }
+      );
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro ao criar reserva:", error);
+        throw error;
+      }
+      
       return true;
     } catch (error) {
       console.error("Erro ao criar reserva:", error);
