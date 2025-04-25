@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -161,12 +162,17 @@ const AvailabilityCalendar = ({ initialAvailability }: AvailabilityCalendarProps
                 closed: { backgroundColor: "#FEF9C3" }
               }}
               components={{
-                Day: ({ day, ...props }) => (
-                  <button
-                    {...props}
-                    className={`${props.className || ''} ${dayClass(day, availability)}`}
-                  />
-                )
+                // Fixed the Day component to use the proper DayPicker props pattern
+                Day: (props) => {
+                  // The date property contains the current day's date
+                  const date = props.date;
+                  return (
+                    <button
+                      {...props}
+                      className={`${props.className || ''} ${dayClass(date, availability)}`}
+                    />
+                  );
+                }
               }}
             />
             
