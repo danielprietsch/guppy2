@@ -96,7 +96,11 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         
         // Ensure we pass a number with 2 decimal places
         const formattedPrice = Number((newPrice / 100).toFixed(2));
-        onPriceEdit(formattedPrice);
+        
+        // Explicitly convert to number to avoid type issues
+        onPriceEdit(Number(formattedPrice));
+        
+        // Convert to string for display
         setPriceValue(formattedPrice.toString());
         
         setAnimatePrice(true);
