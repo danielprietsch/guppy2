@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
 import { format, isSameDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from "@/lib/auth";
@@ -18,7 +17,6 @@ import { useWorkingHours } from "@/hooks/useWorkingHours";
 import WorkingHoursSettings from './WorkingHoursSettings';
 import DailyView from './calendar/DailyView';
 import WeeklyView from './calendar/WeeklyView';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
 
@@ -180,45 +178,6 @@ const AvailabilityCalendar = () => {
         <WorkingHoursSettings />
 
         <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Visão Mensal</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4">
-              <div className="w-full">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  locale={ptBR}
-                  showOutsideDays
-                  className="w-full border rounded-md p-3"
-                  components={{
-                    DayContent: ({ date }) => (
-                      <div className={dayClass(date)}>
-                        <div className="text-center">{date.getDate()}</div>
-                        {getAppointmentsForDay(date).map((app, idx) => (
-                          <div
-                            key={app.id}
-                            className="absolute bottom-0 left-0 right-0 px-1 py-0.5 text-xs bg-blue-200 cursor-pointer truncate"
-                            style={{ bottom: `${idx * 18}px` }}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setSelectedAppointment(app);
-                            }}
-                          >
-                            {format(new Date(`2000-01-01T${app.time}`), 'HH:mm')}
-                          </div>
-                        ))}
-                      </div>
-                    )
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader>
               <CardTitle>Visão Semanal</CardTitle>
