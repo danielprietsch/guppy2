@@ -152,6 +152,14 @@ const NewServicePage = () => {
         <h1 className="text-3xl font-bold">Novos Serviços</h1>
       </div>
 
+      {selectedServices.length === 0 && (
+        <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-lg mb-6">
+          <p className="text-sm font-medium">
+            Selecione pelo menos um serviço para se tornar elegível nas pesquisas
+          </p>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Selecione seus serviços</CardTitle>
@@ -202,12 +210,6 @@ const NewServicePage = () => {
                   )}
                 </Button>
               </div>
-
-              {selectedServices.length === 0 && (
-                <p className="text-sm font-medium text-destructive mt-2">
-                  Selecione pelo menos um serviço para se tornar elegível nas pesquisas
-                </p>
-              )}
             </form>
           </Form>
         </CardContent>
