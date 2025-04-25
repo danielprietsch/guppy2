@@ -67,8 +67,8 @@ export const useWorkingHours = (professionalId: string | undefined) => {
         const { error } = await supabase
           .from('professional_availability')
           .update({
-            working_hours: workingHours,
-            break_time: breakTime
+            working_hours: workingHours as any,
+            break_time: breakTime as any
           })
           .eq('id', existingData.id);
 
@@ -77,12 +77,12 @@ export const useWorkingHours = (professionalId: string | undefined) => {
         // Insert new record
         const { error } = await supabase
           .from('professional_availability')
-          .insert({
+          .insert([{
             professional_id: professionalId,
             date: formattedDate,
-            working_hours: workingHours,
-            break_time: breakTime
-          });
+            working_hours: workingHours as any,
+            break_time: breakTime as any
+          }]);
 
         if (error) throw error;
       }
