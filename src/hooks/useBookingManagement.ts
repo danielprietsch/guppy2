@@ -69,6 +69,11 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       let allBookingsSuccessful = true;
       const bookingPromises = [];
       
+      // Ensure cabinId is not empty before proceeding
+      if (!cabinId) {
+        throw new Error("ID da cabine não informado");
+      }
+      
       for (const [date, turns] of Object.entries(selectedTurns)) {
         for (const turn of turns) {
           const turnPrice = total / Object.values(selectedTurns).flat().length;
@@ -112,6 +117,12 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       }
 
       debugLog("Creating booking with professional_id:", data.session.user.id);
+
+      // Ensure we have a valid cabin_id before making the request
+      if (!cabinId || cabinId === "") {
+        console.error("Invalid cabin ID:", cabinId);
+        throw new Error("ID da cabine inválido");
+      }
 
       const { error } = await supabase.rpc(
         'create_booking',
