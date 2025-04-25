@@ -176,6 +176,10 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       month={viewMonth}
       onMonthChange={setViewMonth}
       locale={ptBR}
+      disabled={(date) => {
+        if (!cabinCreatedAt) return false;
+        return isBefore(startOfDay(date), startOfDay(parseISO(cabinCreatedAt)));
+      }}
       className="w-full rounded-md border"
       classNames={{
         months: "w-full",
@@ -194,7 +198,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
         DayContent: ({ date }) => renderDayContent(date)
       }}
     />
-  ), [viewMonth, renderDayContent]);
+  ), [viewMonth, renderDayContent, cabinCreatedAt]);
 
   return (
     <div className="space-y-4">

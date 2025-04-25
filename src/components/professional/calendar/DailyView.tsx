@@ -1,7 +1,6 @@
-
 import React, { useContext } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { format, addDays, subDays } from "date-fns";
+import { format, addDays, subDays, startOfDay, parseISO } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -13,6 +12,7 @@ interface DailyViewProps {
   onDateChange: (date: Date) => void;
   workingHours: WorkingHours;
   breakTime: BreakTime;
+  createdAt?: string;
 }
 
 const DailyView = ({ 
@@ -20,12 +20,17 @@ const DailyView = ({
   appointments, 
   onDateChange,
   workingHours,
-  breakTime
+  breakTime,
+  createdAt 
 }: DailyViewProps) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handlePreviousDay = () => {
-    onDateChange(subDays(selectedDate, 1));
+    const newDate = subDays(selectedDate, 1);
+    if (createdAt && isBefore(startOfDay(newDate), startOfDay(parseISO(createdAt)))) {
+      return; // Don't allow navigation before creation date
+    }
+    onDateChange(newDate);
   };
 
   const handleNextDay = () => {

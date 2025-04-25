@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
@@ -13,6 +12,7 @@ interface WeeklyViewProps {
   onDateChange: (date: Date) => void;
   workingHours: WorkingHours;
   breakTime: BreakTime;
+  createdAt?: string;
 }
 
 const WeeklyView = ({ 
@@ -20,14 +20,21 @@ const WeeklyView = ({
   appointments, 
   onDateChange,
   workingHours,
-  breakTime
+  breakTime,
+  createdAt
 }: WeeklyViewProps) => {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+    .filter(date => !createdAt || !isBefore(startOfDay(date), startOfDay(parseISO(createdAt))));
+
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handlePreviousWeek = () => {
-    onDateChange(subWeeks(selectedDate, 1));
+    const newDate = subWeeks(selectedDate, 1);
+    if (createdAt && isBefore(startOfDay(newDate), startOfDay(parseISO(createdAt)))) {
+      return; // Don't allow navigation before creation date
+    }
+    onDateChange(newDate);
   };
 
   const handleNextWeek = () => {
@@ -50,10 +57,8 @@ const WeeklyView = ({
     }
   };
 
-  // Format day name as a short version to prevent wrapping
   const formatDayName = (date: Date) => {
     const fullName = format(date, 'EEEE', { locale: ptBR });
-    // Use abbreviated day names or first 3 letters
     return format(date, 'EEE', { locale: ptBR });
   };
 

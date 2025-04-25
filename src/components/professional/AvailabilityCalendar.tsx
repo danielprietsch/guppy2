@@ -179,6 +179,7 @@ const AvailabilityCalendar = () => {
                   onDateChange={handleDateChange}
                   workingHours={workingHours}
                   breakTime={breakTime}
+                  createdAt={userProfile?.created_at}
                 />
               </CardContent>
             </Card>
@@ -191,6 +192,7 @@ const AvailabilityCalendar = () => {
                   onDateChange={handleDateChange}
                   workingHours={workingHours}
                   breakTime={breakTime}
+                  createdAt={userProfile?.created_at}
                 />
               </CardContent>
             </Card>
