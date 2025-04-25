@@ -4,49 +4,15 @@ import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-
-const professionalAvatars = {
-  female: [
-    "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  ],
-  male: [
-    "https://images.unsplash.com/photo-1519340333755-c6eb8f2aaa9b?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-    "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=facearea&w=400&h=400&facepad=3&q=80",
-  ],
-};
-
-function detectGender(name: string): "male" | "female" {
-  const femaleNames = [
-    "ana", "mariana", "fernanda", "silva", "santos", "lima"
-  ];
-  if (
-    femaleNames.some((f) => name.toLowerCase().includes(f)) ||
-    name.trim().toLowerCase().split(" ")[0].endsWith("a")
-  ) {
-    return "female";
-  }
-  return "male";
-}
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface ProfessionalCardProps {
   professional: User;
 }
 
 const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
-  const gender = detectGender(professional.name);
-  const avatars = professionalAvatars[gender];
-  const imageIndex = parseInt(professional.id.replace(/\D/g, ""), 10) % avatars.length;
-  
-  // Use the user's real avatar if available, otherwise use the generated one
-  const avatarUrl = professional.avatarUrl || professional.avatar_url || avatars[imageIndex];
-
+  const avatarUrl = professional.avatarUrl || professional.avatar_url;
+  const initials = professional.name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??';
   const rating = 4.5;
 
   // Make sure specialties is always an array
@@ -55,28 +21,27 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
   return (
     <Link to={`/professional/${professional.id}`} className="block">
       <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
-        <div className="aspect-square overflow-hidden">
-          <img
-            src={avatarUrl}
-            alt={professional.name}
-            className="h-full w-full object-cover transition-transform hover:scale-105"
-          />
-        </div>
-        <CardContent className="p-4">
-          <h3 className="font-semibold text-lg">{professional.name}</h3>
+        <div className="p-4 flex flex-col items-center">
+          <Avatar className="h-24 w-24">
+            <AvatarImage src={avatarUrl} alt={professional.name} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <h3 className="font-semibold text-lg mt-4">{professional.name}</h3>
           <div className="flex items-center gap-1 mt-1">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm">{rating}</span>
           </div>
-          
+        </div>
+        
+        <CardContent className="p-4 pt-0">
           {/* Available indicator */}
-          <div className="mt-2 flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-center mb-4">
             <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
-            <span className="text-xs text-green-600">Disponível</span>
+            <span className="text-xs text-green-600">Disponível essa semana</span>
           </div>
           
           {specialties.length > 0 ? (
-            <div className="mt-3 flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1 justify-center">
               {specialties.map((specialty, index) => (
                 <Badge
                   key={index}
@@ -88,7 +53,7 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
               ))}
             </div>
           ) : (
-            <div className="mt-3 text-xs text-gray-500">Especialidades não definidas</div>
+            <div className="text-center text-xs text-gray-500">Especialidades não definidas</div>
           )}
         </CardContent>
       </Card>
