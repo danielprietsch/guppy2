@@ -54,12 +54,16 @@ export const BookingConfirmationDialog = ({
         return;
       }
       
-      // Using a simplified approach to avoid recursion
-      const { data: user, error } = await supabase
-        .rpc('get_user_type', { user_id: session.user.id });
+      // Using a direct query to check user type, rather than using RPC function
+      // This avoids the TypeScript error since we're not using the RPC function
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', session.user.id)
+        .single();
       
-      if (error) {
-        console.error("Error checking user type:", error);
+      if (profileError) {
+        console.error("Error checking user type:", profileError);
         toast({
           title: "Erro",
           description: "Não foi possível verificar seu tipo de usuário. Tente novamente.",
@@ -69,7 +73,7 @@ export const BookingConfirmationDialog = ({
         return;
       }
       
-      if (user === 'professional' || user === 'provider') {
+      if (profileData.user_type === 'professional' || profileData.user_type === 'provider') {
         navigate(`/book-cabin/${cabinId}`);
       } else {
         toast({
