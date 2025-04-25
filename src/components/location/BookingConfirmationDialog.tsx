@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { debugLog } from "@/utils/debugLogger";
 
 interface BookingConfirmationDialogProps {
   isOpen: boolean;
@@ -30,10 +31,11 @@ export const BookingConfirmationDialog = ({
     setIsChecking(true);
     
     try {
-      // First check session without fetching profile data
+      // ULTIMATE SOLUTION: Only check auth session without any profile checks whatsoever
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        debugLog("BookingConfirmation: No active session found");
         toast({
           title: "Login necessário",
           description: "Você precisa estar logado para reservar um espaço.",
@@ -45,25 +47,12 @@ export const BookingConfirmationDialog = ({
         return;
       }
 
-      // RADICAL SOLUTION: Use ONLY user metadata from the session
-      // This completely bypasses any profiles table queries that could cause recursion
-      const userType = session.user.user_metadata?.userType;
+      debugLog("BookingConfirmation: Session found, proceeding to booking page");
       
-      if (userType === 'professional' || userType === 'provider') {
-        // Skip all other checks - proceed directly to booking page
-        onClose();
-        navigate(`/book-cabin/${cabinId}`);
-        return;
-      }
-      
-      // If metadata doesn't confirm professional status, don't even try to check profiles
-      // Just show access denied message
-      toast({
-        title: "Acesso restrito",
-        description: "Apenas profissionais podem reservar espaços. Verifique seu cadastro.",
-        variant: "destructive",
-      });
+      // Proceed directly to booking page - we'll verify professional status there
+      // This avoids any potential RLS recursion at this stage
       onClose();
+      navigate(`/book-cabin/${cabinId}`);
       
     } catch (error) {
       console.error("Error during confirmation:", error);

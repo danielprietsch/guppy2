@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -11,8 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
 import BookingCalendar from "@/components/booking/BookingCalendar";
 import { TermsOfUseModal } from "@/components/booking/TermsOfUseModal";
-import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { debugLog } from "@/utils/debugLogger";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -171,16 +171,20 @@ const BookCabinPage = () => {
 
   const createBooking = async (date: string, turn: string, price: number) => {
     try {
-      const { data: session } = await supabase.auth.getSession();
-      if (!session || !session.session) {
+      // Get current session - NO profile queries!
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
         throw new Error("Usuário não autenticado");
       }
 
-      const { data, error } = await supabase.rpc(
+      debugLog("Creating booking with professional_id:", data.session.user.id);
+
+      // Use RPC function to avoid RLS recursion
+      const { error } = await supabase.rpc(
         'create_booking',
         { 
           cabin_id: cabin?.id,
-          professional_id: session.session.user.id,
+          professional_id: data.session.user.id,
           date, 
           shift: turn, 
           price,
@@ -205,6 +209,29 @@ const BookCabinPage = () => {
       toast({
         title: "Erro",
         description: "Por favor, selecione pelo menos um turno e aceite os termos",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Verify authentication with session only - NO profile queries!
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para reservar um espaço.",
+        variant: "destructive",
+      });
+      navigate("/login", { state: { returnTo: `/book-cabin/${id}` } });
+      return;
+    }
+
+    // Verify professional status only via metadata - avoid profile table
+    const userType = data.session.user.user_metadata?.userType;
+    if (userType !== 'professional' && userType !== 'provider') {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas profissionais podem reservar espaços.",
         variant: "destructive",
       });
       return;
