@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { useCabinSearch } from "@/hooks/useCabinSearch";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -15,6 +16,7 @@ import { useBookingManagement } from "@/hooks/useBookingManagement";
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const { cabinDetails, locationDetails } = location.state || {};
   const [cabin, setCabin] = useState<Cabin | null>(cabinDetails || null);
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
