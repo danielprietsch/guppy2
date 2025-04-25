@@ -1,4 +1,3 @@
-
 import { Cabin, Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,12 +5,12 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const cabinImages = [
-  "https://images.unsplash.com/photo-1633687367233-b9097e506d60?auto=format&fit=crop&w=800&q=80", // Hair salon station
-  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80", // Salon chair and mirror
-  "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80", // Modern beauty workspace
-  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80", // Elegant salon interior
-  "https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=800&q=80", // Professional salon setup
+const workspaceImages = [
+  "https://images.unsplash.com/photo-1633687367233-b9097e506d60?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=800&q=80",
+  "https://images.unsplash.com/photo-1470259078422-826894b933aa?auto=format&fit=crop&w=800&q=80",
 ];
 
 interface CabinCardProps {
@@ -28,13 +27,11 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     const checkUserType = async () => {
       setIsLoading(true);
       try {
-        // Verificar se há uma sessão ativa
         const { data: { session } } = await supabase.auth.getSession();
         
         setIsLoggedIn(!!session?.user);
         
         if (session?.user) {
-          // Verificar primeiro nos metadados do usuário (mais confiável)
           const userType = session.user.user_metadata?.userType;
           
           if (userType === 'professional' || userType === 'provider') {
@@ -43,7 +40,6 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
             return;
           }
           
-          // Se não houver nos metadados, verificar na tabela de perfis
           const { data: profile } = await supabase
             .from('profiles')
             .select('user_type')
@@ -64,8 +60,8 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     checkUserType();
   }, []);
 
-  const imageIndex = parseInt(cabin.id.replace(/\D/g, ""), 10) % cabinImages.length;
-  const cabinImage = cabin.imageUrl || cabinImages[imageIndex];
+  const imageIndex = parseInt(cabin.id.replace(/\D/g, ""), 10) % workspaceImages.length;
+  const workspaceImage = cabin.imageUrl || workspaceImages[imageIndex];
 
   const formatShiftStatus = (isAvailable: boolean) => {
     return isAvailable ? (
@@ -79,7 +75,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
     <Card className="overflow-hidden">
       <div className="aspect-video overflow-hidden">
         <img
-          src={cabinImage}
+          src={workspaceImage}
           alt={cabin.name}
           className="h-full w-full object-cover"
         />

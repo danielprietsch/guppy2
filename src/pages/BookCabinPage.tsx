@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -336,8 +335,8 @@ const BookCabinPage = () => {
                     afternoon: cabin.price,
                     evening: cabin.price
                   }}
-                  cabinAvailability={cabin.availability}
-                  cabinCreatedAt={cabin.created_at}
+                  workspaceAvailability={cabin.availability}
+                  workspaceCreatedAt={cabin.created_at}
                 />
               </CardContent>
             </Card>

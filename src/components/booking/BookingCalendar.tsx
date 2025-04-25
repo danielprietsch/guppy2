@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -11,25 +10,24 @@ interface BookingCalendarProps {
   selectedTurns: { [date: string]: string[] };
   onSelectTurn: (date: string, turn: string) => void;
   pricePerTurn: { [turn: string]: number };
-  cabinAvailability?: { morning: boolean; afternoon: boolean; evening: boolean };
-  cabinCreatedAt?: string;
+  workspaceAvailability?: { morning: boolean; afternoon: boolean; evening: boolean };
+  workspaceCreatedAt?: string;
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({
   selectedTurns,
   onSelectTurn,
   pricePerTurn,
-  cabinAvailability = { morning: true, afternoon: true, evening: true },
-  cabinCreatedAt
+  workspaceAvailability = { morning: true, afternoon: true, evening: true },
+  workspaceCreatedAt
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const today = startOfDay(new Date());
   const [bookedTurns, setBookedTurns] = React.useState<{ [date: string]: { [turn: string]: boolean } }>({});
   
-  // Fetch existing bookings for this workspace when component mounts
   React.useEffect(() => {
     const fetchBookings = async () => {
-      if (!cabinAvailability) return;
+      if (!workspaceAvailability) return;
       
       try {
         const startDate = format(new Date(), 'yyyy-MM-dd');
@@ -51,7 +49,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             if (!booked[booking.date]) {
               booked[booking.date] = { morning: false, afternoon: false, evening: false };
             }
-            booked[booking.date][booking.shift as keyof typeof cabinAvailability] = true;
+            booked[booking.date][booking.shift as keyof typeof workspaceAvailability] = true;
           });
         }
         
@@ -62,14 +60,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     };
     
     fetchBookings();
-  }, [cabinAvailability]);
+  }, [workspaceAvailability]);
 
   const renderTurnButton = (date: Date, turn: string, price: number) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const isSelected = selectedTurns[dateStr]?.includes(turn);
     const isPastDate = isBefore(date, today) && !isToday(date);
-    const isClosed = !cabinAvailability[turn as keyof typeof cabinAvailability];
-    const isBooked = bookedTurns[dateStr]?.[turn as keyof typeof cabinAvailability];
+    const isClosed = !workspaceAvailability[turn as keyof typeof workspaceAvailability];
+    const isBooked = bookedTurns[dateStr]?.[turn as keyof typeof workspaceAvailability];
 
     const getButtonClasses = () => {
       if (isPastDate) return "bg-gray-300 text-gray-500 cursor-not-allowed";
@@ -122,11 +120,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       onMonthChange={setViewMonth}
       locale={ptBR}
       disabled={(date) => {
-        // Disable past dates (before today)
         if (isBefore(startOfDay(date), today)) return true;
-        // If cabin has a creation date, also disable dates before that
-        if (cabinCreatedAt) {
-          const creationDate = parseISO(cabinCreatedAt);
+        if (workspaceCreatedAt) {
+          const creationDate = parseISO(workspaceCreatedAt);
           return isBefore(startOfDay(date), startOfDay(creationDate));
         }
         return false;
