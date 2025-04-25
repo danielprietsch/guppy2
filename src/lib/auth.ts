@@ -13,41 +13,49 @@ export const useAuth = () => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          // Direct query instead of using an RPC function to avoid recursion
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (profileData) {
-            setUser({
-              id: profileData.id,
-              name: profileData.name || '',
-              email: profileData.email || '',
-              user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
-              avatarUrl: profileData.avatar_url,
-              avatar_url: profileData.avatar_url,
-              phoneNumber: profileData.phone_number,
-              phone_number: profileData.phone_number,
-              specialties: [],
-              cpf: profileData.cpf,
-              address: profileData.address,
-              city: profileData.city,
-              state: profileData.state,
-              zip_code: profileData.zip_code
-            });
-          } else {
-            setUser({
-              id: session.user.id,
-              name: session.user.user_metadata?.name || '',
-              email: session.user.email || '',
-              user_type: (session.user.user_metadata?.userType as "professional" | "client" | "owner" | "global_admin") || 'client',
-              avatarUrl: session.user.user_metadata?.avatar_url,
-              avatar_url: session.user.user_metadata?.avatar_url,
-              specialties: []
-            });
+          // Start with user metadata (most reliable source)
+          let userData: User = {
+            id: session.user.id,
+            name: session.user.user_metadata?.name || '',
+            email: session.user.email || '',
+            user_type: (session.user.user_metadata?.userType as "professional" | "client" | "owner" | "global_admin") || 'client',
+            avatarUrl: session.user.user_metadata?.avatar_url,
+            avatar_url: session.user.user_metadata?.avatar_url,
+            specialties: []
+          };
+          
+          // Then try to enhance with profile data if available
+          try {
+            // Direct query to profiles table instead of using any function that might trigger recursion
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (profileData) {
+              userData = {
+                ...userData,
+                name: profileData.name || userData.name,
+                email: profileData.email || userData.email,
+                user_type: profileData.user_type as "professional" | "client" | "owner" | "global_admin",
+                avatarUrl: profileData.avatar_url,
+                avatar_url: profileData.avatar_url,
+                phoneNumber: profileData.phone_number,
+                phone_number: profileData.phone_number,
+                cpf: profileData.cpf,
+                address: profileData.address,
+                city: profileData.city,
+                state: profileData.state,
+                zip_code: profileData.zip_code
+              };
+            }
+          } catch (profileError) {
+            console.error("Error fetching profile in auth hook:", profileError);
+            // Continue with user metadata only
           }
+          
+          setUser(userData);
         } else {
           setUser(null);
         }
@@ -74,7 +82,10 @@ export const useAuth = () => {
         }
         
         if (session) {
-          await getUser(); // Use await to ensure user data is fetched completely
+          // Call getUser with a small delay to ensure we don't trigger recursion
+          setTimeout(() => {
+            getUser();
+          }, 0);
         } else {
           setUser(null);
           setLoading(false);

@@ -61,10 +61,10 @@ export const useOwnerProfile = () => {
         
         // Se metadados não confirmarem status, usar consulta direta para evitar recursão
         try {
-          // Direct query to avoid recursion instead of using RPC function
+          // Avoid any recursive calls by using direct query to the profiles table
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
-            .select('user_type')
+            .select('user_type, name, email, avatar_url, phone_number')
             .eq('id', session.user.id)
             .single();
             
@@ -97,11 +97,11 @@ export const useOwnerProfile = () => {
           // Tipo de usuário confirma status, criar dados básicos do usuário
           const userData: User = {
             id: session.user.id,
-            name: userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
-            email: session.user.email || "",
+            name: profileData.name || userMetadata?.name || session.user.email?.split('@')[0] || "Usuário",
+            email: profileData.email || session.user.email || "",
             user_type: userType === 'owner' ? 'owner' : 'global_admin',
-            avatarUrl: userMetadata?.avatar_url,
-            phoneNumber: null
+            avatarUrl: profileData.avatar_url || userMetadata?.avatar_url,
+            phoneNumber: profileData.phone_number
           };
           
           setCurrentUser(userData);
@@ -113,8 +113,8 @@ export const useOwnerProfile = () => {
             title: "Erro",
             description: "Ocorreu um erro ao verificar seu perfil.",
             variant: "destructive",
-            });
-            navigate("/login");
+          });
+          navigate("/login");
         }
       } catch (error) {
         debugError("useOwnerProfile: Error checking auth status:", error);

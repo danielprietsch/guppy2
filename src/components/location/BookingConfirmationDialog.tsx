@@ -45,7 +45,7 @@ export const BookingConfirmationDialog = ({
         return;
       }
 
-      // Check if user is a professional directly from metadata first
+      // Direct check using metadata to avoid recursion entirely
       const userType = session.user.user_metadata?.userType;
       
       if (userType === 'professional' || userType === 'provider') {
@@ -54,7 +54,7 @@ export const BookingConfirmationDialog = ({
         return;
       }
       
-      // Using a direct query instead of an RPC function to avoid recursion
+      // Fallback: Use direct query instead of any RPC function to avoid recursion
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('user_type')
