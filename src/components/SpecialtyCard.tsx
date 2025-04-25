@@ -1,3 +1,4 @@
+
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -158,26 +159,32 @@ const SpecialtyCard = ({
 }: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
-  const handleCheckboxClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  // Tornando o card todo clicável
+  const handleCardClick = () => {
     onCheckedChange(!checked);
   };
   
   return (
     <div
       className={cn(
-        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors",
+        "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer",
         checked ? "border-primary bg-accent" : "border-input"
       )}
+      onClick={handleCardClick}
+      role="checkbox"
+      aria-checked={checked}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onCheckedChange(!checked);
+        }
+      }}
     >
-      <div 
-        className="absolute top-4 right-4"
-        onClick={handleCheckboxClick}
-      >
+      <div className="absolute top-4 right-4">
         <Checkbox
           checked={checked}
-          className="w-8 h-8 border-2"
+          className="w-8 h-8 border-2 pointer-events-none" // Impede que o checkbox receba cliques diretamente
           aria-label={`Selecionar ${label}`}
         />
       </div>
@@ -202,7 +209,10 @@ const SpecialtyCard = ({
         {getServiceDescription(id)}
       </p>
       
-      <div className="w-full space-y-4 mt-4 pt-4 border-t border-border bg-background/80 p-4 rounded-md shadow-sm">
+      <div 
+        className="w-full space-y-4 mt-4 pt-4 border-t border-border bg-background/80 p-4 rounded-md shadow-sm"
+        onClick={(e) => e.stopPropagation()} // Impede que cliques nos inputs marquem/desmarquem o card
+      >
         <div className="space-y-2">
           <Label htmlFor={`duration-${id}`} className="flex items-center gap-2 text-base font-semibold">
             <HandMetal className="h-5 w-5" />
