@@ -13,9 +13,9 @@ import {
   Sparkles,
   Star,
   HandHelping,
-  Hand,          // Usando Hand para manicure
-  Footprints,    // Corrected from FootPrints to Footprints
-  ScissorsSquare // Usando ScissorsSquare para barba
+  Hand,          
+  Footprints,    
+  ScissorsSquare 
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { serviceData } from "@/utils/serviceData";
@@ -159,10 +159,13 @@ const SpecialtyCard = ({
 }: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
-  // Handle checkbox click with preventing default to avoid navigation
+  // Completely revised checkbox handling to prevent default behavior and stop propagation
   const handleCheckboxClick = (e: React.MouseEvent) => {
+    // Stop event bubbling and prevent default
     e.preventDefault();
     e.stopPropagation();
+    
+    // Call the parent handler with the new state
     onCheckedChange(!checked);
   };
   
@@ -173,17 +176,14 @@ const SpecialtyCard = ({
         checked ? "border-primary bg-accent" : "border-input"
       )}
     >
-      {/* Checkbox maior e mais visível com área clicável ampliada */}
+      {/* Checkbox with improved click handling */}
       <div 
         className="absolute top-4 right-4 cursor-pointer p-2 rounded-lg hover:bg-accent-foreground/10 flex items-center justify-center"
         onClick={handleCheckboxClick}
       >
         <Checkbox
           checked={checked}
-          onCheckedChange={(value) => {
-            // Prevent default form submission behavior
-            onCheckedChange(!!value);
-          }}
+          // Remove onCheckedChange to prevent double-trigger
           className="w-8 h-8 border-2 cursor-pointer"
           id={`checkbox-${id}`}
         />
