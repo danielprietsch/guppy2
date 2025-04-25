@@ -54,6 +54,7 @@ export interface Cabin {
     defaultPricing: any;
     specificDates: any;
   };
+  created_at?: string;
 }
 
 export interface Service {
