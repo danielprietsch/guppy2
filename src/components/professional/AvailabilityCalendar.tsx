@@ -147,41 +147,11 @@ const AvailabilityCalendar = () => {
 
   return (
     <Card className="mb-8">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CalendarIcon className="h-5 w-5" />
-          Calendário de Disponibilidade
-        </CardTitle>
-      </CardHeader>
       <CardContent className="p-4 flex flex-col space-y-6">
-        <Card>
-          <CardContent>
-            <Label className="text-lg font-medium mb-6 block">Disponibilidade para Agendamentos</Label>
-            <ToggleGroup
-              type="single"
-              defaultValue="open"
-              onValueChange={(value) => console.log(value)}
-              className="flex items-center gap-2"
-            >
-              <ToggleGroupItem value="open" className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                Disponível
-              </ToggleGroupItem>
-              <ToggleGroupItem value="closed" className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                Não Disponível
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </CardContent>
-        </Card>
-
         <WorkingHoursSettings />
 
         <div className="space-y-8">
           <Card>
-            <CardHeader>
-              <CardTitle>Visão Semanal</CardTitle>
-            </CardHeader>
             <CardContent className="p-0">
               <WeeklyView
                 selectedDate={selectedDate || today}
@@ -194,9 +164,6 @@ const AvailabilityCalendar = () => {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Visão Diária</CardTitle>
-            </CardHeader>
             <CardContent className="p-0">
               <DailyView
                 selectedDate={selectedDate || today}
