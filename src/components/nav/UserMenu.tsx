@@ -44,6 +44,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
             filter: `id=eq.${currentUser.id}`,
           },
           (payload) => {
+            console.log("UserMenu received profile update:", payload);
             if (payload.new && payload.new.avatar_url) {
               setAvatarUrl(payload.new.avatar_url);
             }

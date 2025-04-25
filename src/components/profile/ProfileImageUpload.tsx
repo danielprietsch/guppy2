@@ -32,6 +32,7 @@ export function ProfileImageUpload({
   const uploadAvatar = async (file: File) => {
     try {
       setIsUploading(true);
+      console.log("Starting upload for user:", userId);
 
       // Check file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
@@ -47,12 +48,32 @@ export function ProfileImageUpload({
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
+      // Make sure avatars bucket exists
+      console.log("Checking if avatars bucket exists");
+      const { data: bucketExists } = await supabase.storage
+        .getBucket('avatars');
+      
+      if (!bucketExists) {
+        console.log("Creating avatars bucket");
+        const { error: bucketError } = await supabase.storage
+          .createBucket('avatars', { public: true });
+        
+        if (bucketError) {
+          console.error("Error creating bucket:", bucketError);
+          // Continue anyway, as the bucket might already exist
+        }
+      }
+
       // Upload file to 'avatars' bucket
+      console.log("Uploading file to path:", filePath);
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
 
       // Get public URL for the file
       const { data: { publicUrl } } = supabase.storage
@@ -61,25 +82,45 @@ export function ProfileImageUpload({
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
-      // Update user metadata with new avatar URL
-      const { error: userUpdateError } = await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl }
-      });
+      // Use the update_avatar_everywhere function if available, otherwise fallback to manual updates
+      try {
+        const { data, error } = await supabase.rpc(
+          'update_avatar_everywhere',
+          { user_id: userId, avatar_url: publicUrl }
+        );
+        
+        if (error) {
+          console.error("Error calling RPC function, falling back to manual updates:", error);
+          throw error;
+        } else {
+          console.log("Avatar updated everywhere via RPC function");
+        }
+      } catch (rpcError) {
+        console.warn("Falling back to manual avatar updates");
+        
+        // Update user metadata with new avatar URL
+        const { error: userUpdateError } = await supabase.auth.updateUser({
+          data: { avatar_url: publicUrl }
+        });
 
-      if (userUpdateError) throw userUpdateError;
+        if (userUpdateError) {
+          console.error("Error updating user metadata:", userUpdateError);
+          throw userUpdateError;
+        }
 
-      // Update profile in profiles table
-      const { error: profileUpdateError } = await supabase
-        .from('profiles')
-        .update({ 
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+        // Update profile in profiles table
+        const { error: profileUpdateError } = await supabase
+          .from('profiles')
+          .update({ 
+            avatar_url: publicUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', userId);
 
-      if (profileUpdateError) {
-        console.error("Error updating profile:", profileUpdateError);
-        throw new Error("Não foi possível atualizar o perfil no banco de dados");
+        if (profileUpdateError) {
+          console.error("Error updating profile:", profileUpdateError);
+          throw new Error("Não foi possível atualizar o perfil no banco de dados");
+        }
       }
 
       // Update local preview
@@ -90,7 +131,7 @@ export function ProfileImageUpload({
       
       toast({
         title: "Foto atualizada",
-        description: "Sua foto de perfil foi atualizada com sucesso e salva no banco de dados.",
+        description: "Sua foto de perfil foi atualizada com sucesso.",
       });
     } catch (error: any) {
       console.error('Erro ao fazer upload:', error);

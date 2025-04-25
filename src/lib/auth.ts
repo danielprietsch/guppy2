@@ -62,7 +62,7 @@ export const useAuth = () => {
 
     // Setup auth state change listener with improved handling
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state changed:", event, session?.user?.id);
         
         if (event === 'SIGNED_OUT') {
@@ -73,7 +73,7 @@ export const useAuth = () => {
         }
         
         if (session) {
-          getUser();
+          await getUser(); // Use await to ensure user data is fetched completely
         } else {
           setUser(null);
           setLoading(false);
@@ -92,6 +92,7 @@ export const useAuth = () => {
           table: 'profiles'
         },
         (payload) => {
+          console.log("Profile update received via realtime:", payload);
           // Check if update is for current user
           if (user && payload.new.id === user.id) {
             // Update user data with new profile information

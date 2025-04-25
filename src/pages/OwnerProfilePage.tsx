@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types"; 
@@ -8,6 +9,7 @@ import { useOwnerProfile } from "@/hooks/useOwnerProfile";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut } from "lucide-react";
+import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 
 const OwnerProfilePage = () => {
   const navigate = useNavigate();
@@ -164,6 +166,25 @@ const OwnerProfilePage = () => {
       </div>
 
       <div className="mt-8">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Foto do Perfil</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <ProfileImageUpload
+              userId={currentUser.id}
+              currentAvatarUrl={currentUser.avatarUrl}
+              onImageUploaded={(url) => {
+                setCurrentUser({
+                  ...currentUser,
+                  avatarUrl: url,
+                  avatar_url: url
+                });
+              }}
+            />
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="personal">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="personal">Informações Pessoais</TabsTrigger>
