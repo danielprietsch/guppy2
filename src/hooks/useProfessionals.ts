@@ -33,10 +33,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             id,
             name,
             email,
-            avatar_url,
-            specialties:services (
-              category
-            )
+            avatar_url
           )
         `)
         .eq('date', formattedDate)
@@ -59,6 +56,30 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         return [];
       }
 
+      // Get all services to map specialties
+      const { data: services, error: servicesError } = await supabase
+        .from('services')
+        .select('professional_id, category');
+      
+      if (servicesError) {
+        console.error('Error fetching services:', servicesError);
+        return [];
+      }
+
+      // Create a map of professional IDs to their specialties
+      const specialtiesByProfessional: Record<string, string[]> = {};
+      services.forEach(service => {
+        if (!service.professional_id) return;
+        
+        if (!specialtiesByProfessional[service.professional_id]) {
+          specialtiesByProfessional[service.professional_id] = [];
+        }
+        
+        if (!specialtiesByProfessional[service.professional_id].includes(service.category)) {
+          specialtiesByProfessional[service.professional_id].push(service.category);
+        }
+      });
+
       // Filter professionals who have both availability and an active booking
       const availableProfessionalsWithBookings = availableProfessionals
         .filter(prof => {
@@ -68,13 +89,15 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           return hasBooking && prof.profiles;
         })
         .map(prof => {
-          const specialties = prof.profiles?.specialties?.map(s => s.category) || [];
+          const profId = prof.professional_id;
+          const specialties = specialtiesByProfessional[profId] || [];
+          
           return {
             id: prof.profiles?.id || '',
             name: prof.profiles?.name || '',
             email: prof.profiles?.email || '',
             avatarUrl: prof.profiles?.avatar_url,
-            specialties: [...new Set(specialties)]
+            specialties: specialties
           };
         }) as User[];
 
