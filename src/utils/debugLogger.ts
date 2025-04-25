@@ -1,3 +1,4 @@
+
 export const DEBUG_MODE = true; // Enable global debugging in development
 
 // Specific areas of the system can be enabled individually for debugging

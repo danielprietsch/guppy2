@@ -108,24 +108,39 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     }
   };
 
+  // Completely rewritten time slot closure logic to fix the issue
   const canCloseTimeSlot = () => {
-    // Corrigindo: Essa função não deve levar em conta a data, apenas a hora
-    // A verificação de "hoje" já é feita antes de chamar essa função
-    debugAreaLog('TIME_CLOSURE', `Verificando horário para fechamento - Turno: ${turno}, Hora atual: ${new Date().getHours()}`);
-    
     const now = new Date();
     const currentHour = now.getHours();
     
+    debugAreaLog('TIME_CLOSURE', `Verificando turno: ${turno}, Hora atual: ${currentHour}`);
+    
+    // Get the end hour for each shift
+    let endHour;
     switch(turno.toLowerCase()) {
       case 'manhã':
-        return currentHour < 12;
+        endHour = 12;
+        break;
       case 'tarde':
-        return currentHour < 17;
+        endHour = 18;
+        break;
       case 'noite':
-        return currentHour < 22;
+        endHour = 23;
+        break;
       default:
-        return true;
+        endHour = 23;
     }
+    
+    // Always allow closing if:
+    // 1. It's not today's date, OR
+    // 2. It's today but current time is before the shift's end hour
+    if (!isToday(date) || currentHour < endHour) {
+      debugAreaLog('TIME_CLOSURE', `Permitido fechar: ${!isToday(date) ? 'Não é hoje' : 'Dentro do horário'}`);
+      return true;
+    }
+    
+    debugAreaLog('TIME_CLOSURE', `Não permitido fechar: É hoje e já passou do horário limite (${endHour}h)`);
+    return false;
   };
 
   const handleManualClose = (e: React.MouseEvent) => {
@@ -133,8 +148,6 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     
     debugAreaLog('TIME_CLOSURE', `Tentando fechar - Data: ${format(date, 'yyyy-MM-dd')}, Turno: ${turno}`);
     
-    // Removendo a verificação que impede o fechamento no dia atual
-    // O fechamento deve ser permitido baseado apenas na hora, não na data
     if (!canCloseTimeSlot()) {
       toast({
         title: "Não é possível fechar este turno",
@@ -246,3 +259,4 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
+
