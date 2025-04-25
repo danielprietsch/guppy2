@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isSameDay, parseISO, addDays, isAfter, isBefore } from "date-fns";
@@ -223,92 +224,102 @@ const AvailabilityCalendar = () => {
     }
   }, [userProfile]);
 
-  // Calculando as datas limite para o calendário
+  // Calculate date limits for the calendar
   const getDateLimits = (): { startDate: Date, endDate: Date } => {
     const today = new Date();
     const endDate = addDays(today, MAX_CALENDAR_DAYS);
     
-    // Use a data de criação do usuário como início se disponível, senão use hoje
+    // Use the user's creation date as the start if available, otherwise use today
     const startDate = userProfile?.created_at ? 
       parseISO(userProfile.created_at) : today;
       
     return { startDate, endDate };
   };
 
-  // Fetch appointments with proper TypeScript typing and date limitations
+  // Simplified function to fetch appointments with explicit types
+  const fetchAppointments = async (): Promise<Appointment[]> => {
+    if (!user?.id) return [];
+    
+    const { startDate, endDate } = getDateLimits();
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+    
+    // Base query with date limits
+    let query = supabase
+      .from('appointments')
+      .select('*')
+      .eq('professional_id', user.id)
+      .gte('date', startDateStr) 
+      .lte('date', endDateStr);
+    
+    // If cabin ID is provided, filter by it
+    if (cabinId) {
+      query = query.eq('cabin_id', cabinId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching appointments:', error);
+      return [];
+    }
+
+    // Safely cast the data
+    const rawAppointments = data as RawAppointmentData[];
+    
+    // Create a list to store the processed appointments
+    const appointmentsWithClients: Appointment[] = [];
+    
+    // Process each appointment individually to avoid deep nesting
+    for (const appointment of rawAppointments) {
+      let client: AppointmentClient = { 
+        name: 'Cliente não especificado', 
+        email: '' 
+      };
+      
+      if (appointment.client_id) {
+        const { data: clientData } = await supabase
+          .from('profiles')
+          .select('name, email')
+          .eq('id', appointment.client_id)
+          .single();
+        
+        if (clientData) {
+          client = {
+            name: clientData.name || 'Nome não disponível',
+            email: clientData.email || 'Email não disponível'
+          };
+        }
+      }
+      
+      // Create a clean appointment object with explicit structure
+      const processedAppointment: Appointment = {
+        id: appointment.id,
+        date: appointment.date,
+        time: appointment.time,
+        client_id: appointment.client_id,
+        status: appointment.status,
+        client: client
+      };
+      
+      appointmentsWithClients.push(processedAppointment);
+    }
+
+    return appointmentsWithClients;
+  };
+
+  // Use the simplified fetch function in the query
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
-    queryFn: async () => {
-      if (!user?.id) return [] as Appointment[];
-      
-      const { startDate, endDate } = getDateLimits();
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
-      
-      // Base query with date limits
-      let query = supabase
-        .from('appointments')
-        .select('*')
-        .eq('professional_id', user.id)
-        .gte('date', startDateStr) // Greater than or equal to start date
-        .lte('date', endDateStr); // Less than or equal to end date
-      
-      // Se temos um ID de cabine, filtrar por ele
-      if (cabinId) {
-        query = query.eq('cabin_id', cabinId);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching appointments:', error);
-        return [] as Appointment[];
-      }
-
-      // Type assertion for the raw data
-      const rawAppointments = data as RawAppointmentData[];
-      
-      // Process appointments to include client information with explicit typing
-      const appointmentsWithClients: Appointment[] = await Promise.all(
-        rawAppointments.map(async (appointment) => {
-          let client: AppointmentClient = { name: 'Cliente não especificado', email: '' };
-          
-          if (appointment.client_id) {
-            const { data: clientData, error: clientError } = await supabase
-              .from('profiles')
-              .select('name, email')
-              .eq('id', appointment.client_id)
-              .single();
-            
-            if (!clientError && clientData) {
-              client = {
-                name: clientData.name || 'Nome não disponível',
-                email: clientData.email || 'Email não disponível'
-              };
-            }
-          }
-          
-          return {
-            id: appointment.id,
-            date: appointment.date,
-            time: appointment.time,
-            client_id: appointment.client_id,
-            status: appointment.status,
-            client: client
-          };
-        })
-      );
-
-      return appointmentsWithClients;
-    },
+    queryFn: fetchAppointments,
     enabled: !!user?.id
   });
 
-  // Filtra os agendamentos dentro do limite de dias
+  // Filter appointments for a specific day
   const getAppointmentsForDay = (date: Date): Appointment[] => {
     const { startDate, endDate } = getDateLimits();
     
-    // Só retorna agendamentos dentro do intervalo de datas permitido
+    // Only return appointments within the allowed date range
     if (isBefore(date, startDate) || isAfter(date, endDate)) {
       return [];
     }
@@ -337,7 +348,7 @@ const AvailabilityCalendar = () => {
   };
 
   const handleDateChange = (newDate: Date): void => {
-    // Verificar se a data está dentro dos limites
+    // Check if the date is within limits
     const { startDate, endDate } = getDateLimits();
     
     if (isBefore(newDate, startDate)) {
