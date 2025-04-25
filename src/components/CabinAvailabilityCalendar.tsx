@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -113,7 +114,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
               onManualClose={() => handleStatusChange(dateStr, turno, true)}
               onRelease={() => handleStatusChange(dateStr, turno, false)}
               onViewBooking={() => navigate(`/owner/bookings/${dateStr}/${turno}`)}
-              disabled={isPastDate}
+              isPastDate={isPastDate}
             />
           ))}
         </div>
