@@ -200,7 +200,7 @@ const AvailabilityCalendar = () => {
           </TabsList>
 
           <div className="flex-1">
-            <TabsContent value="day" className="m-0 outline-none h-[500px]">
+            <TabsContent value="day" className="m-0 outline-none h-[460px]">
               <Card className="h-full border-0">
                 <CardContent className="p-0">
                   <DailyView
@@ -214,7 +214,7 @@ const AvailabilityCalendar = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="week" className="m-0 outline-none h-[500px]">
+            <TabsContent value="week" className="m-0 outline-none h-[460px]">
               <Card className="h-full border-0">
                 <CardContent className="p-0">
                   <WeeklyView
@@ -228,7 +228,7 @@ const AvailabilityCalendar = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="month" className="m-0 outline-none h-[500px]">
+            <TabsContent value="month" className="m-0 outline-none h-[460px]">
               <Card className="h-full border-0">
                 <CardContent className="p-4">
                   <div className="h-full flex flex-col space-y-4">

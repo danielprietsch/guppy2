@@ -48,7 +48,7 @@ const DailyView = ({
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 bg-background sticky top-0 z-10 border-b">
         <Button variant="ghost" size="sm" onClick={handlePreviousDay}>
           <ChevronLeft className="h-4 w-4" />
