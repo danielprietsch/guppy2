@@ -5,9 +5,21 @@ import { GlobalAdminProfileForm } from "@/components/admin/GlobalAdminProfileFor
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import { debugLog } from "@/utils/debugLogger";
+import { useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 const GlobalAdminProfilePage = () => {
   const { currentUser, isLoading, error, updateProfile } = useGlobalAdminProfile();
+
+  useEffect(() => {
+    // Log user data for debugging when it changes
+    if (currentUser) {
+      debugLog("GlobalAdminProfilePage: User data updated:", { 
+        id: currentUser.id, 
+        avatarUrl: currentUser.avatarUrl 
+      });
+    }
+  }, [currentUser]);
 
   if (isLoading) {
     return (
@@ -27,6 +39,26 @@ const GlobalAdminProfilePage = () => {
 
   debugLog("GlobalAdminProfilePage: Renderizando página de perfil para:", currentUser);
 
+  const handleAvatarUpdate = async (url: string) => {
+    try {
+      if (updateProfile && currentUser) {
+        debugLog("GlobalAdminProfilePage: Atualizando avatar para:", url);
+        await updateProfile({ ...currentUser, avatarUrl: url });
+        toast({
+          title: "Foto atualizada",
+          description: "Sua foto de perfil foi atualizada com sucesso."
+        });
+      }
+    } catch (error) {
+      console.error("Error updating avatar:", error);
+      toast({
+        title: "Erro ao atualizar foto",
+        description: "Não foi possível salvar sua foto de perfil. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-2">Meu Perfil</h1>
@@ -44,11 +76,7 @@ const GlobalAdminProfilePage = () => {
               <ProfileImageUpload
                 userId={currentUser.id}
                 currentAvatarUrl={currentUser.avatarUrl}
-                onImageUploaded={(url) => {
-                  if (updateProfile) {
-                    updateProfile({ ...currentUser, avatarUrl: url });
-                  }
-                }}
+                onImageUploaded={handleAvatarUpdate}
               />
             </CardContent>
           </Card>

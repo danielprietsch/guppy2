@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types"; 
@@ -23,7 +22,6 @@ const OwnerProfilePage = () => {
     cnpj: currentUser?.cnpj || "",
   });
 
-  // Effect to update form data when currentUser changes
   useEffect(() => {
     if (currentUser) {
       setFormData({
@@ -141,6 +139,30 @@ const OwnerProfilePage = () => {
     }
   };
 
+  const handleAvatarUpdate = async (url: string) => {
+    try {
+      console.log("OwnerProfilePage: Image uploaded, updating state with:", url);
+      if (currentUser) {
+        setCurrentUser({
+          ...currentUser,
+          avatarUrl: url,
+        });
+        
+        toast({
+          title: "Foto atualizada",
+          description: "Sua foto de perfil foi atualizada com sucesso."
+        });
+      }
+    } catch (error) {
+      console.error("Error in handleAvatarUpdate:", error);
+      toast({
+        title: "Erro ao processar imagem",
+        description: "Ocorreu um erro ao processar sua imagem. Por favor, tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!currentUser) {
     return (
       <div className="container py-12 flex items-center justify-center">
@@ -188,13 +210,7 @@ const OwnerProfilePage = () => {
             <ProfileImageUpload
               userId={currentUser.id}
               currentAvatarUrl={currentUser.avatarUrl}
-              onImageUploaded={(url) => {
-                console.log("Image uploaded in OwnerProfilePage, updating state with:", url);
-                setCurrentUser({
-                  ...currentUser,
-                  avatarUrl: url,
-                });
-              }}
+              onImageUploaded={handleAvatarUpdate}
             />
           </CardContent>
         </Card>

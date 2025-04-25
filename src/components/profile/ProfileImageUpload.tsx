@@ -20,45 +20,15 @@ export function ProfileImageUpload({
   className = ""
 }: ProfileImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(currentAvatarUrl || null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Effect to update preview URL when currentAvatarUrl changes
+  // Update preview URL when currentAvatarUrl changes
   useEffect(() => {
     if (currentAvatarUrl) {
+      console.log("ProfileImageUpload: Setting preview from currentAvatarUrl:", currentAvatarUrl);
       setPreviewUrl(currentAvatarUrl);
     }
   }, [currentAvatarUrl]);
-
-  // Effect to add realtime subscription for avatar updates
-  useEffect(() => {
-    // Subscribe to profile changes to refresh the avatar when updated elsewhere
-    if (userId) {
-      console.log("Setting up realtime subscription for profile updates", userId);
-      
-      const channel = supabase
-        .channel('profile-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${userId}`,
-          },
-          (payload) => {
-            console.log("Received profile update via realtime:", payload);
-            if (payload.new && payload.new.avatar_url) {
-              setPreviewUrl(payload.new.avatar_url);
-            }
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [userId]);
 
   const uploadAvatar = async (file: File) => {
     try {
@@ -75,7 +45,7 @@ export function ProfileImageUpload({
         throw new Error("Por favor, selecione apenas arquivos de imagem");
       }
 
-      // Create unique filename using userId
+      // Create unique filename using userId and timestamp
       const fileExt = file.name.split('.').pop();
       const filePath = `${userId}/${Date.now()}.${fileExt}`;
 
@@ -101,30 +71,17 @@ export function ProfileImageUpload({
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
       // Use the security definer function to update both profile and user metadata
-      const { data, error } = await supabase.rpc(
+      const { data: updateResult, error: updateError } = await supabase.rpc(
         'update_avatar_everywhere',
         { user_id: userId, avatar_url: publicUrl }
       );
 
-      if (error) {
-        console.error("Error updating avatar:", error);
-        throw new Error("Não foi possível atualizar o avatar: " + error.message);
+      if (updateError) {
+        console.error("Error updating avatar:", updateError);
+        throw new Error("Não foi possível atualizar o avatar: " + updateError.message);
       }
 
-      console.log("Avatar updated successfully via RPC function, result:", data);
-
-      // Verify the update was successful by fetching the profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('id', userId)
-        .single();
-        
-      if (profileError) {
-        console.error("Error verifying profile update:", profileError);
-      } else {
-        console.log("Profile verification:", profileData);
-      }
+      console.log("Avatar updated successfully via RPC function, result:", updateResult);
 
       // Update local state and notify parent
       setPreviewUrl(publicUrl);

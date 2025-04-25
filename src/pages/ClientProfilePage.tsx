@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 import { debugAreaLog, debugAreaCritical } from "@/utils/debugLogger";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/hooks/use-toast";
 
 const ClientProfilePage = () => {
   const navigate = useNavigate();
@@ -37,6 +38,31 @@ const ClientProfilePage = () => {
     } catch (error: any) {
       debugAreaCritical("CLIENT_PROFILE", "Error in handleUpdateProfile:", error);
       throw new Error(error.message || "Ocorreu um erro ao atualizar o perfil");
+    }
+  };
+
+  const handleAvatarUpdate = async (url: string) => {
+    try {
+      debugAreaLog("CLIENT_PROFILE", "Updating avatar to:", url);
+      
+      if (updateProfile && currentUser) {
+        await updateProfile({ 
+          ...currentUser, 
+          avatarUrl: url 
+        });
+        
+        toast({
+          title: "Foto atualizada",
+          description: "Sua foto de perfil foi atualizada com sucesso."
+        });
+      }
+    } catch (error: any) {
+      debugAreaCritical("CLIENT_PROFILE", "Error updating avatar:", error);
+      toast({
+        title: "Erro ao atualizar foto",
+        description: error.message || "Ocorreu um erro ao atualizar sua foto de perfil.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -98,11 +124,7 @@ const ClientProfilePage = () => {
               <ProfileImageUpload
                 userId={currentUser.id}
                 currentAvatarUrl={currentUser.avatarUrl}
-                onImageUploaded={(url) => {
-                  if (updateProfile) {
-                    updateProfile({ ...currentUser, avatarUrl: url });
-                  }
-                }}
+                onImageUploaded={handleAvatarUpdate}
               />
             </CardContent>
           </Card>

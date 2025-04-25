@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -187,6 +186,31 @@ const ProfessionalProfilePage = () => {
     checkSession();
   }, [navigate]);
   
+  const handleAvatarUpdate = async (url: string) => {
+    try {
+      debugLog("ProfessionalProfilePage: Updating avatar to:", url);
+      
+      setProfile(prev => prev ? { ...prev, avatarUrl: url } : null);
+      
+      await supabase.rpc('update_avatar_everywhere', {
+        user_id: profile?.id,
+        avatar_url: url
+      });
+      
+      toast({
+        title: "Foto atualizada",
+        description: "Sua foto de perfil foi atualizada com sucesso.",
+      });
+    } catch (error) {
+      console.error("Error updating avatar:", error);
+      toast({
+        title: "Erro ao atualizar foto",
+        description: "Não foi possível atualizar sua foto de perfil.",
+        variant: "destructive"
+      });
+    }
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     toast({
@@ -247,13 +271,7 @@ const ProfessionalProfilePage = () => {
               <ProfileImageUpload
                 userId={profile.id}
                 currentAvatarUrl={profile.avatarUrl}
-                onImageUploaded={(url) => {
-                  setProfile(prev => prev ? { ...prev, avatarUrl: url } : null);
-                  toast({
-                    title: "Foto atualizada",
-                    description: "Sua foto de perfil foi atualizada com sucesso.",
-                  });
-                }}
+                onImageUploaded={handleAvatarUpdate}
                 className="mb-4"
               />
             )}

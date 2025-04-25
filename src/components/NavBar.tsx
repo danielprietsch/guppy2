@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ const NavBar = () => {
         
         if (!session) {
           setCurrentUser(null);
+          setLoading(false);
           return;
         }
         
@@ -32,6 +34,13 @@ const NavBar = () => {
         const nameFromMetadata = userMetadata?.name;
         const avatarFromMetadata = userMetadata?.avatar_url;
         
+        console.log("NavBar: Checking auth with user metadata:", {
+          userType: userTypeFromMetadata,
+          name: nameFromMetadata,
+          avatar: avatarFromMetadata
+        });
+        
+        // If found in metadata, use that data first
         if (userTypeFromMetadata) {
           const userData: User = {
             id: session.user.id,
@@ -41,9 +50,33 @@ const NavBar = () => {
             avatarUrl: avatarFromMetadata,
           };
           
+          console.log("NavBar: Setting user from metadata:", userData);
           setCurrentUser(userData);
-          setLoading(false);
+          
+          // Still get profile data to make sure we have the most recent info
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+              
+            if (profileError) {
+              console.log("NavBar: No profile found in database, using metadata only");
+            } else if (profileData) {
+              console.log("NavBar: Profile found, updating with data:", profileData);
+              setCurrentUser(prevUser => ({
+                ...prevUser!,
+                name: profileData.name || prevUser!.name,
+                avatarUrl: profileData.avatar_url || prevUser!.avatarUrl,
+                phoneNumber: profileData.phone_number,
+              }));
+            }
+          } catch (err) {
+            console.error("Error fetching profile:", err);
+          }
         } else {
+          // Fallback to fetching from database
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -53,6 +86,7 @@ const NavBar = () => {
           if (profileError || !profileData) {
             console.error("Error fetching user profile:", profileError);
             setCurrentUser(null);
+            setLoading(false);
             return;
           }
           
@@ -65,7 +99,7 @@ const NavBar = () => {
             phoneNumber: profileData.phone_number,
           };
           
-          console.log("NavBar: User data loaded:", userData);
+          console.log("NavBar: User data loaded from database:", userData);
           setCurrentUser(userData);
         }
       } catch (error) {
@@ -79,18 +113,32 @@ const NavBar = () => {
     checkAuth();
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log("Auth state change:", event);
         if (event === "SIGNED_OUT") {
           setCurrentUser(null);
         } else if (session) {
+          // Set initial user data immediately from session metadata
+          if (session.user.user_metadata?.userType) {
+            const initialUserData: User = {
+              id: session.user.id,
+              name: session.user.user_metadata?.name || session.user.email?.split('@')[0] || "User",
+              email: session.user.email || "",
+              user_type: session.user.user_metadata?.userType,
+              avatarUrl: session.user.user_metadata?.avatar_url,
+            };
+            setCurrentUser(initialUserData);
+          }
+          
+          // Then do a full check
           checkAuth();
         }
       }
     );
     
+    // Setup real-time subscription for profile updates
     const channel = supabase
-      .channel('public:profiles')
+      .channel('navbar-profile-updates')
       .on(
         'postgres_changes',
         {
@@ -100,7 +148,7 @@ const NavBar = () => {
         },
         (payload) => {
           if (currentUser && payload.new.id === currentUser.id) {
-            console.log("Profile updated in real-time:", payload.new);
+            console.log("NavBar: Profile updated in real-time:", payload.new);
             setCurrentUser(prev => {
               if (!prev) return null;
               return {
@@ -142,7 +190,7 @@ const NavBar = () => {
         description: "Você foi desconectado com sucesso.",
       });
       
-      window.location.href = "/login";
+      navigate("/login");
     } catch (error) {
       console.error("Error signing out:", error);
       toast({
@@ -151,10 +199,6 @@ const NavBar = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const navigateToSearch = () => {
-    navigate("/locations");
   };
 
   return (
