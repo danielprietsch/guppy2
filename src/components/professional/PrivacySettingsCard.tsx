@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -67,20 +66,22 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
   return (
     <Card className="mb-6">
       <CardContent className="p-6">
-        <Label className="text-lg font-medium mb-4 block">Visibilidade do Perfil</Label>
+        <Label className="text-lg font-medium mb-6 block">Visibilidade do Perfil</Label>
         <ToggleGroup
           type="single"
           value={isPublic ? 'public' : 'private'}
           onValueChange={handleTogglePrivacy}
-          className="grid grid-cols-2 gap-4"
+          className="grid grid-cols-2 gap-6"
         >
           <ToggleGroupItem 
             value="public" 
-            className="flex flex-col items-center gap-3 p-6 data-[state=on]:bg-primary/10 border rounded-lg hover:bg-accent"
+            className="flex flex-col items-center gap-4 p-8 data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
-            <Globe className="h-8 w-8 text-primary" />
+            <div className="p-4 rounded-full bg-primary/5">
+              <Globe className="h-12 w-12 text-primary" />
+            </div>
             <div className="text-center">
-              <div className="font-medium">Público</div>
+              <div className="font-semibold text-lg mb-1">Público</div>
               <p className="text-sm text-muted-foreground">
                 Visível para clientes
               </p>
@@ -89,11 +90,13 @@ const PrivacySettingsCard = ({ initialIsPublic = true }: PrivacySettingsCardProp
           
           <ToggleGroupItem 
             value="private"
-            className="flex flex-col items-center gap-3 p-6 data-[state=on]:bg-primary/10 border rounded-lg hover:bg-accent"
+            className="flex flex-col items-center gap-4 p-8 data-[state=on]:bg-primary/10 border-2 rounded-xl hover:bg-accent transition-all duration-200 hover:scale-105"
           >
-            <Lock className="h-8 w-8 text-primary" />
+            <div className="p-4 rounded-full bg-primary/5">
+              <Lock className="h-12 w-12 text-primary" />
+            </div>
             <div className="text-center">
-              <div className="font-medium">Privado</div>
+              <div className="font-semibold text-lg mb-1">Privado</div>
               <p className="text-sm text-muted-foreground">
                 Oculto para clientes
               </p>
