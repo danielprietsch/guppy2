@@ -1,23 +1,9 @@
-
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronRight, CalendarDays, MapPin, Users } from "lucide-react";
-import { locations } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import ProfessionalCard from "@/components/ProfessionalCard";
-import LocationCard from "@/components/LocationCard";
-import { useProfessionals } from "@/hooks/useUsers";
 
 const HomePage = () => {
-  const { data: professionals = [], isLoading: loadingProfessionals } = useProfessionals();
-  
-  // Filter featured professionals (3 for the home page)
-  const featuredProfessionals = professionals.slice(0, 3);
-
-  // Filter featured locations (3 for the home page)
-  const featuredLocations = locations.slice(0, 3);
-
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -128,48 +114,6 @@ const HomePage = () => {
                 Comece agora <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Featured Professionals */}
-      <section className="py-16">
-        <div className="container">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">Profissionais em Destaque</h2>
-            <Link to="/professionals" className="text-primary font-medium inline-flex items-center">
-              Ver todos <ChevronRight className="h-4 w-4 ml-1" />
-            </Link>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-            {loadingProfessionals ? (
-              <p className="col-span-full text-center py-4">Carregando profissionais...</p>
-            ) : featuredProfessionals.length > 0 ? (
-              featuredProfessionals.map((professional) => (
-                <ProfessionalCard key={professional.id} professional={professional} />
-              ))
-            ) : (
-              <p className="col-span-full text-center py-4">Nenhum profissional cadastrado no momento</p>
-            )}
-          </div>
-        </div>
-      </section>
-      
-      {/* Featured Locations */}
-      <section className="py-16 bg-gray-50">
-        <div className="container">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold">Locais em Destaque</h2>
-            <Link to="/locations" className="text-primary font-medium inline-flex items-center">
-              Ver todos <ChevronRight className="h-4 w-4 ml-1" />
-            </Link>
-          </div>
-          
-          <div className="flex flex-col space-y-6">
-            {featuredLocations.map((location) => (
-              <LocationCard key={location.id} location={location} displayLayout="compact" />
-            ))}
           </div>
         </div>
       </section>
