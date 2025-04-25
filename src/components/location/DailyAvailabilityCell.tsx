@@ -1,14 +1,17 @@
 
 import { format, isBefore, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BookingConfirmationDialog } from "./BookingConfirmationDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { debugBooking } from "@/utils/debugLogger";
 
 interface ShiftAvailability {
   totalCabins: number;
   availableCabins: number;
   manuallyClosedCount: number;
   price?: number;
+  isReserved?: boolean;
 }
 
 interface DailyAvailabilityCellProps {
@@ -23,15 +26,59 @@ interface DailyAvailabilityCellProps {
 
 export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabilityCellProps) => {
   const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [shiftData, setShiftData] = useState(shifts);
   const isPastDate = isBefore(date, startOfDay(new Date()));
+  
+  // Check for existing bookings when the component mounts or cabin ID changes
+  useEffect(() => {
+    if (cabinId) {
+      const checkBookings = async () => {
+        const formattedDate = format(date, "yyyy-MM-dd");
+        const { data, error } = await supabase
+          .from('bookings')
+          .select('shift')
+          .eq('cabin_id', cabinId)
+          .eq('date', formattedDate);
+        
+        if (error) {
+          console.error("Error checking bookings:", error);
+          return;
+        }
+        
+        if (data && data.length > 0) {
+          debugBooking(`Found ${data.length} bookings for cabin ${cabinId} on ${formattedDate}`);
+          const updatedShifts = { ...shifts };
+          
+          // Mark shifts as reserved if they have bookings
+          data.forEach(booking => {
+            const shift = booking.shift as keyof typeof updatedShifts;
+            if (updatedShifts[shift]) {
+              updatedShifts[shift] = {
+                ...updatedShifts[shift],
+                isReserved: true,
+                availableCabins: 0 // Force availability to zero when reserved
+              };
+            }
+          });
+          
+          setShiftData(updatedShifts);
+        }
+      };
+      
+      checkBookings();
+    }
+  }, [cabinId, date, shifts]);
 
   const getStatusColor = (shift: ShiftAvailability) => {
     if (isPastDate) return "bg-gray-400";
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "bg-yellow-500";
     }
-    // Consider a shift as available only if there's at least one cabin available
-    // AND it's not manually closed AND the total cabins count is greater than 0
+    // Check explicitly for reservations first
+    if (shift.isReserved) {
+      return "bg-red-500";
+    }
+    // Then check for general availability
     return (shift.availableCabins > 0 && shift.totalCabins > 0) ? "bg-green-500" : "bg-red-500";
   };
 
@@ -39,6 +86,10 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
     if (isPastDate) return "Indisponível";
     if (shift.manuallyClosedCount === shift.totalCabins) {
       return "Fechado";
+    }
+    // Explicitly check for reservations
+    if (shift.isReserved) {
+      return "Reservado";
     }
     // Return "Reservado" if no cabins are available or if there are no cabins at all
     if (shift.availableCabins <= 0 || shift.totalCabins <= 0) {
@@ -48,8 +99,8 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
   };
 
   const handleShiftClick = (shift: ShiftAvailability) => {
-    // Only allow clicking if there are actually available cabins
-    if (shift.availableCabins > 0 && shift.totalCabins > 0 && cabinId && !isPastDate) {
+    // Only allow clicking if there are actually available cabins and not reserved
+    if (shift.availableCabins > 0 && shift.totalCabins > 0 && !shift.isReserved && cabinId && !isPastDate) {
       setShowBookingDialog(true);
     }
   };
@@ -74,44 +125,44 @@ export const DailyAvailabilityCell = ({ date, shifts, cabinId }: DailyAvailabili
       </div>
       <div className="space-y-1">
         <div className="flex flex-col">
-          {shifts.morning.price !== undefined && (
+          {shiftData.morning.price !== undefined && (
             <div className="text-xs font-medium text-center -mb-0.5">
-              {formatPrice(shifts.morning.price)}
+              {formatPrice(shiftData.morning.price)}
             </div>
           )}
           <div 
-            className={`${getStatusColor(shifts.morning)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
-            onClick={() => handleShiftClick(shifts.morning)}
+            className={`${getStatusColor(shiftData.morning)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() => handleShiftClick(shiftData.morning)}
           >
-            {getStatusText(shifts.morning)}
+            {getStatusText(shiftData.morning)}
           </div>
         </div>
         
         <div className="flex flex-col">
-          {shifts.afternoon.price !== undefined && (
+          {shiftData.afternoon.price !== undefined && (
             <div className="text-xs font-medium text-center -mb-0.5">
-              {formatPrice(shifts.afternoon.price)}
+              {formatPrice(shiftData.afternoon.price)}
             </div>
           )}
           <div 
-            className={`${getStatusColor(shifts.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
-            onClick={() => handleShiftClick(shifts.afternoon)}
+            className={`${getStatusColor(shiftData.afternoon)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() => handleShiftClick(shiftData.afternoon)}
           >
-            {getStatusText(shifts.afternoon)}
+            {getStatusText(shiftData.afternoon)}
           </div>
         </div>
         
         <div className="flex flex-col">
-          {shifts.evening.price !== undefined && (
+          {shiftData.evening.price !== undefined && (
             <div className="text-xs font-medium text-center -mb-0.5">
-              {formatPrice(shifts.evening.price)}
+              {formatPrice(shiftData.evening.price)}
             </div>
           )}
           <div 
-            className={`${getStatusColor(shifts.evening)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
-            onClick={() => handleShiftClick(shifts.evening)}
+            className={`${getStatusColor(shiftData.evening)} text-white text-xs p-1 rounded-sm shadow-sm ${isPastDate ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
+            onClick={() => handleShiftClick(shiftData.evening)}
           >
-            {getStatusText(shifts.evening)}
+            {getStatusText(shiftData.evening)}
           </div>
         </div>
       </div>
