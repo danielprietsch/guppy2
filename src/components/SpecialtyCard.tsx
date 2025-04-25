@@ -1,4 +1,3 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -159,13 +158,9 @@ const SpecialtyCard = ({
 }: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
-  // Completely revised checkbox handling to prevent default behavior and stop propagation
   const handleCheckboxClick = (e: React.MouseEvent) => {
-    // Stop event bubbling and prevent default
     e.preventDefault();
     e.stopPropagation();
-    
-    // Call the parent handler with the new state
     onCheckedChange(!checked);
   };
   
@@ -176,19 +171,17 @@ const SpecialtyCard = ({
         checked ? "border-primary bg-accent" : "border-input"
       )}
     >
-      {/* Checkbox with improved click handling */}
       <div 
-        className="absolute top-4 right-4 cursor-pointer p-2 rounded-lg hover:bg-accent-foreground/10 flex items-center justify-center"
+        className="absolute top-4 right-4"
         onClick={handleCheckboxClick}
       >
         <Checkbox
           checked={checked}
-          // Remove onCheckedChange to prevent double-trigger
-          className="w-8 h-8 border-2 cursor-pointer"
-          id={`checkbox-${id}`}
+          className="w-8 h-8 border-2"
+          aria-label={`Selecionar ${label}`}
         />
       </div>
-      
+
       <div className="flex items-center gap-3 mb-4 w-full">
         <div className="text-primary p-3 bg-background rounded-full shadow-sm">
           {getIconForSpecialty(id)}
@@ -209,7 +202,6 @@ const SpecialtyCard = ({
         {getServiceDescription(id)}
       </p>
       
-      {/* SEMPRE MOSTRAR CAMPOS DE PREÇO E DURAÇÃO PARA EDIÇÃO */}
       <div className="w-full space-y-4 mt-4 pt-4 border-t border-border bg-background/80 p-4 rounded-md shadow-sm">
         <div className="space-y-2">
           <Label htmlFor={`duration-${id}`} className="flex items-center gap-2 text-base font-semibold">
