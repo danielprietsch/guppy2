@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
@@ -170,30 +169,34 @@ const GlobalAdminDashboardPage = () => {
         </TabsList>
         
         <TabsContent value="overview">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dashboard do Administrador Global</CardTitle>
-              <CardDescription>
-                Gerencie todos os aspectos do sistema a partir deste painel.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <Card className="p-6">
-                <h3 className="font-medium text-lg mb-2">Usuários</h3>
-                <p className="text-muted-foreground">Gerencie usuários e permissões.</p>
-              </Card>
-              
-              <Card className="p-6">
-                <h3 className="font-medium text-lg mb-2">Configurações</h3>
-                <p className="text-muted-foreground">Configurações do sistema.</p>
-              </Card>
-              
-              <Card className="p-6">
-                <h3 className="font-medium text-lg mb-2">Relatórios</h3>
-                <p className="text-muted-foreground">Visualize relatórios do sistema.</p>
-              </Card>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dashboard do Administrador Global</CardTitle>
+                <CardDescription>
+                  Gerencie todos os aspectos do sistema a partir deste painel.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="p-6">
+                  <h3 className="font-medium text-lg mb-2">Usuários</h3>
+                  <p className="text-muted-foreground">Gerencie usuários e permissões.</p>
+                </Card>
+                
+                <Card className="p-6">
+                  <h3 className="font-medium text-lg mb-2">Configurações</h3>
+                  <p className="text-muted-foreground">Configurações do sistema.</p>
+                </Card>
+                
+                <Card className="p-6">
+                  <h3 className="font-medium text-lg mb-2">Relatórios</h3>
+                  <p className="text-muted-foreground">Visualize relatórios do sistema.</p>
+                </Card>
+              </CardContent>
+            </Card>
+
+            <SystemBookingsCard />
+          </div>
         </TabsContent>
         
         <TabsContent value="permissions">
