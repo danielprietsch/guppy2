@@ -52,7 +52,8 @@ export const useProfessionals = () => {
   return useUsers('professional');
 };
 
-// New function to find user by CPF
+// Function to find user by CPF - allows checking for existing users regardless of user type
+// This enables the same CPF to be used for both professional and client accounts
 export const useUserByCPF = (cpf: string, userType?: string) => {
   return useQuery({
     queryKey: ['user-by-cpf', cpf, userType],
