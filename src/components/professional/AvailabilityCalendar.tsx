@@ -144,36 +144,36 @@ const AvailabilityCalendar = () => {
   };
 
   return (
-    <Card>
+    <Card className="h-[calc(100vh-10rem)]">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarIcon className="h-5 w-5" />
           Calendário de Disponibilidade
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <Tabs defaultValue="day" className="w-full">
+      <CardContent className="h-[calc(100%-5rem)] overflow-auto">
+        <div className="h-full space-y-6">
+          <Tabs defaultValue="day" className="w-full h-full">
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="day">Dia</TabsTrigger>
               <TabsTrigger value="week">Semana</TabsTrigger>
               <TabsTrigger value="month">Mês</TabsTrigger>
             </TabsList>
-            <TabsContent value="day">
+            <TabsContent value="day" className="h-[calc(100%-4rem)]">
               <DailyView 
                 selectedDate={selectedDate || today}
                 appointments={appointments || []}
                 onDateChange={handleDateChange}
               />
             </TabsContent>
-            <TabsContent value="week">
+            <TabsContent value="week" className="h-[calc(100%-4rem)]">
               <WeeklyView 
                 selectedDate={selectedDate || today}
                 appointments={appointments || []}
                 onDateChange={handleDateChange}
               />
             </TabsContent>
-            <TabsContent value="month">
+            <TabsContent value="month" className="h-[calc(100%-4rem)]">
               <div className="mb-6">
                 <Calendar
                   mode="single"

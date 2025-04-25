@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek } from "date-fns";
@@ -26,8 +25,8 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
   };
 
   return (
-    <Card className="mb-6 overflow-x-auto">
-      <CardContent className="p-4">
+    <Card className="h-full">
+      <CardContent className="p-4 h-full overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="sm" onClick={handlePreviousWeek}>
             <ChevronLeft className="h-4 w-4" />
@@ -39,8 +38,7 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="grid grid-cols-8 gap-2 min-w-[800px]">
-          {/* Time column */}
+        <div className="grid grid-cols-8 gap-2 min-w-[800px] h-[calc(100%-3rem)]">
           <div className="space-y-2">
             <div className="h-12"></div>
             {hours.map((hour) => (
@@ -53,7 +51,6 @@ const WeeklyView = ({ selectedDate, appointments, onDateChange }: WeeklyViewProp
             ))}
           </div>
 
-          {/* Days columns */}
           {weekDays.map((date) => (
             <div key={date.toString()} className="space-y-2">
               <div className="text-center h-12">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addDays, subDays } from "date-fns";
@@ -24,8 +23,8 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
   };
 
   return (
-    <Card className="mb-6">
-      <CardContent className="p-4">
+    <Card className="h-full">
+      <CardContent className="p-4 h-full overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <Button variant="ghost" size="sm" onClick={handlePreviousDay}>
             <ChevronLeft className="h-4 w-4" />
@@ -37,7 +36,7 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2 h-[calc(100%-3rem)]">
           {hours.map((hour) => {
             const hourAppointments = appointments.filter(app => {
               const appHour = parseInt(app.time.split(':')[0]);
