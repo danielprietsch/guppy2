@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { DailyAvailabilityCell } from "@/components/location/DailyAvailabilityCell";
-import { format, addDays, startOfWeek, isBefore, startOfDay } from "date-fns";
+import { format, addDays, startOfWeek, isBefore, startOfDay, parseISO } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 
 interface CabinAvailabilityCardProps {
@@ -23,7 +23,8 @@ export const CabinAvailabilityCard = ({ cabinId, pricing, createdAt }: CabinAvai
   }, [createdAt]);
   
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+    .filter(date => !createdAt || !isBefore(date, parseISO(createdAt)));
   const currentDay = startOfDay(new Date());
 
   const getShiftAvailability = (date: Date) => {
