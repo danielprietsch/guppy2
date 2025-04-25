@@ -36,6 +36,26 @@ interface Appointment {
   client: AppointmentClient;
 }
 
+// Define an interface for cabin availability to avoid type errors
+interface CabinAvailability {
+  morning: boolean;
+  afternoon: boolean;
+  evening: boolean;
+}
+
+interface CabinDetails {
+  id: string;
+  name: string;
+  description: string;
+  availability: CabinAvailability;
+  locations?: {
+    id: string;
+    name: string;
+    city: string;
+    state: string;
+  };
+}
+
 const AvailabilityCalendar = () => {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -65,7 +85,7 @@ const AvailabilityCalendar = () => {
         return null;
       }
       
-      return data;
+      return data as CabinDetails;
     },
     enabled: !!cabinId,
   });
@@ -188,6 +208,15 @@ const AvailabilityCalendar = () => {
     setSelectedDate(newDate);
   };
 
+  // Helper function to safely check cabin availability
+  const getCabinShiftAvailability = (shift: 'morning' | 'afternoon' | 'evening'): boolean => {
+    if (!cabinData || !cabinData.availability) return false;
+    
+    // Type casting to access the properties safely
+    const cabinAvailability = cabinData.availability as CabinAvailability;
+    return cabinAvailability[shift] || false;
+  };
+
   if (!selectedDate) {
     return <div>Carregando...</div>;
   }
@@ -207,19 +236,19 @@ const AvailabilityCalendar = () => {
             <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
               <div>
                 <div className="font-medium">Manhã</div>
-                <div>{cabinData.availability?.morning ? 
+                <div>{getCabinShiftAvailability('morning') ? 
                   <span className="text-green-600">Disponível</span> : 
                   <span className="text-red-500">Indisponível</span>}</div>
               </div>
               <div>
                 <div className="font-medium">Tarde</div>
-                <div>{cabinData.availability?.afternoon ? 
+                <div>{getCabinShiftAvailability('afternoon') ? 
                   <span className="text-green-600">Disponível</span> : 
                   <span className="text-red-500">Indisponível</span>}</div>
               </div>
               <div>
                 <div className="font-medium">Noite</div>
-                <div>{cabinData.availability?.evening ? 
+                <div>{getCabinShiftAvailability('evening') ? 
                   <span className="text-green-600">Disponível</span> : 
                   <span className="text-red-500">Indisponível</span>}</div>
               </div>
