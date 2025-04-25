@@ -227,29 +227,29 @@ const LocationCard = ({ location }: LocationCardProps) => {
             )}
           </CardContent>
 
-          <div className="aspect-[16/9] overflow-hidden">
-            <img
-              src={displayImage}
-              alt={location.name}
-              className="h-full w-full object-cover transition-transform hover:scale-105"
-            />
-          </div>
-          
-          <div className="w-full h-60 bg-white flex items-center justify-center">
-            <iframe
-              title={`${location.name} Mapa`}
-              src={googleMapsEmbedUrl}
-              width="100%"
-              height="100%"
-              className="w-full h-full rounded-b-lg"
-              style={{
-                minHeight: 180,
-                border: "none",
-                borderRadius: "0 0 0.75rem 0.75rem",
-                pointerEvents: 'auto'
-              }}
-              allowFullScreen
-            />
+          <div className="grid grid-cols-2 gap-4 p-4">
+            <div className="aspect-square overflow-hidden rounded-lg">
+              <img
+                src={displayImage}
+                alt={location.name}
+                className="h-full w-full object-cover transition-transform hover:scale-105"
+              />
+            </div>
+            
+            <div className="aspect-square rounded-lg overflow-hidden">
+              <iframe
+                title={`${location.name} Mapa`}
+                src={googleMapsEmbedUrl}
+                width="100%"
+                height="100%"
+                className="w-full h-full"
+                style={{
+                  border: "none",
+                  borderRadius: "0.5rem"
+                }}
+                allowFullScreen
+              />
+            </div>
           </div>
 
           <CardFooter className="p-4 pt-0 flex flex-wrap gap-1">
