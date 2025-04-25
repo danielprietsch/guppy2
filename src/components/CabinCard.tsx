@@ -136,7 +136,11 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
             </Button>
           </Link>
         ) : isProfessional ? (
-          <Link to={`/book-cabin/${cabin.id}`} className="w-full">
+          <Link 
+            to={`/book-cabin/${cabin.id}?locationId=${location?.id || ''}`} 
+            className="w-full" 
+            state={{ cabinDetails: cabin, locationDetails: location }}
+          >
             <Button size="sm" className="w-full">
               Reservar Cabine
             </Button>
