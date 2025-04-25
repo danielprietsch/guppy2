@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { z } from "zod";
@@ -51,7 +50,6 @@ const NewServicePage = () => {
   const [selectedServices, setSelectedServices] = useState<{ id: string; price: number; duration: number; }[]>([]);
   const [showWarning, setShowWarning] = useState(true);
 
-  // Update warning visibility based on selected services
   useEffect(() => {
     if (selectedServices.length > 0) {
       setShowWarning(false);
@@ -67,7 +65,6 @@ const NewServicePage = () => {
     },
   });
 
-  // Update form values when selected services change
   useEffect(() => {
     form.setValue('services', selectedServices);
   }, [selectedServices, form]);
@@ -95,7 +92,6 @@ const NewServicePage = () => {
       setIsSubmitting(true);
       console.log("Salvando serviços:", selectedServices);
 
-      // Insert each service as a separate row
       for (const service of selectedServices) {
         const { error } = await supabase
           .from("services")
@@ -133,7 +129,7 @@ const NewServicePage = () => {
   };
 
   const handleCancel = () => {
-    navigate(-1);
+    navigate("/professional/dashboard");
   };
 
   const handleServiceToggle = (serviceId: string, checked: boolean) => {
@@ -176,7 +172,12 @@ const NewServicePage = () => {
   return (
     <div className="container max-w-7xl py-12">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" onClick={handleCancel}>
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={handleCancel}
+          className="mr-2"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h1 className="text-3xl font-bold">Novos Serviços</h1>
@@ -190,7 +191,6 @@ const NewServicePage = () => {
         </div>
       )}
 
-      {/* Sticky Save button at top of page for better visibility */}
       <div className="sticky top-4 z-10 flex justify-end mb-6">
         <Button 
           onClick={onSubmit}
@@ -239,7 +239,6 @@ const NewServicePage = () => {
                 })}
               </div>
 
-              {/* Large, prominent save button at bottom of page as well */}
               <div className="flex justify-center pt-8">
                 <Button 
                   onClick={onSubmit}
