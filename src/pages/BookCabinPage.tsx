@@ -2,17 +2,14 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useCabinSearch } from "@/hooks/useCabinSearch";
 import { supabase } from "@/integrations/supabase/client";
-import CabinAvailabilityCalendar from "@/components/CabinAvailabilityCalendar";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { toast } from "@/hooks/use-toast";
-import { Calendar as CalendarIcon, Check } from "lucide-react";
+import BookingCalendar from "@/components/booking/BookingCalendar";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,11 +20,10 @@ const BookCabinPage = () => {
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [isWeekend, setIsWeekend] = useState(false);
-  const [selectedTurn, setSelectedTurn] = useState<"morning" | "afternoon" | "evening">("morning");
-  const [daysBooked] = useState<{ [date: string]: { [turn: string]: boolean } }>({});
-
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
+
+  const [selectedTurns, setSelectedTurns] = useState<{ [date: string]: string[] }>({});
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     const loadCabinData = async () => {
@@ -134,32 +130,59 @@ const BookCabinPage = () => {
     loadCabinData();
   }, [id, cabinDetails]);
 
-  const onSelectDates = (dates: string[]) => {
-    // Handle date selection
-    console.log('Selected dates:', dates);
+  const handleTurnSelection = (date: string, turn: string) => {
+    setSelectedTurns(prev => {
+      const newTurns = { ...prev };
+      
+      if (newTurns[date]?.includes(turn)) {
+        // Remove turn if already selected
+        newTurns[date] = newTurns[date].filter(t => t !== turn);
+        if (newTurns[date].length === 0) {
+          delete newTurns[date];
+        }
+      } else {
+        // Add new turn
+        if (!newTurns[date]) {
+          newTurns[date] = [];
+        }
+        newTurns[date] = [...newTurns[date], turn];
+      }
+      
+      return newTurns;
+    });
   };
 
-  const getBasePrice = (cabin: Cabin) => {
-    return cabin?.price || 50;
-  };
+  // Calculate total price whenever selected turns change
+  useEffect(() => {
+    if (!cabin) return;
+
+    let newTotal = 0;
+    Object.entries(selectedTurns).forEach(([_, turns]) => {
+      turns.forEach(() => {
+        newTotal += cabin.price;
+      });
+    });
+    
+    // Add service fee
+    newTotal += 10;
+    setTotal(newTotal);
+  }, [selectedTurns, cabin]);
 
   const handleBookCabin = () => {
-    if (!cabin || !selectedTurn || !acceptTerms) {
+    if (!cabin || Object.keys(selectedTurns).length === 0 || !acceptTerms) {
       toast({
         title: "Erro",
-        description: "Por favor, preencha todos os campos e aceite os termos",
+        description: "Por favor, selecione pelo menos um turno e aceite os termos",
         variant: "destructive",
       });
       return;
     }
 
-    // Logic for booking cabin would go here
     toast({
       title: "Reserva solicitada",
       description: "Sua reserva foi enviada com sucesso e está sendo processada.",
     });
     
-    // Navigate to a confirmation page or dashboard
     navigate("/professional-dashboard");
   };
 
@@ -239,18 +262,19 @@ const BookCabinPage = () => {
       
       <div className="mt-8 grid gap-8 md:grid-cols-[1fr_400px]">
         <Card>
+          <CardHeader>
+            <CardTitle>Selecione os turnos desejados</CardTitle>
+          </CardHeader>
           <CardContent className="p-6">
             {cabin && (
-              <CabinAvailabilityCalendar
-                selectedTurn={selectedTurn}
-                daysBooked={daysBooked}
-                onSelectDates={onSelectDates}
-                selectedDates={[]}
-                pricePerDay={getBasePrice(cabin)}
-                onStatusChange={() => {}}
-                onPriceChange={() => {}}
-                manuallyClosedDates={{}}
-                slotPrices={{}}
+              <BookingCalendar
+                selectedTurns={selectedTurns}
+                onSelectTurn={handleTurnSelection}
+                pricePerTurn={{
+                  morning: cabin.price,
+                  afternoon: cabin.price,
+                  evening: cabin.price
+                }}
                 cabinCreatedAt={cabin.created_at}
               />
             )}
@@ -270,16 +294,19 @@ const BookCabinPage = () => {
                 )}
                 
                 <div className="mt-4">
-                  {/* Date display */}
-                  <span>
-                    {/* {date ? format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecione uma data"} */}
-                  </span>
-                  {/* Shift selection */}
-                  <div>
-                    <span>
-                      {/* Turno: {selectedShift === "morning" ? "Manhã (08:00 - 12:00)" : selectedShift === "afternoon" ? "Tarde (13:00 - 17:00)" : selectedShift === "evening" ? "Noite (18:00 - 22:00)" : "Selecione um turno"} */}
-                    </span>
-                  </div>
+                  <h3 className="font-medium mb-2">Turnos selecionados:</h3>
+                  {Object.entries(selectedTurns).map(([date, turns]) => (
+                    <div key={date} className="mb-2">
+                      <p className="text-sm text-gray-600">{date}:</p>
+                      <div className="flex gap-2">
+                        {turns.map(turn => (
+                          <span key={turn} className="text-sm bg-secondary px-2 py-1 rounded">
+                            {turn === "morning" ? "Manhã" : turn === "afternoon" ? "Tarde" : "Noite"}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
                 
                 <Separator className="my-4" />
@@ -290,7 +317,7 @@ const BookCabinPage = () => {
                     <ul className="grid gap-1 text-sm">
                       {cabin.equipment.map((item, index) => (
                         <li key={index} className="flex items-center gap-2">
-                          <Check className="h-4 w-4 text-primary" /> {item}
+                          <span>•</span> {item}
                         </li>
                       ))}
                     </ul>
@@ -301,8 +328,8 @@ const BookCabinPage = () => {
                 
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
-                    <span>Valor do turno ({isWeekend ? "fim de semana" : "dia de semana"})</span>
-                    <span>R$ {cabin?.price?.toFixed(2)}</span>
+                    <span>Valor total dos turnos</span>
+                    <span>R$ {(total - 10).toFixed(2)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Taxa de serviço</span>
@@ -311,7 +338,7 @@ const BookCabinPage = () => {
                   <Separator className="my-2" />
                   <div className="flex items-center justify-between font-bold">
                     <span>Total</span>
-                    <span>R$ {(cabin?.price + 10).toFixed(2)}</span>
+                    <span>R$ {total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -320,7 +347,7 @@ const BookCabinPage = () => {
               <Button 
                 className="w-full" 
                 onClick={handleBookCabin}
-                disabled={!acceptTerms || !selectedTurn}
+                disabled={!acceptTerms || Object.keys(selectedTurns).length === 0}
               >
                 Reservar Cabine
               </Button>
@@ -328,6 +355,7 @@ const BookCabinPage = () => {
           </Card>
         </div>
       </div>
+
       <div className="mt-6">
         <h2 className="text-xl font-semibold">Termos de Uso</h2>
         <div className="mt-4 max-h-64 overflow-y-auto rounded-md border p-4">
