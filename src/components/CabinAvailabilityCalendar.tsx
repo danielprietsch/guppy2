@@ -30,17 +30,20 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   slotPrices = {},
   cabinCreatedAt
 }) => {
-  // Garantir que usamos a data de criação como mês inicial quando disponível
-  const defaultViewMonth = cabinCreatedAt ? parseISO(cabinCreatedAt) : new Date();
-  const [viewMonth, setViewMonth] = React.useState<Date>(defaultViewMonth);
-  
-  // Atualizar viewMonth quando cabinCreatedAt mudar para manter consistência
-  React.useEffect(() => {
+  // FORÇAR o uso da data de criação como mês inicial - SEMPRE!
+  const getInitialDate = React.useCallback(() => {
     if (cabinCreatedAt) {
-      const creationDate = parseISO(cabinCreatedAt);
-      setViewMonth(creationDate);
+      return parseISO(cabinCreatedAt);
     }
+    return new Date();
   }, [cabinCreatedAt]);
+  
+  const [viewMonth, setViewMonth] = React.useState<Date>(getInitialDate);
+  
+  // GARANTIR que a data de visualização seja SEMPRE atualizada quando mudar a cabine
+  React.useEffect(() => {
+    setViewMonth(getInitialDate());
+  }, [cabinCreatedAt, getInitialDate]);
   
   const navigate = useNavigate();
   const today = startOfDay(new Date());
@@ -178,8 +181,9 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       locale={ptBR}
       disabled={(date) => {
         if (!cabinCreatedAt) return false;
-        // Desabilitar datas anteriores à data de criação da cabine
-        return isBefore(startOfDay(date), startOfDay(parseISO(cabinCreatedAt)));
+        // RIGOROSAMENTE desabilitar TODAS as datas anteriores à data de criação da cabine
+        const creationDate = parseISO(cabinCreatedAt);
+        return isBefore(startOfDay(date), startOfDay(creationDate));
       }}
       className="w-full rounded-md border"
       classNames={{

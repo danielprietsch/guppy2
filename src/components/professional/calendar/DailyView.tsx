@@ -28,9 +28,13 @@ const DailyView = ({
 
   const handlePreviousDay = () => {
     const newDate = subDays(selectedDate, 1);
-    // Impedir navegação para datas anteriores à data de criação
-    if (createdAt && isBefore(startOfDay(newDate), startOfDay(parseISO(createdAt)))) {
-      return; 
+    
+    // ESTRITAMENTE impedir navegação para datas anteriores à data de criação
+    if (createdAt) {
+      const creationDate = parseISO(createdAt);
+      if (isBefore(startOfDay(newDate), startOfDay(creationDate))) {
+        return; 
+      }
     }
     onDateChange(newDate);
   };

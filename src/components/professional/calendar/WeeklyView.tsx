@@ -25,17 +25,26 @@ const WeeklyView = ({
   createdAt
 }: WeeklyViewProps) => {
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  // Filtrar dias da semana para garantir que nenhuma data anterior à data de criação seja exibida
+  
+  // RIGOROSAMENTE filtrar TODOS os dias da semana anteriores à data de criação
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-    .filter(date => !createdAt || !isBefore(startOfDay(date), startOfDay(parseISO(createdAt))));
+    .filter(date => {
+      if (!createdAt) return true;
+      const creationDate = parseISO(createdAt);
+      return !isBefore(date, creationDate);
+    });
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
-    // Impedir navegação para semanas anteriores à data de criação
-    if (createdAt && isBefore(startOfDay(newDate), startOfDay(parseISO(createdAt)))) {
-      return;
+    
+    // ESTRITAMENTE impedir navegação para semanas anteriores à data de criação
+    if (createdAt) {
+      const creationDate = parseISO(createdAt);
+      if (isBefore(startOfDay(newDate), startOfDay(creationDate))) {
+        return;
+      }
     }
     onDateChange(newDate);
   };

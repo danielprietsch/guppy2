@@ -12,13 +12,18 @@ interface CabinAvailabilityCardProps {
 }
 
 export const CabinAvailabilityCard = ({ cabinId, pricing, createdAt }: CabinAvailabilityCardProps) => {
-  // Use cabin creation date if available, otherwise use today
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  // Forçar o uso da data de criação da cabine como data inicial
+  const [startDate, setStartDate] = useState<Date>(() => {
+    if (createdAt) {
+      return parseISO(createdAt);
+    }
+    return new Date();
+  });
   
+  // Garantir que a data de início nunca seja anterior à data de criação
   useEffect(() => {
     if (createdAt) {
       const cabinCreationDate = parseISO(createdAt);
-      // Garantir que a data de início é pelo menos a data de criação
       if (isBefore(startDate, cabinCreationDate)) {
         setStartDate(cabinCreationDate);
       }
@@ -26,9 +31,15 @@ export const CabinAvailabilityCard = ({ cabinId, pricing, createdAt }: CabinAvai
   }, [createdAt, startDate]);
   
   const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
-  // Filtra dias da semana para garantir que nenhuma data anterior à criação da cabine seja exibida
+  
+  // Filtrar dias da semana para garantir que NENHUMA data anterior à criação da cabine seja exibida
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-    .filter(date => !createdAt || !isBefore(date, parseISO(createdAt)));
+    .filter(date => {
+      if (!createdAt) return true;
+      const creationDate = parseISO(createdAt);
+      return !isBefore(date, creationDate);
+    });
+    
   const currentDay = startOfDay(new Date());
 
   const getShiftAvailability = (date: Date) => {

@@ -30,6 +30,7 @@ export const AvailabilitySettings = ({
   useEffect(() => {
     if (locationCabins.length > 0 && !selectedCabin) {
       setSelectedCabin(locationCabins[0].id);
+      debugAreaLog('AVAILABILITY', 'Auto-selecting first cabin:', locationCabins[0].id);
     }
   }, [locationCabins, selectedCabin]);
   
@@ -96,6 +97,8 @@ export const AvailabilitySettings = ({
     if (!selectedCabin) return undefined;
     
     const cabin = locationCabins.find(c => c.id === selectedCabin);
+    // Garantir que o console mostra a data que está sendo passada
+    debugAreaLog('AVAILABILITY', 'Getting cabin creation date:', cabin?.created_at);
     return cabin?.created_at;
   };
 
