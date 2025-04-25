@@ -22,9 +22,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         const formattedDate = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
         console.log('Fetching professionals for date:', formattedDate);
 
-        // Use a function call to avoid RLS recursion
-        const { data: professionals, error } = await supabase
-          .rpc('get_public_professionals');
+        const { data: professionals, error } = await supabase.rpc<User[]>('get_public_professionals');
 
         if (error) {
           console.error('Error fetching professional profiles:', error);
@@ -38,7 +36,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         }
 
         // 5. If withSpecialties is true, fetch their specialties
-        if (withSpecialties) {
+        if (withSpecialties && professionals) {
           const { data: services, error: servicesError } = await supabase
             .from('services')
             .select('professional_id, category')
@@ -67,7 +65,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           }
         }
 
-        return professionals as User[];
+        return professionals;
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
         return [];

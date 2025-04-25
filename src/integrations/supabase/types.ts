@@ -552,6 +552,29 @@ export type Database = {
         Args: { user_id: string }
         Returns: string
       }
+      get_profile_visibility: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      get_public_professionals: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          address: string | null
+          avatar_url: string | null
+          city: string | null
+          cpf: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          is_public: boolean | null
+          name: string | null
+          phone_number: string | null
+          state: string | null
+          updated_at: string | null
+          user_type: string | null
+          zip_code: string | null
+        }[]
+      }
       get_user_locations: {
         Args: { user_id: string }
         Returns: {
@@ -613,6 +636,10 @@ export type Database = {
       }
       update_location_approval_status: {
         Args: { location_id: string; new_status: string; admin_id: string }
+        Returns: boolean
+      }
+      update_profile_visibility: {
+        Args: { user_id: string; is_public: boolean }
         Returns: boolean
       }
     }
