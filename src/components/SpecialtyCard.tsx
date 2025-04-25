@@ -1,4 +1,3 @@
-
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -159,9 +158,7 @@ const SpecialtyCard = ({
 }: SpecialtyCardProps) => {
   const serviceInfo = serviceData[id as keyof typeof serviceData] || { duration: 30, price: 50, category: "Outro" };
   
-  // Tornando o card todo clicável, mas com prevenção de comportamento indesejado
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevenindo comportamento padrão para evitar redirecionamentos
     e.preventDefault();
     onCheckedChange(!checked);
   };
@@ -171,7 +168,7 @@ const SpecialtyCard = ({
       className={cn(
         "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer",
         checked 
-          ? "border-primary bg-[#D3E4FD] text-foreground" // Light, soft blue when selected
+          ? "border-primary bg-[#33C3F0]/10 text-foreground" // Novo azul claro com fundo semi-transparente
           : "border-input"
       )}
       onClick={handleCardClick}
