@@ -52,6 +52,63 @@ export const useProfessionals = () => {
   return useUsers('professional');
 };
 
+// New function to find user by CPF
+export const useUserByCPF = (cpf: string, userType?: string) => {
+  return useQuery({
+    queryKey: ['user-by-cpf', cpf, userType],
+    queryFn: async () => {
+      // Skip the query if CPF is not provided
+      if (!cpf) {
+        return null;
+      }
+      
+      let query = supabase
+        .from('profiles')
+        .select('*')
+        .eq('cpf', cpf);
+      
+      if (userType) {
+        query = query.eq('user_type', userType);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching user by CPF:', error);
+        return null;
+      }
+      
+      if (data.length === 0) {
+        return null;
+      }
+      
+      const profile = data[0];
+      
+      // Map the profile to our User type
+      return {
+        id: profile.id,
+        name: profile.name || '',
+        email: profile.email || '',
+        user_type: profile.user_type,
+        userType: profile.user_type,
+        avatarUrl: profile.avatar_url,
+        avatar_url: profile.avatar_url,
+        phoneNumber: profile.phone_number,
+        phone_number: profile.phone_number,
+        cpf: profile.cpf,
+        address: profile.address,
+        city: profile.city,
+        state: profile.state,
+        zip_code: profile.zip_code,
+        specialties: [],
+        created_at: profile.created_at,
+        updated_at: profile.updated_at
+      } as User;
+    },
+    enabled: !!cpf
+  });
+};
+
 export const useUser = (id: string) => {
   return useQuery({
     queryKey: ['user', id],
