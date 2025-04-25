@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Index from './pages/Index';
@@ -18,6 +19,7 @@ import ClientReservationsPage from './pages/ClientReservationsPage';
 import ClientProfilePage from './pages/ClientProfilePage';
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
 import OwnerProfilePage from './pages/OwnerProfilePage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import GlobalAdminDashboardPage from './pages/GlobalAdminDashboardPage';
 import GlobalAdminProfilePage from './pages/GlobalAdminProfilePage';
 import NotFound from './pages/NotFound';
@@ -62,7 +64,8 @@ function App() {
             <Route path="/owner/profile" element={<OwnerProfilePage />} />
             
             {/* Admin Routes */}
-            <Route path="/admin/dashboard" element={<GlobalAdminDashboardPage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/global" element={<GlobalAdminDashboardPage />} />
             <Route path="/admin/profile" element={<GlobalAdminProfilePage />} />
             
             {/* Fallback Route */}
