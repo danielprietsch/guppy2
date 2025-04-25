@@ -61,7 +61,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
     return beautySalonImages[imageIndex];
   })();
 
-  const googleMapsEmbedUrl = `https://www.google.com/maps?&q=${formatAddressForMaps(location.address, location.city, location.state)}&z=18&output=embed`;
+  const googleMapsEmbedUrl = `https://www.google.com/maps/embed/v1/place?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&q=${formatAddressForMaps(location.address, location.city, location.state)}&zoom=16`;
 
   useEffect(() => {
     const fetchAvailabilityData = async () => {
@@ -179,8 +179,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
       <Link to={`/locations/${location.id}`} className="block hover:no-underline">
         <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200">
           <CardContent className="p-6">
-            <div className="grid grid-cols-12 gap-6">
-              <div className="col-span-4">
+            <div className="grid grid-cols-3 gap-6">
+              <div className="col-span-1">
                 <h3 className="font-semibold text-2xl text-gray-800 mb-3">{location.name}</h3>
                 <p className="text-lg text-gray-600 mb-4">{location.address}, {location.city}</p>
                 
@@ -207,8 +207,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
                 </div>
               </div>
 
-              <div className="col-span-4">
-                <div className="h-48 overflow-hidden rounded-lg shadow-sm">
+              <div className="col-span-1">
+                <div className="h-64 overflow-hidden rounded-lg shadow-sm">
                   <img
                     src={displayImage}
                     alt={location.name}
@@ -217,19 +217,18 @@ const LocationCard = ({ location }: LocationCardProps) => {
                 </div>
               </div>
 
-              <div className="col-span-4">
-                <div className="h-48 rounded-lg overflow-hidden shadow-sm">
+              <div className="col-span-1">
+                <div className="h-64 rounded-lg overflow-hidden shadow-sm">
                   <iframe
                     title={`${location.name} Mapa`}
                     src={googleMapsEmbedUrl}
                     width="100%"
                     height="100%"
                     className="w-full h-full"
-                    style={{
-                      border: "none",
-                      borderRadius: "0.5rem"
-                    }}
+                    style={{ border: "none" }}
                     allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
               </div>
