@@ -48,16 +48,44 @@ export const useWorkingHours = (professionalId: string | undefined) => {
     mutationFn: async ({ workingHours, breakTime }: { workingHours: WorkingHours; breakTime: BreakTime }) => {
       if (!professionalId) throw new Error('No professional ID');
 
-      const { error } = await supabase
+      const formattedDate = format(new Date(), 'yyyy-MM-dd');
+      
+      // First check if an entry exists for this professional
+      const { data: existingData, error: fetchError } = await supabase
         .from('professional_availability')
-        .upsert({
-          professional_id: professionalId,
-          date: format(new Date(), 'yyyy-MM-dd'),
-          working_hours: workingHours,
-          break_time: breakTime
-        });
+        .select('id')
+        .eq('professional_id', professionalId)
+        .eq('date', formattedDate)
+        .single();
 
-      if (error) throw error;
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 is "not found" error
+        throw fetchError;
+      }
+
+      if (existingData) {
+        // Update existing record
+        const { error } = await supabase
+          .from('professional_availability')
+          .update({
+            working_hours: workingHours,
+            break_time: breakTime
+          })
+          .eq('id', existingData.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('professional_availability')
+          .insert({
+            professional_id: professionalId,
+            date: formattedDate,
+            working_hours: workingHours,
+            break_time: breakTime
+          });
+
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['working-hours', professionalId] });

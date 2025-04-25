@@ -14,6 +14,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailability, ShiftStatus } from "@/hooks/useAvailability";
+import WorkingHoursSettings from './WorkingHoursSettings';
 
 interface AppointmentClient {
   name: string;
