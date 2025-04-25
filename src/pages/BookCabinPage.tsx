@@ -1,310 +1,77 @@
-
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-toast";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { Calendar as CalendarIcon, Check } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { debugLog, debugError } from "@/utils/debugLogger";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
+import { useCabinSearch } from "@/hooks/useCabinSearch";
 
 const BookCabinPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [cabin, setCabin] = useState<Cabin | null>(null);
-  const [location, setLocation] = useState<Location | null>(null);
+  const location = useLocation();
+  const { cabinDetails, locationDetails } = location.state || {};
+  const [cabin, setCabin] = useState<Cabin | null>(cabinDetails || null);
+  const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
-  const [date, setDate] = useState<Date | undefined>(new Date());
-  const [selectedShift, setSelectedShift] = useState<"morning" | "afternoon" | "evening" | null>(null);
-  const [isWeekend, setIsWeekend] = useState<boolean>(false);
-  const [price, setPrice] = useState<number>(0);
-  const [acceptTerms, setAcceptTerms] = useState<boolean>(false);
 
-  // Fetch cabin and location data from Supabase
+  const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
+
   useEffect(() => {
-    const fetchCabinData = async () => {
+    const loadCabinData = async () => {
       if (!id) {
         setLoading(false);
         return;
       }
 
       try {
-        debugLog(`BookCabinPage: Fetching cabin with id ${id}`);
-        
-        // Fetch cabin
-        const { data: cabinData, error: cabinError } = await supabase
-          .from('cabins')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (cabinError) {
-          debugError("BookCabinPage: Error fetching cabin:", cabinError);
-          setLoading(false);
-          return;
-        }
-
-        if (!cabinData) {
-          debugLog("BookCabinPage: No cabin found with id:", id);
-          setLoading(false);
-          return;
-        }
-
-        // Transform cabin data to match Cabin type
-        const transformedCabin = transformCabinData(cabinData);
-        setCabin(transformedCabin);
-
-        // Fetch location for this cabin
-        if (cabinData.location_id) {
-          const { data: locationData, error: locationError } = await supabase
-            .from('locations')
+        // If we don't have cabin details from state, fetch them
+        if (!cabinDetails) {
+          const { data: cabinData, error: cabinError } = await supabase
+            .from('cabins')
             .select('*')
-            .eq('id', cabinData.location_id)
+            .eq('id', id)
             .single();
 
-          if (locationError) {
-            debugError("BookCabinPage: Error fetching location:", locationError);
-          } else if (locationData) {
-            // Transform location data to match Location type
-            const transformedLocation = transformLocationData(locationData);
-            setLocation(transformedLocation);
+          if (cabinError) throw cabinError;
+          setCabin(cabinData);
+
+          // Fetch location data if we have a cabin
+          if (cabinData?.location_id) {
+            const { data: locData, error: locError } = await supabase
+              .from('locations')
+              .select('*')
+              .eq('id', cabinData.location_id)
+              .single();
+
+            if (locError) throw locError;
+            setLocationData(locData);
           }
         }
       } catch (error) {
-        debugError("BookCabinPage: Unexpected error:", error);
+        console.error("Error loading cabin data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCabinData();
-  }, [id]);
-
-  // Transform cabin data from Supabase to match Cabin type
-  const transformCabinData = (cabinData: any): Cabin => {
-    let availability = { morning: true, afternoon: true, evening: true };
-    
-    try {
-      if (cabinData.availability) {
-        if (typeof cabinData.availability === 'string') {
-          availability = JSON.parse(cabinData.availability);
-        } else if (typeof cabinData.availability === 'object' && cabinData.availability !== null) {
-          const avail = cabinData.availability as any;
-          availability = {
-            morning: avail.morning !== false,
-            afternoon: avail.afternoon !== false,
-            evening: avail.evening !== false
-          };
-        }
-      }
-    } catch (e) {
-      debugError("BookCabinPage: Error parsing availability data", e);
-    }
-    
-    let pricingObject = {
-      defaultPricing: {},
-      specificDates: {}
-    };
-    
-    try {
-      if (cabinData.pricing) {
-        if (typeof cabinData.pricing === 'string') {
-          const parsedPricing = JSON.parse(cabinData.pricing);
-          if (parsedPricing && typeof parsedPricing === 'object') {
-            pricingObject = {
-              defaultPricing: parsedPricing.defaultPricing || {},
-              specificDates: parsedPricing.specificDates || {}
-            };
-          }
-        } else if (typeof cabinData.pricing === 'object' && cabinData.pricing !== null) {
-          const pricingData = cabinData.pricing as any;
-          pricingObject = {
-            defaultPricing: pricingData.defaultPricing || {},
-            specificDates: pricingData.specificDates || {}
-          };
-        }
-      }
-    } catch (e) {
-      debugError("BookCabinPage: Error parsing pricing data", e);
-    }
-
-    // Calculate initial price based on default pricing data
-    let cabinPrice = 0;
-    try {
-      if (pricingObject.defaultPricing && 
-          typeof pricingObject.defaultPricing === 'object' && 
-          pricingObject.defaultPricing !== null) {
-            
-        const defaultPricing = pricingObject.defaultPricing as any;
-        
-        if (defaultPricing.weekday && typeof defaultPricing.weekday === 'number') {
-          cabinPrice = defaultPricing.weekday;
-        } else if (defaultPricing.weekend && typeof defaultPricing.weekend === 'number') {
-          cabinPrice = defaultPricing.weekend;
-        }
-      }
-    } catch (e) {
-      debugError("BookCabinPage: Error extracting cabin price", e);
-    }
-
-    return {
-      id: cabinData.id,
-      locationId: cabinData.location_id,
-      name: cabinData.name,
-      description: cabinData.description || "",
-      equipment: cabinData.equipment || [],
-      imageUrl: cabinData.image_url || "",
-      availability: availability,
-      price: cabinPrice,
-      pricing: pricingObject
-    };
-  };
-
-  // Transform location data from Supabase to match Location type
-  const transformLocationData = (locationData: any): Location => {
-    let openingHours = { open: "09:00", close: "18:00" };
-    
-    if (locationData.opening_hours) {
-      try {
-        if (typeof locationData.opening_hours === 'string') {
-          const parsed = JSON.parse(locationData.opening_hours);
-          if (parsed && typeof parsed === 'object' && 'open' in parsed && 'close' in parsed) {
-            openingHours = {
-              open: String(parsed.open),
-              close: String(parsed.close)
-            };
-          }
-        } else if (typeof locationData.opening_hours === 'object' && locationData.opening_hours !== null) {
-          const hours = locationData.opening_hours as any;
-          if ('open' in hours && 'close' in hours) {
-            openingHours = {
-              open: String(hours.open),
-              close: String(hours.close)
-            };
-          }
-        }
-      } catch (e) {
-        debugError("BookCabinPage: Error parsing opening hours", e);
-      }
-    }
-    
-    return {
-      id: locationData.id,
-      name: locationData.name,
-      address: locationData.address,
-      city: locationData.city,
-      state: locationData.state,
-      zipCode: locationData.zip_code,
-      cabinsCount: locationData.cabins_count || 0,
-      openingHours: openingHours,
-      amenities: locationData.amenities || [],
-      imageUrl: locationData.image_url || "",
-      description: locationData.description || "",
-      active: locationData.active
-    };
-  };
-
-  // Update price based on date (weekend vs weekday)
-  useEffect(() => {
-    if (date && cabin) {
-      const day = date.getDay();
-      const isWeekend = day === 0 || day === 6; // 0 is Sunday, 6 is Saturday
-      setIsWeekend(isWeekend);
-      
-      // Try to get price from cabin pricing data
-      let newPrice = 0;
-      
-      if (cabin.pricing && typeof cabin.pricing === 'object') {
-        const pricing = cabin.pricing as any;
-        const defaultPricing = pricing.defaultPricing || {};
-        
-        if (isWeekend && defaultPricing.weekend) {
-          newPrice = Number(defaultPricing.weekend);
-        } else if (!isWeekend && defaultPricing.weekday) {
-          newPrice = Number(defaultPricing.weekday);
-        }
-      }
-      
-      // If no price found in cabin pricing, use default values
-      if (newPrice === 0) {
-        newPrice = isWeekend ? 150 : 100;
-      }
-      
-      setPrice(newPrice);
-    }
-  }, [date, cabin]);
-
-  const handleBookCabin = async () => {
-    const currentUser = localStorage.getItem("currentUser");
-    
-    if (!currentUser) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para fazer uma reserva.",
-        variant: "destructive",
-      });
-      navigate("/login");
-      return;
-    }
-    
-    if (!date || !selectedShift) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione uma data e um turno.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!acceptTerms) {
-      toast({
-        title: "Erro",
-        description: "Você precisa aceitar os termos de uso.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      // In a real implementation, this would create a booking record in Supabase
-      // For now, we'll just simulate a successful booking with a toast notification
-      
-      toast({
-        title: "Reserva realizada com sucesso!",
-        description: `Você reservou a cabine para ${format(date, "dd 'de' MMMM", { locale: ptBR })} no turno da ${
-          selectedShift === "morning" ? "manhã" : selectedShift === "afternoon" ? "tarde" : "noite"
-        }.`,
-      });
-      
-      // Redirect to appropriate dashboard based on user type
-      navigate("/client/reservations");
-    } catch (error) {
-      toast({
-        title: "Erro ao fazer reserva",
-        description: "Ocorreu um erro ao processar sua reserva. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
+    loadCabinData();
+  }, [id, cabinDetails]);
 
   if (loading) {
     return (
-      <div className="container px-4 py-12 md:px-6 md:py-16 text-center">
-        <p className="text-lg">Carregando dados da cabine...</p>
+      <div className="container px-4 py-12 md:px-6 md:py-16">
+        <p className="text-center text-lg">Carregando...</p>
       </div>
     );
   }
 
-  if (!cabin || !location) {
+  if (!cabin && !locationData) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-16 text-center">
-        <h2>Cabine não encontrada</h2>
-        <Button className="mt-4" onClick={() => navigate("/locations")}>
+        <h2 className="text-2xl font-bold mb-4">Cabine não encontrada</h2>
+        <Button onClick={() => navigate("/locations")}>
           Voltar para Locais
         </Button>
       </div>
@@ -313,7 +80,58 @@ const BookCabinPage = () => {
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
-      <h1 className="text-3xl font-bold">Reserva de Cabine</h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-4">
+          {locationData ? `Cabines em ${locationData.name}` : 'Reserva de Cabine'}
+        </h1>
+        
+        <div className="relative max-w-md mb-6">
+          <Input
+            type="text"
+            placeholder="Buscar cabines..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading ? (
+            <p>Carregando cabines...</p>
+          ) : cabins.length > 0 ? (
+            cabins.map((cabin) => (
+              <Card key={cabin.id} className="overflow-hidden">
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-2">{cabin.name}</h3>
+                  <p className="text-sm text-muted-foreground">{cabin.description}</p>
+                  {cabin.equipment && cabin.equipment.length > 0 && (
+                    <ul className="mt-2 space-y-1">
+                      {cabin.equipment.map((item, index) => (
+                        <li key={index} className="text-xs flex items-center gap-1">
+                          <span>•</span> {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </CardContent>
+                <CardFooter className="p-4 pt-0">
+                  <Button 
+                    className="w-full"
+                    onClick={() => navigate(`/book-cabin/${cabin.id}`, {
+                      state: { cabinDetails: cabin, locationDetails: locationData }
+                    })}
+                  >
+                    Selecionar Cabine
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))
+          ) : (
+            <p>Nenhuma cabine encontrada.</p>
+          )}
+        </div>
+      </div>
       
       <div className="mt-8 grid gap-8 md:grid-cols-[1fr_400px]">
         <div>
