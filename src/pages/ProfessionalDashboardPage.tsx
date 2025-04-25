@@ -33,7 +33,6 @@ const ProfessionalDashboardPage = () => {
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
 
-  // Stats data
   const [stats, setStats] = useState({
     upcomingAppointments: 0,
     totalClients: 0,
@@ -42,14 +41,13 @@ const ProfessionalDashboardPage = () => {
   });
 
   useEffect(() => {
-    // Set a timeout to prevent infinite loading
     const loadingTimeout = setTimeout(() => {
       if (loading) {
         console.log("Loading timeout reached, forcing dashboard display");
         setLoading(false);
         setLoadingError("Timeout ao carregar dados. Alguns dados podem não estar disponíveis.");
       }
-    }, 5000); // 5 second timeout
+    }, 5000);
 
     return () => clearTimeout(loadingTimeout);
   }, [loading]);
@@ -69,12 +67,11 @@ const ProfessionalDashboardPage = () => {
 
         console.log("Fetching user profile for:", user.id);
         
-        // Fetch user profile to get privacy settings
         try {
           const { data: { user: authUser } } = await supabase.auth.getUser();
           
           if (authUser && authUser.user_metadata) {
-            const isPublic = authUser.user_metadata.isPublic !== false; // Default to public if not set
+            const isPublic = authUser.user_metadata.isPublic !== false;
             if (isMounted) {
               setIsPublicProfile(isPublic);
             }
@@ -84,8 +81,6 @@ const ProfessionalDashboardPage = () => {
           // Continue anyway to show the dashboard
         }
         
-        // Simulate loading behavior with mock data
-        // In a real app, this would fetch data from API based on current user
         if (isMounted) {
           const professionalAppointments = appointments.filter(
             (app) => app.professionalId === user.id
@@ -94,7 +89,6 @@ const ProfessionalDashboardPage = () => {
             (review) => review.professionalId === user.id
           );
 
-          // Calculate relevant statistics
           const uniqueClients = [...new Set(professionalAppointments.map((app) => app.clientId))];
           const totalRevenue = professionalAppointments.reduce((sum, app) => sum + app.price, 0);
 
@@ -127,7 +121,6 @@ const ProfessionalDashboardPage = () => {
     
     fetchUserProfileAndData();
 
-    // Cleanup function
     return () => {
       isMounted = false;
     };
@@ -197,25 +190,28 @@ const ProfessionalDashboardPage = () => {
         return "Confirmada";
       case "cancelled":
         return "Cancelada";
+      case "paid":
+        return "Paga";
       default:
         return status;
-  }
-};
+    }
+  };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "confirmed":
-      return "text-green-600";
-    case "payment_pending":
-      return "text-amber-600";
-    case "cancelled":
-      return "text-red-600";
-    default:
-      return "text-gray-600";
-  }
-};
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "text-green-600";
+      case "payment_pending":
+        return "text-amber-600";
+      case "cancelled":
+        return "text-red-600";
+      case "paid":
+        return "text-emerald-600";
+      default:
+        return "text-gray-600";
+    }
+  };
 
-  // If there's a loading error, show it and display the dashboard anyway
   if (loadingError) {
     toast({
       title: "Aviso",
@@ -249,7 +245,6 @@ const getStatusColor = (status: string) => {
 
       <PrivacySettingsCard />
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="pt-6">
@@ -309,7 +304,6 @@ const getStatusColor = (status: string) => {
         </Card>
       </div>
 
-      {/* Main Content */}
       <Tabs defaultValue="bookings" className="space-y-4">
         <TabsList>
           <TabsTrigger value="availability">Disponibilidade</TabsTrigger>
