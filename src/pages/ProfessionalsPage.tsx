@@ -1,7 +1,8 @@
+
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, AlertCircle } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { 
@@ -13,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useProfessionals } from "@/hooks/useProfessionals";
 import { useServices } from "@/hooks/useServices";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,7 +25,9 @@ const ProfessionalsPage = () => {
   const { services } = useServices();
   const { 
     professionals, 
-    isLoading 
+    isLoading,
+    isError,
+    error
   } = useProfessionals({ 
     withSpecialties: true,
     withAvailability: true,
@@ -80,6 +84,16 @@ const ProfessionalsPage = () => {
           </SelectContent>
         </Select>
       </div>
+      
+      {isError && (
+        <Alert variant="destructive" className="mt-8">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erro</AlertTitle>
+          <AlertDescription>
+            Ocorreu um erro ao carregar os profissionais. Por favor, tente novamente mais tarde.
+          </AlertDescription>
+        </Alert>
+      )}
       
       {isLoading ? (
         <div className="mt-12 text-center">
