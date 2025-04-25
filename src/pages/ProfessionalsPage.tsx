@@ -2,7 +2,9 @@
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Filter } from "lucide-react";
+import { format, addDays, isSameDay } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { 
   Select,
   SelectContent,
@@ -10,13 +12,22 @@ import {
   SelectTrigger,
   SelectValue
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useProfessionals } from "@/hooks/useProfessionals";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedSpecialty, setSelectedSpecialty] = useState<string>("");
+  const today = new Date();
   
   const { 
     professionals, 
@@ -24,32 +35,52 @@ const ProfessionalsPage = () => {
     isLoading 
   } = useProfessionals({ 
     withSpecialties: true,
-    withAvailability: true,
-    date: new Date()
+    withAvailability: false, // We'll filter locally to keep all professionals visible
+    date: selectedDate
   });
   
   // Filter professionals by search query and specialty
   const filteredProfessionals = professionals.filter(professional => {
+    // Filter by search query (name)
     const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // Filter by specialty if one is selected
     const matchesSpecialty = !selectedSpecialty || 
       (professional.specialties && professional.specialties.includes(selectedSpecialty));
     
     return matchesSearch && matchesSpecialty;
   });
   
+  // Get next 7 days for quick date selection
+  const nextDays = Array.from({ length: 7 }, (_, i) => addDays(today, i));
+  
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
         <h1 className="text-3xl font-bold tracking-tight">
-          Profissionais disponíveis essa semana
+          Profissionais de Qualidade
         </h1>
         <p className="mt-4 text-gray-500">
           Encontre os melhores profissionais de beleza e estética
         </p>
       </div>
       
+      {/* Quick date selection */}
+      <div className="mt-6 flex items-center gap-2 overflow-x-auto pb-2">
+        {nextDays.map((date, index) => (
+          <Button
+            key={index}
+            variant={isSameDay(date, selectedDate) ? "default" : "outline"}
+            className="whitespace-nowrap"
+            onClick={() => setSelectedDate(date)}
+          >
+            {index === 0 ? "Hoje" : format(date, 'EEE, dd MMM', { locale: ptBR })}
+          </Button>
+        ))}
+      </div>
+      
       {/* Filters section */}
-      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="flex items-center gap-2 border rounded-lg p-2">
           <Search className="h-5 w-5 text-muted-foreground" />
           <Input
@@ -72,6 +103,26 @@ const ProfessionalsPage = () => {
             ))}
           </SelectContent>
         </Select>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                <span>{format(selectedDate, 'dd/MM/yyyy')}</span>
+              </div>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={(date) => setSelectedDate(date || new Date())}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
       </div>
       
       {/* Applied filters */}
@@ -98,10 +149,7 @@ const ProfessionalsPage = () => {
         <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredProfessionals.length > 0 ? (
             filteredProfessionals.map((professional) => (
-              <ProfessionalCard 
-                key={professional.id} 
-                professional={professional} 
-              />
+              <ProfessionalCard key={professional.id} professional={professional} />
             ))
           ) : (
             <div className="col-span-full text-center py-12">
