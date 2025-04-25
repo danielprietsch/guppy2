@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { translateSupabaseError } from "@/utils/supabaseErrorTranslations";
+import { debugBooking } from "@/utils/debugLogger";
 
 interface BookingCalendarProps {
   selectedTurns: { [date: string]: string[] };
@@ -15,6 +15,7 @@ interface BookingCalendarProps {
   pricePerTurn: { [turn: string]: number };
   workspaceAvailability?: { morning: boolean; afternoon: boolean; evening: boolean };
   workspaceCreatedAt?: string;
+  cabinId?: string;
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({
@@ -22,7 +23,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   onSelectTurn,
   pricePerTurn,
   workspaceAvailability = { morning: true, afternoon: true, evening: true },
-  workspaceCreatedAt
+  workspaceCreatedAt,
+  cabinId
 }) => {
   const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
   const today = startOfDay(new Date());
@@ -31,9 +33,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   
   React.useEffect(() => {
     const fetchBookings = async () => {
-      if (!workspaceAvailability) return;
+      if (!workspaceAvailability || !cabinId) {
+        setIsLoadingBookings(false);
+        return;
+      }
       
       setIsLoadingBookings(true);
+      debugBooking("Fetching bookings for cabin:", cabinId);
       
       try {
         const startDate = format(new Date(), 'yyyy-MM-dd');
@@ -42,6 +48,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         const { data, error } = await supabase
           .from('bookings')
           .select('date, shift')
+          .eq('cabin_id', cabinId)
           .gte('date', startDate)
           .lte('date', endDate)
           .not('status', 'eq', 'cancelled');
@@ -59,6 +66,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         const booked: { [date: string]: { [turn: string]: boolean } } = {};
         
         if (data) {
+          debugBooking(`Found ${data.length} bookings for cabin ${cabinId}`);
           data.forEach(booking => {
             if (!booked[booking.date]) {
               booked[booking.date] = { morning: false, afternoon: false, evening: false };
@@ -83,7 +91,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     };
     
     fetchBookings();
-  }, [workspaceAvailability]);
+  }, [workspaceAvailability, cabinId]);
 
   const renderTurnButton = (date: Date, turn: string, price: number) => {
     const dateStr = format(date, 'yyyy-MM-dd');

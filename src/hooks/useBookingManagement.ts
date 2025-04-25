@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +23,15 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       debugBookingError("Invalid cabin ID at initialization:", cabinId);
       setBookingErrors(prev => [...prev, `Cabin ID inválido: ${cabinId}`]);
     }
-  }, [cabinId]);
+    
+    // Reset selected turns when cabin changes
+    setSelectedTurns({});
+    setTotal(0);
+    setSubtotalTurns(0);
+    setServiceFee(0);
+    setAcceptTerms(false);
+    
+  }, [cabinId]); // Reset when cabinId changes
 
   // Validate if cabinId is a proper UUID
   const isValidUUID = (id: string): boolean => {

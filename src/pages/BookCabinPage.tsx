@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -24,7 +25,8 @@ const BookCabinPage = () => {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
-  const {
+  // Reset selected turns when cabin changes
+  const { 
     selectedTurns,
     total,
     subtotalTurns,
@@ -227,12 +229,13 @@ const BookCabinPage = () => {
                   selectedTurns={selectedTurns}
                   onSelectTurn={handleTurnSelection}
                   pricePerTurn={{
-                    morning: selectedCabin.price,
-                    afternoon: selectedCabin.price,
-                    evening: selectedCabin.price
+                    morning: selectedCabin.pricing?.defaultPricing?.morning || selectedCabin.price || 50,
+                    afternoon: selectedCabin.pricing?.defaultPricing?.afternoon || selectedCabin.price || 50,
+                    evening: selectedCabin.pricing?.defaultPricing?.evening || selectedCabin.price || 50
                   }}
                   workspaceAvailability={selectedCabin.availability}
                   workspaceCreatedAt={selectedCabin.created_at}
+                  cabinId={selectedCabin.id} // Pass the cabin ID to fetch specific bookings
                 />
               </CardContent>
             </Card>
