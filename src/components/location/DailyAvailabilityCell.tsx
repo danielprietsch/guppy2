@@ -6,6 +6,7 @@ interface ShiftAvailability {
   totalCabins: number;
   availableCabins: number;
   manuallyClosedCount: number;
+  price?: number;
 }
 
 interface DailyAvailabilityCellProps {
@@ -32,6 +33,16 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
     return shift.availableCabins > 0 ? `${shift.availableCabins} livre${shift.availableCabins > 1 ? 's' : ''}` : "Reservado";
   };
 
+  const formatPrice = (price?: number) => {
+    if (!price && price !== 0) return null;
+    return new Intl.NumberFormat('pt-BR', { 
+      style: 'currency', 
+      currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
+  };
+
   return (
     <div className="text-xs">
       <div className="font-medium mb-1">
@@ -40,15 +51,38 @@ export const DailyAvailabilityCell = ({ date, shifts }: DailyAvailabilityCellPro
       <div className="text-[10px] mb-1">
         {format(date, "dd/MM")}
       </div>
-      <div className="space-y-1">
-        <div className={`${getStatusColor(shifts.morning)} text-white text-[10px] p-1 rounded-sm`}>
-          {getStatusText(shifts.morning)}
+      <div className="space-y-1.5">
+        <div className="flex flex-col">
+          {shifts.morning.price !== undefined && (
+            <div className="text-[9px] font-medium text-center -mb-0.5">
+              {formatPrice(shifts.morning.price)}
+            </div>
+          )}
+          <div className={`${getStatusColor(shifts.morning)} text-white text-[10px] p-1 rounded-sm shadow-sm`}>
+            {getStatusText(shifts.morning)}
+          </div>
         </div>
-        <div className={`${getStatusColor(shifts.afternoon)} text-white text-[10px] p-1 rounded-sm`}>
-          {getStatusText(shifts.afternoon)}
+        
+        <div className="flex flex-col">
+          {shifts.afternoon.price !== undefined && (
+            <div className="text-[9px] font-medium text-center -mb-0.5">
+              {formatPrice(shifts.afternoon.price)}
+            </div>
+          )}
+          <div className={`${getStatusColor(shifts.afternoon)} text-white text-[10px] p-1 rounded-sm shadow-sm`}>
+            {getStatusText(shifts.afternoon)}
+          </div>
         </div>
-        <div className={`${getStatusColor(shifts.evening)} text-white text-[10px] p-1 rounded-sm`}>
-          {getStatusText(shifts.evening)}
+        
+        <div className="flex flex-col">
+          {shifts.evening.price !== undefined && (
+            <div className="text-[9px] font-medium text-center -mb-0.5">
+              {formatPrice(shifts.evening.price)}
+            </div>
+          )}
+          <div className={`${getStatusColor(shifts.evening)} text-white text-[10px] p-1 rounded-sm shadow-sm`}>
+            {getStatusText(shifts.evening)}
+          </div>
         </div>
       </div>
     </div>

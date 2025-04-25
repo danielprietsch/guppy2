@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Search, Filter, Calendar as CalendarIcon, ChevronDown } from "lucide-react";
+import { Search, Filter, Calendar as CalendarIcon, ChevronDown, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Location } from "@/lib/types";
 import { debugLog, debugError } from "@/utils/debugLogger";
@@ -289,187 +289,238 @@ const LocationsPage = () => {
   }, [locations, searchQuery, activeFilters, sortBy, nextWeekAvailability]);
 
   return (
-    <div className="container px-4 py-12 md:px-6 md:py-16">
-      <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Encontre o Local Perfeito</h1>
-        <p className="mt-4 text-gray-500">
-          Descubra espaços equipados para profissionais de beleza em toda a cidade
-        </p>
-      </div>
-      
-      <div className="mt-8 space-y-4 max-w-5xl mx-auto">
-        <div className="flex items-center gap-2 border rounded-lg p-2">
-          <Search className="h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, endereço ou comodidades..."
-            className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={toggleFilters}
-            className="gap-1"
-          >
-            <Filter className="h-4 w-4" />
-            Filtros
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
+    <div className="bg-gradient-to-b from-slate-50 to-white min-h-screen">
+      <div className="container mx-auto px-4 py-12 md:px-6 md:py-16 max-w-7xl">
+        <div className="mx-auto max-w-3xl text-center mb-10">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700">
+            Encontre o Local Perfeito
+          </h1>
+          <p className="mt-4 text-slate-600 text-lg">
+            Descubra espaços equipados para profissionais de beleza em toda a região
+          </p>
         </div>
         
-        {showFilters && (
-          <Card className="p-4">
-            <CardContent className="p-0 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Cidade</label>
-                  <Select 
-                    value={activeFilters.city} 
-                    onValueChange={(value) => handleFilterChange('city', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Todas as cidades" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as cidades</SelectItem>
-                      {allCities.map((city) => (
-                        <SelectItem key={city} value={city}>{city}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Qtd. Mínima de Cabines</label>
-                  <Select 
-                    value={activeFilters.cabinsMin.toString()} 
-                    onValueChange={(value) => handleFilterChange('cabinsMin', parseInt(value))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Qualquer quantidade" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="0">Qualquer quantidade</SelectItem>
-                      <SelectItem value="1">1+ cabines</SelectItem>
-                      <SelectItem value="2">2+ cabines</SelectItem>
-                      <SelectItem value="5">5+ cabines</SelectItem>
-                      <SelectItem value="10">10+ cabines</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Disponibilidade</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        className={cn(
-                          "w-full justify-between",
-                          !activeFilters.availableOn && "text-muted-foreground"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <CalendarIcon className="h-4 w-4" />
-                          {activeFilters.availableOn ? format(activeFilters.availableOn, 'dd/MM/yyyy') : 'Qualquer data'}
-                        </div>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={activeFilters.availableOn || undefined}
-                        onSelect={(date) => handleFilterChange('availableOn', date)}
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Ordenar por</label>
-                  <Select 
-                    value={sortBy} 
-                    onValueChange={(value) => setSortBy(value as SortOption)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="availability">Disponibilidade</SelectItem>
-                      <SelectItem value="name">Nome (A-Z)</SelectItem>
-                      <SelectItem value="cabins">Mais cabines</SelectItem>
-                      <SelectItem value="newest">Mais recentes</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
-              <div className="mt-6">
-                <label className="text-sm font-medium">Comodidades</label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {allAmenities.map((amenity) => (
-                    <Badge 
-                      key={amenity}
-                      variant={activeFilters.amenities.includes(amenity) ? "default" : "outline"}
-                      className="cursor-pointer"
-                      onClick={() => toggleAmenityFilter(amenity)}
-                    >
-                      {amenity}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex justify-end mt-6">
+        <div className="mt-8 space-y-4 max-w-5xl mx-auto">
+          <Card className="shadow-md border-slate-200">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 bg-white rounded-lg border p-2">
+                <Search className="h-5 w-5 text-slate-400" />
+                <Input
+                  placeholder="Buscar por nome, endereço ou comodidades..."
+                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
                 <Button 
                   variant="outline" 
-                  size="sm" 
-                  onClick={resetFilters}
-                  className="mr-2"
-                >
-                  Limpar filtros
-                </Button>
-                <Button 
-                  size="sm" 
+                  size="sm"
                   onClick={toggleFilters}
+                  className="gap-1 border-slate-300 hover:bg-slate-50"
                 >
-                  Aplicar
+                  <Filter className="h-4 w-4" />
+                  Filtros
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-primary text-white">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
                 </Button>
               </div>
+              
+              {showFilters && (
+                <div className="mt-4 pt-4 border-t border-slate-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Cidade</label>
+                      <Select 
+                        value={activeFilters.city} 
+                        onValueChange={(value) => handleFilterChange('city', value)}
+                      >
+                        <SelectTrigger className="bg-white border-slate-300">
+                          <SelectValue placeholder="Todas as cidades" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Todas as cidades</SelectItem>
+                          {allCities.map((city) => (
+                            <SelectItem key={city} value={city}>{city}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Qtd. Mínima de Cabines</label>
+                      <Select 
+                        value={activeFilters.cabinsMin.toString()} 
+                        onValueChange={(value) => handleFilterChange('cabinsMin', parseInt(value))}
+                      >
+                        <SelectTrigger className="bg-white border-slate-300">
+                          <SelectValue placeholder="Qualquer quantidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="0">Qualquer quantidade</SelectItem>
+                          <SelectItem value="1">1+ cabines</SelectItem>
+                          <SelectItem value="2">2+ cabines</SelectItem>
+                          <SelectItem value="5">5+ cabines</SelectItem>
+                          <SelectItem value="10">10+ cabines</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Disponibilidade</label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            className={cn(
+                              "w-full justify-between bg-white border-slate-300",
+                              !activeFilters.availableOn && "text-slate-500"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <CalendarIcon className="h-4 w-4" />
+                              {activeFilters.availableOn ? format(activeFilters.availableOn, 'dd/MM/yyyy') : 'Qualquer data'}
+                            </div>
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={activeFilters.availableOn || undefined}
+                            onSelect={(date) => handleFilterChange('availableOn', date)}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Ordenar por</label>
+                      <Select 
+                        value={sortBy} 
+                        onValueChange={(value) => setSortBy(value as SortOption)}
+                      >
+                        <SelectTrigger className="bg-white border-slate-300">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="availability">Disponibilidade</SelectItem>
+                          <SelectItem value="name">Nome (A-Z)</SelectItem>
+                          <SelectItem value="cabins">Mais cabines</SelectItem>
+                          <SelectItem value="newest">Mais recentes</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <label className="text-sm font-medium text-slate-700">Comodidades</label>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {allAmenities.map((amenity) => (
+                        <Badge 
+                          key={amenity}
+                          variant={activeFilters.amenities.includes(amenity) ? "default" : "outline"}
+                          className={cn(
+                            "cursor-pointer",
+                            activeFilters.amenities.includes(amenity) 
+                              ? "bg-primary hover:bg-primary/90" 
+                              : "hover:bg-slate-100"
+                          )}
+                          onClick={() => toggleAmenityFilter(amenity)}
+                        >
+                          {amenity}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end mt-6">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={resetFilters}
+                      className="mr-2"
+                    >
+                      Limpar filtros
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={toggleFilters}
+                    >
+                      Aplicar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
-      </div>
-      
-      {loading ? (
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground">Carregando locais...</p>
-        </div>
-      ) : (
-        <div className="mt-12 grid grid-cols-1 gap-6">
-          {filteredAndSortedLocations.length > 0 ? (
-            filteredAndSortedLocations.map((location) => (
-              <LocationCard key={location.id} location={location} />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-12">
-              <h3 className="text-lg font-medium">Nenhum local encontrado</h3>
-              <p className="mt-1 text-gray-500">
-                Tente ajustar sua busca ou remover filtros
-              </p>
+
+          {activeFilterCount > 0 && (
+            <div className="flex items-center gap-2 text-sm text-slate-600 px-1">
+              <span>Filtros ativos:</span>
+              <div className="flex flex-wrap gap-1">
+                {activeFilters.city && (
+                  <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-700 flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    {activeFilters.city}
+                  </Badge>
+                )}
+                {activeFilters.cabinsMin > 0 && (
+                  <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-700">
+                    Min: {activeFilters.cabinsMin} cabines
+                  </Badge>
+                )}
+                {activeFilters.availableOn && (
+                  <Badge variant="outline" className="bg-slate-50 border-slate-200 text-slate-700 flex items-center gap-1">
+                    <CalendarIcon className="h-3 w-3" />
+                    {format(activeFilters.availableOn, 'dd/MM/yyyy')}
+                  </Badge>
+                )}
+                {activeFilters.amenities.map(amenity => (
+                  <Badge key={amenity} variant="outline" className="bg-slate-50 border-slate-200 text-slate-700">
+                    {amenity}
+                  </Badge>
+                ))}
+              </div>
             </div>
           )}
         </div>
-      )}
+        
+        {loading ? (
+          <div className="mt-12 text-center">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+            <p className="mt-2 text-slate-600">Carregando locais...</p>
+          </div>
+        ) : (
+          <div className="mt-8 grid grid-cols-1 gap-6">
+            {filteredAndSortedLocations.length > 0 ? (
+              filteredAndSortedLocations.map((location) => (
+                <LocationCard key={location.id} location={location} />
+              ))
+            ) : (
+              <div className="col-span-full bg-slate-50 rounded-lg text-center py-16 border border-slate-200">
+                <h3 className="text-xl font-medium text-slate-800">Nenhum local encontrado</h3>
+                <p className="mt-2 text-slate-600">
+                  Tente ajustar sua busca ou remover alguns filtros
+                </p>
+                {activeFilterCount > 0 && (
+                  <Button 
+                    onClick={resetFilters} 
+                    variant="outline" 
+                    className="mt-4"
+                  >
+                    Limpar todos os filtros
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
@@ -28,16 +29,19 @@ type ShiftAvailabilityMap = {
       totalCabins: number;
       availableCabins: number;
       manuallyClosedCount: number;
+      price?: number;
     };
     afternoon: {
       totalCabins: number;
       availableCabins: number;
       manuallyClosedCount: number;
+      price?: number;
     };
     evening: {
       totalCabins: number;
       availableCabins: number;
       manuallyClosedCount: number;
+      price?: number;
     };
   };
 };
@@ -53,6 +57,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
   const [currentDate] = useState(() => {
     const today = new Date();
     const dayOfWeek = today.getDay();
+    // Ajuste para começar na segunda-feira (1) e terminar no domingo (0)
     const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     return new Date(today.setDate(today.getDate() - daysToSubtract));
   });
@@ -73,7 +78,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
       try {
         const { data: cabins, error: cabinsError } = await supabase
           .from('cabins')
-          .select('id, availability')
+          .select('id, availability, pricing')
           .eq('location_id', location.id);
 
         if (cabinsError) {
@@ -92,32 +97,77 @@ const LocationCard = ({ location }: LocationCardProps) => {
           let closedMorning = 0;
           let closedAfternoon = 0;
           let closedEvening = 0;
+          
+          // Calcular preço médio por turno
+          let totalMorningPrice = 0;
+          let totalAfternoonPrice = 0;
+          let totalEveningPrice = 0;
+          let morningPriceCount = 0;
+          let afternoonPriceCount = 0;
+          let eveningPriceCount = 0;
 
           cabins?.forEach(cabin => {
             const availability = cabin.availability as any;
-            if (availability?.morning) availableMorning++;
-            else closedMorning++;
-            if (availability?.afternoon) availableAfternoon++;
-            else closedAfternoon++;
-            if (availability?.evening) availableEvening++;
-            else closedEvening++;
+            if (availability?.morning) {
+              availableMorning++;
+              // Obter preço do turno da manhã
+              const pricing = cabin.pricing as any;
+              if (pricing?.defaultPricing?.morning) {
+                totalMorningPrice += Number(pricing.defaultPricing.morning);
+                morningPriceCount++;
+              }
+            } else {
+              closedMorning++;
+            }
+            
+            if (availability?.afternoon) {
+              availableAfternoon++;
+              // Obter preço do turno da tarde
+              const pricing = cabin.pricing as any;
+              if (pricing?.defaultPricing?.afternoon) {
+                totalAfternoonPrice += Number(pricing.defaultPricing.afternoon);
+                afternoonPriceCount++;
+              }
+            } else {
+              closedAfternoon++;
+            }
+            
+            if (availability?.evening) {
+              availableEvening++;
+              // Obter preço do turno da noite
+              const pricing = cabin.pricing as any;
+              if (pricing?.defaultPricing?.evening) {
+                totalEveningPrice += Number(pricing.defaultPricing.evening);
+                eveningPriceCount++;
+              }
+            } else {
+              closedEvening++;
+            }
           });
+
+          // Calcular preços médios
+          const morningPrice = morningPriceCount > 0 ? Math.round(totalMorningPrice / morningPriceCount) : undefined;
+          const afternoonPrice = afternoonPriceCount > 0 ? Math.round(totalAfternoonPrice / afternoonPriceCount) : undefined;
+          const eveningPrice = eveningPriceCount > 0 ? Math.round(totalEveningPrice / eveningPriceCount) : undefined;
 
           availabilityMap[dateStr] = {
             morning: {
               totalCabins,
               availableCabins: availableMorning,
-              manuallyClosedCount: closedMorning
+              manuallyClosedCount: closedMorning,
+              price: morningPrice
             },
             afternoon: {
               totalCabins,
               availableCabins: availableAfternoon,
-              manuallyClosedCount: closedAfternoon
+              manuallyClosedCount: closedAfternoon,
+              price: afternoonPrice
             },
             evening: {
               totalCabins,
               availableCabins: availableEvening,
-              manuallyClosedCount: closedEvening
+              manuallyClosedCount: closedEvening,
+              price: eveningPrice
             }
           };
         }
@@ -137,20 +187,24 @@ const LocationCard = ({ location }: LocationCardProps) => {
 
   return (
     <div className="relative">
-      <Link to={`/locations/${location.id}`}>
-        <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold text-lg">{location.name}</h3>
+      <Link to={`/locations/${location.id}`} className="block hover:no-underline">
+        <Card className="overflow-hidden hover:shadow-lg transition-shadow border-slate-200">
+          <CardContent className="p-4 pb-2">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-lg text-gray-800">{location.name}</h3>
               <button 
                 className="flex items-center text-primary text-sm hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowAvailability(!showAvailability);
+                }}
               >
                 <Calendar className="h-4 w-4 mr-1" />
-                Ver disponibilidade
+                {showAvailability ? "Ocultar disponibilidade" : "Ver disponibilidade"}
               </button>
             </div>
-            <p className="text-sm text-muted-foreground">{location.address}, {location.city}</p>
-            <div className="flex items-center gap-1 mt-2">
+            <p className="text-sm text-gray-600">{location.address}, {location.city}</p>
+            <div className="flex items-center gap-2 mt-2">
               <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                 {location.cabinsCount} cabines
               </span>
@@ -160,15 +214,15 @@ const LocationCard = ({ location }: LocationCardProps) => {
             </div>
             
             {showAvailability && (
-              <div className="mt-4 p-2 bg-secondary/20 rounded-md">
-                <h4 className="text-sm font-medium mb-2">Disponibilidade próximos dias</h4>
+              <div className="mt-4 p-3 bg-slate-50 rounded-md shadow-inner">
+                <h4 className="text-sm font-medium mb-3 text-gray-700">Disponibilidade próximos dias</h4>
                 {isLoading ? (
                   <div className="flex justify-center p-2">
                     <p className="text-xs">Carregando...</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-8 gap-1">
-                    <div className="text-xs space-y-4 pt-6">
+                  <div className="grid grid-cols-8 gap-2">
+                    <div className="text-xs space-y-[1.625rem] pt-7 font-medium text-gray-600">
                       <div>Manhã</div>
                       <div>Tarde</div>
                       <div>Noite</div>
@@ -193,8 +247,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
             )}
           </CardContent>
 
-          <div className="grid grid-cols-2 gap-2 p-2">
-            <div className="aspect-square max-h-32 overflow-hidden rounded-lg">
+          <div className="grid grid-cols-2 gap-3 px-4 py-3">
+            <div className="aspect-video max-h-28 overflow-hidden rounded-lg shadow-sm">
               <img
                 src={displayImage}
                 alt={location.name}
@@ -202,7 +256,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
               />
             </div>
             
-            <div className="aspect-square max-h-32 rounded-lg overflow-hidden">
+            <div className="aspect-video max-h-28 rounded-lg overflow-hidden shadow-sm">
               <iframe
                 title={`${location.name} Mapa`}
                 src={googleMapsEmbedUrl}
@@ -218,11 +272,11 @@ const LocationCard = ({ location }: LocationCardProps) => {
             </div>
           </div>
 
-          <CardFooter className="p-4 pt-0 flex flex-wrap gap-1">
+          <CardFooter className="p-4 pt-0 flex flex-wrap gap-1 border-t border-slate-100 mt-2">
             {location.amenities.map((amenity, index) => (
               <span
                 key={index}
-                className="text-xs bg-secondary/50 px-2 py-0.5 rounded-full"
+                className="text-xs bg-slate-100 px-2 py-0.5 rounded-full text-slate-700"
               >
                 {amenity}
               </span>
