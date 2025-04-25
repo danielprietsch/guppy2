@@ -12,6 +12,8 @@ interface CabinSearchSectionProps {
   isLoading: boolean;
   searchTerm: string;
   setSearchTerm: (term: string) => void;
+  onSelectCabin: (cabin: Cabin) => void;
+  selectedCabin: Cabin | null;
 }
 
 export const CabinSearchSection = ({
@@ -19,7 +21,9 @@ export const CabinSearchSection = ({
   locationDetails,
   isLoading,
   searchTerm,
-  setSearchTerm
+  setSearchTerm,
+  onSelectCabin,
+  selectedCabin
 }: CabinSearchSectionProps) => {
   const navigate = useNavigate();
 
@@ -50,7 +54,12 @@ export const CabinSearchSection = ({
               <p>Carregando espaços...</p>
             ) : (
               cabins.map((cabin) => (
-                <Card key={cabin.id} className="overflow-hidden h-auto">
+                <Card 
+                  key={cabin.id} 
+                  className={`overflow-hidden h-auto transition-colors ${
+                    selectedCabin?.id === cabin.id ? 'ring-2 ring-primary' : ''
+                  }`}
+                >
                   <div className="p-4">
                     <h3 className="font-semibold text-lg mb-2">{cabin.name}</h3>
                     <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
@@ -66,12 +75,12 @@ export const CabinSearchSection = ({
                       </ul>
                     )}
                     <Button 
-                      className="w-full mt-4"
-                      onClick={() => navigate(`/book-cabin/${cabin.id}`, {
-                        state: { cabinDetails: cabin, locationDetails }
-                      })}
+                      className={`w-full mt-4 ${
+                        selectedCabin?.id === cabin.id ? 'bg-primary/80' : ''
+                      }`}
+                      onClick={() => onSelectCabin(cabin)}
                     >
-                      Selecionar Espaço
+                      {selectedCabin?.id === cabin.id ? 'Espaço Selecionado' : 'Selecionar Espaço'}
                     </Button>
                   </div>
                 </Card>

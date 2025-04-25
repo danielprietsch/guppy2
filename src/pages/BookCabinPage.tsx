@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -19,15 +18,12 @@ const BookCabinPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cabinDetails, locationDetails } = location.state || {};
-  const [cabin, setCabin] = useState<Cabin | null>(cabinDetails || null);
+  const [selectedCabin, setSelectedCabin] = useState<Cabin | null>(cabinDetails || null);
   const [locationData, setLocationData] = useState<Location | null>(locationDetails || null);
   const [loading, setLoading] = useState(true);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const { cabins, isLoading, searchTerm, setSearchTerm } = useCabinSearch(locationData?.id);
 
-  // Ensure we pass a valid cabin ID to useBookingManagement
-  const cabinId = id || cabin?.id || "";
-  
   const {
     selectedTurns,
     total,
@@ -42,7 +38,7 @@ const BookCabinPage = () => {
     setSubtotalTurns,
     setServiceFee,
     bookingErrors
-  } = useBookingManagement(cabinId, () => setIsTermsModalOpen(false));
+  } = useBookingManagement(selectedCabin?.id || "", () => setIsTermsModalOpen(false));
 
   useEffect(() => {
     const loadCabinData = async () => {
@@ -103,7 +99,7 @@ const BookCabinPage = () => {
           };
           
           debugBooking("Transformed cabin data:", transformedCabin);
-          setCabin(transformedCabin);
+          setSelectedCabin(transformedCabin);
 
           if (cabinData?.location_id) {
             const { data: locData, error: locError } = await supabase
@@ -165,12 +161,12 @@ const BookCabinPage = () => {
   }, [id, cabinDetails]);
 
   useEffect(() => {
-    if (!cabin) return;
+    if (!selectedCabin) return;
 
     let calculatedSubtotal = 0;
     Object.entries(selectedTurns).forEach(([date, turns]) => {
       turns.forEach(turn => {
-        const turnPrice = cabin.pricing?.defaultPricing?.[turn] || cabin.price || 50;
+        const turnPrice = selectedCabin.pricing?.defaultPricing?.[turn] || selectedCabin.price || 50;
         calculatedSubtotal += turnPrice;
       });
     });
@@ -179,7 +175,12 @@ const BookCabinPage = () => {
     const calculatedServiceFee = Object.keys(selectedTurns).length > 0 ? calculatedSubtotal * 0.1 : 0;
     setServiceFee(calculatedServiceFee);
     setTotal(calculatedSubtotal + calculatedServiceFee);
-  }, [selectedTurns, cabin, setSubtotalTurns, setServiceFee, setTotal]);
+  }, [selectedTurns, selectedCabin, setSubtotalTurns, setServiceFee, setTotal]);
+
+  const handleSelectCabin = (cabin: Cabin) => {
+    setSelectedCabin(cabin);
+    debugBooking("Selected cabin:", cabin.id);
+  };
 
   if (loading) {
     return (
@@ -189,7 +190,7 @@ const BookCabinPage = () => {
     );
   }
 
-  if (!cabin && !locationData) {
+  if (!locationData) {
     return (
       <div className="container flex items-center justify-center h-[calc(100vh-4rem)]">
         <div className="text-center">
@@ -211,9 +212,11 @@ const BookCabinPage = () => {
           isLoading={isLoading}
           searchTerm={searchTerm}
           setSearchTerm={setSearchTerm}
+          onSelectCabin={handleSelectCabin}
+          selectedCabin={selectedCabin}
         />
 
-        {cabin && (
+        {selectedCabin && (
           <div className="space-y-8">
             <Card>
               <CardHeader>
@@ -224,12 +227,12 @@ const BookCabinPage = () => {
                   selectedTurns={selectedTurns}
                   onSelectTurn={handleTurnSelection}
                   pricePerTurn={{
-                    morning: cabin.price,
-                    afternoon: cabin.price,
-                    evening: cabin.price
+                    morning: selectedCabin.price,
+                    afternoon: selectedCabin.price,
+                    evening: selectedCabin.price
                   }}
-                  workspaceAvailability={cabin.availability}
-                  workspaceCreatedAt={cabin.created_at}
+                  workspaceAvailability={selectedCabin.availability}
+                  workspaceCreatedAt={selectedCabin.created_at}
                 />
               </CardContent>
             </Card>
@@ -240,7 +243,7 @@ const BookCabinPage = () => {
               </CardHeader>
               <CardContent>
                 <BookingSummary
-                  cabin={cabin}
+                  cabin={selectedCabin}
                   locationData={locationData}
                   selectedTurns={selectedTurns}
                   subtotalTurns={subtotalTurns}
