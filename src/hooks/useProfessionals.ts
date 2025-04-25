@@ -26,6 +26,7 @@ export type Professional = User & {
     afternoon_status: string;
     evening_status: string;
   } | null;
+  hasConfirmedBookings?: boolean; // Add this property to the type definition
 };
 
 export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
