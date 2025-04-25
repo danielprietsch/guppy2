@@ -2,7 +2,8 @@
 import { Link } from "react-router-dom";
 import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
-import { Star } from "lucide-react";
+import { Star, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const professionalAvatars = {
   female: [
@@ -48,9 +49,12 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
 
   const rating = 4.5;
 
+  // Make sure specialties is always an array
+  const specialties = Array.isArray(professional.specialties) ? professional.specialties : [];
+
   return (
-    <Link to={`/professional/${professional.id}`}>
-      <Card className="overflow-hidden hover:shadow-md transition-shadow">
+    <Link to={`/professional/${professional.id}`} className="block">
+      <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
         <div className="aspect-square overflow-hidden">
           <img
             src={avatarUrl}
@@ -64,16 +68,28 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm">{rating}</span>
           </div>
-          <div className="mt-2">
-            {professional.specialties?.map((specialty, index) => (
-              <span
-                key={index}
-                className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full mr-1"
-              >
-                {specialty}
-              </span>
-            ))}
+          
+          {/* Available indicator */}
+          <div className="mt-2 flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-green-500"></span>
+            <span className="text-xs text-green-600">Disponível</span>
           </div>
+          
+          {specialties.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-1">
+              {specialties.map((specialty, index) => (
+                <Badge
+                  key={index}
+                  variant="outline" 
+                  className="text-xs bg-primary/5 text-primary border-primary/20"
+                >
+                  {specialty}
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 text-xs text-gray-500">Especialidades não definidas</div>
+          )}
         </CardContent>
       </Card>
     </Link>
