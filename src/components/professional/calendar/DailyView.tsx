@@ -1,18 +1,27 @@
 
-import React from 'react';
+import React, { useContext } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addDays, subDays } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { WorkingHours, BreakTime, isHourWithinWorkingHours } from "@/hooks/useWorkingHours";
 
 interface DailyViewProps {
   selectedDate: Date;
   appointments: any[];
   onDateChange: (date: Date) => void;
+  workingHours: WorkingHours;
+  breakTime: BreakTime;
 }
 
-const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps) => {
+const DailyView = ({ 
+  selectedDate, 
+  appointments, 
+  onDateChange,
+  workingHours,
+  breakTime
+}: DailyViewProps) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handlePreviousDay = () => {
@@ -31,13 +40,10 @@ const DailyView = ({ selectedDate, appointments, onDateChange }: DailyViewProps)
 
     if (hourAppointments.length > 0) {
       return { status: 'scheduled', color: 'bg-red-100', label: 'Agendado' };
+    } else if (isHourWithinWorkingHours(hour, selectedDate, workingHours, breakTime)) {
+      return { status: 'free', color: 'bg-green-100', label: 'Livre' };
     } else {
-      // This is simplified. In a real app, you'd check the professional's availability data
-      // For now, we'll randomly assign free or closed status for demonstration
-      const randomStatus = Math.random() > 0.2 ? 'free' : 'closed';
-      return randomStatus === 'free' 
-        ? { status: 'free', color: 'bg-green-100', label: 'Livre' } 
-        : { status: 'closed', color: 'bg-amber-100', label: 'Fechado' };
+      return { status: 'closed', color: 'bg-amber-100', label: 'Fechado' };
     }
   };
 

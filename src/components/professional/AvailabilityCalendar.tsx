@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
@@ -14,6 +15,7 @@ import { Calendar as CalendarIcon } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailability, ShiftStatus } from "@/hooks/useAvailability";
+import { useWorkingHours } from "@/hooks/useWorkingHours";
 import WorkingHoursSettings from './WorkingHoursSettings';
 import DailyView from './calendar/DailyView';
 import WeeklyView from './calendar/WeeklyView';
@@ -39,6 +41,7 @@ const AvailabilityCalendar = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const { availability, updateAvailability } = useAvailability(user?.id);
+  const { workingHours, breakTime } = useWorkingHours(user?.id);
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id],
@@ -179,6 +182,8 @@ const AvailabilityCalendar = () => {
                     selectedDate={selectedDate || today}
                     appointments={appointments || []}
                     onDateChange={handleDateChange}
+                    workingHours={workingHours}
+                    breakTime={breakTime}
                   />
                 </CardContent>
               </Card>
@@ -191,6 +196,8 @@ const AvailabilityCalendar = () => {
                     selectedDate={selectedDate || today}
                     appointments={appointments || []}
                     onDateChange={handleDateChange}
+                    workingHours={workingHours}
+                    breakTime={breakTime}
                   />
                 </CardContent>
               </Card>

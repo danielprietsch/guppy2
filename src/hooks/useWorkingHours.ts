@@ -39,6 +39,39 @@ const defaultBreakTime: BreakTime = {
   end: '13:00'
 };
 
+// Helper function to check if a given hour is within working hours
+export const isHourWithinWorkingHours = (
+  hour: number, 
+  date: Date, 
+  workingHours: WorkingHours,
+  breakTime: BreakTime
+): boolean => {
+  const dayName = format(date, 'EEEE').toLowerCase();
+  const daySettings = workingHours[dayName];
+  
+  // If the day is disabled, return false
+  if (!daySettings || !daySettings.enabled) {
+    return false;
+  }
+  
+  // Parse start and end hours
+  const startHour = parseInt(daySettings.start.split(':')[0]);
+  const endHour = parseInt(daySettings.end.split(':')[0]);
+  
+  // Check if hour is within working hours
+  const isWithinWorkingHours = hour >= startHour && hour < endHour;
+  
+  // Check if hour is within break time
+  let isDuringBreak = false;
+  if (breakTime.enabled) {
+    const breakStartHour = parseInt(breakTime.start.split(':')[0]);
+    const breakEndHour = parseInt(breakTime.end.split(':')[0]);
+    isDuringBreak = hour >= breakStartHour && hour < breakEndHour;
+  }
+  
+  return isWithinWorkingHours && !isDuringBreak;
+};
+
 export const useWorkingHours = (professionalId: string | undefined) => {
   const queryClient = useQueryClient();
 
