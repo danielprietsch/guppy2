@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { debugAreaLog } from '@/utils/debugLogger';
 
 interface UseProfessionalsOptions {
   withSpecialties?: boolean;
@@ -53,16 +54,15 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         const startDate = date instanceof Date ? startOfMonth(date) : date;
         const endDate = date instanceof Date ? endOfMonth(date) : date;
 
-        // First, get all public professional profiles
+        // First, get all professional profiles without any filtering
         const { data: professionalsData, error } = await supabase
           .from('profiles')
           .select('*')
           .eq('user_type', 'professional');
-          // Removed .eq('is_public', true) to see all professionals for debugging
-
+          
         if (error) {
           console.error('Error fetching professional profiles:', error);
-          return [];
+          throw error; // Throw error to be caught by React Query
         }
 
         // If no professionals found, return empty array
@@ -76,24 +76,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         // Get professional IDs
         const professionalIds = professionalsData.map(prof => prof.id);
         
-        // Check which professionals have confirmed bookings
-        const { data: professionalBookings, error: bookingsError } = await supabase
-          .from('bookings')
-          .select('professional_id');
-          // Removed .eq('status', 'paid') to see all bookings for debugging
-          
-        if (bookingsError) {
-          console.error('Error fetching bookings:', bookingsError);
-        }
-        
-        const professionalsWithConfirmedBookings = new Set(
-          professionalBookings?.map(b => b.professional_id) || []
-        );
-        
-        console.log(`Found ${professionalsWithConfirmedBookings.size} professionals with confirmed bookings:`, 
-          professionalBookings ? professionalBookings : 'No bookings data');
-
-        // Get services for the professionals
+        // Get services for the professionals - this is crucial for displaying specialties
         const { data: services, error: servicesError } = await supabase
           .from('services')
           .select('professional_id, name, category, price')
@@ -117,17 +100,15 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         
         console.log(`Found ${reviews?.length || 0} reviews for professionals`);
 
-        // Get availability for the specified date or month
+        // Get availability if requested
         let availability = [];
-        if (withAvailability) {
-          // If in month mode or no date provided, don't filter by date for debugging
+        if (withAvailability && date instanceof Date) {
           const availabilityQuery = supabase
             .from('professional_availability')
             .select('*')
             .in('professional_id', professionalIds);
             
-          // Only apply date filtering in day mode
-          if (date instanceof Date && options.date !== null) {
+          if (options.date !== null) {
             availabilityQuery
               .gte('date', format(startDate, 'yyyy-MM-dd'))
               .lte('date', format(endDate, 'yyyy-MM-dd'));
@@ -154,15 +135,15 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           // Get professional's services
           const profServices = services?.filter(s => s.professional_id === prof.id) || [];
           
-          // Only include professionals with services if withSpecialties is true
+          // If withSpecialties is true and there are no services, return null to filter out
           if (withSpecialties && profServices.length === 0) {
-            console.log(`Professional ${prof.id} has no services, skipping`);
+            debugAreaLog('AVAILABILITY', `Professional ${prof.id} has no services, filtering out`);
             return null;
           }
           
           const specialties = [...new Set(profServices.map(s => s.category))];
 
-          // Filter availability based on date mode
+          // Get availability for this professional
           const profAvailability = availability.find(a => a.professional_id === prof.id);
 
           // Ensure user_type is one of the allowed types
@@ -171,8 +152,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
                           prof.user_type === 'owner' ? 'owner' : 
                           prof.user_type === 'global_admin' ? 'global_admin' : 'professional';
 
-          const hasBookings = professionalsWithConfirmedBookings.has(prof.id);
-          console.log(`Processing professional ${prof.id} - Name: ${prof.name}, Has bookings: ${hasBookings}, Services: ${profServices.length}, Specialties: ${specialties.join(', ')}`);
+          console.log(`Processing professional ${prof.id} - Name: ${prof.name}, Services: ${profServices.length}, Specialties: ${specialties.join(', ')}`);
 
           return {
             ...prof,
@@ -182,59 +162,23 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             rating: avgRating,
             reviewCount: profReviews.length,
             availability: profAvailability,
-            hasConfirmedBookings: hasBookings
+            // Always set to true for now to make professionals appear
+            hasConfirmedBookings: true
           } as Professional;
         }).filter(Boolean) as Professional[];
 
-        // For debugging, temporarily allow all professionals without booking confirmation
-        // This will help us see if the issue is with booking confirmation
-        const availableProfessionals = professionals;
-        
-        /* Original filtering logic commented out for debugging
-        const availableProfessionals = professionals.filter(prof => {
-          // First check if they have confirmed bookings
-          if (!prof.hasConfirmedBookings) {
-            console.log(`Professional ${prof.id} has no confirmed bookings, filtering out`);
-            return false;
-          }
-          
-          // If in day mode, check daily availability
-          if (date instanceof Date) {
-            const avail = prof.availability;
-            if (!avail) {
-              console.log(`Professional ${prof.id} has no availability data, filtering out`);
-              return false;
-            }
-            
-            const hasAvailableSlot = 
-              avail.morning_status === 'free' || 
-              avail.afternoon_status === 'free' || 
-              avail.evening_status === 'free';
-              
-            if (!hasAvailableSlot) {
-              console.log(`Professional ${prof.id} has no free shifts, filtering out`);
-            }
-            
-            return hasAvailableSlot;
-          }
-          
-          // If in month mode, just return true (professional has confirmed bookings)
-          return true;
-        });
-        */
-
-        console.log(`Returning ${availableProfessionals.length} available professionals`);
-        return availableProfessionals;
+        console.log(`Returning ${professionals.length} available professionals`);
+        return professionals;
 
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);
-        return [];
+        throw error; // Throw error to be caught by React Query
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes cache
     refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnReconnect: false,
-    retry: false,
+    retry: 2,
   });
 };

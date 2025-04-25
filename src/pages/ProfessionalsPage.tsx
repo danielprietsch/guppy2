@@ -17,8 +17,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { addDays, format, startOfMonth, endOfMonth } from "date-fns";
+import { useToast } from "@/components/ui/use-toast";
 
 const ProfessionalsPage = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   
   // Get all unique categories from serviceData and initialize selectedServices with all of them
@@ -39,12 +41,24 @@ const ProfessionalsPage = () => {
     data: professionals = [], 
     isLoading,
     isError,
+    error,
     refetch,
   } = useProfessionals({ 
     withSpecialties: true,
-    withAvailability: true,
-    date: dateMode === 'day' ? selectedDate : null
+    withAvailability: dateMode === 'day',
+    date: selectedDate
   });
+
+  // Show error toast if query fails
+  useEffect(() => {
+    if (isError && error) {
+      toast({
+        title: "Erro ao carregar profissionais",
+        description: error.message || "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
+    }
+  }, [isError, error, toast]);
 
   console.log("ProfessionalsPage: Received professionals data", professionals.length);
   
@@ -56,9 +70,6 @@ const ProfessionalsPage = () => {
       professional.specialties?.some(specialty => selectedServices.includes(specialty));
     
     const result = matchesSearch && matchesService;
-    if (!result) {
-      console.log(`Filtered out professional ${professional.id}: search match=${matchesSearch}, service match=${matchesService}`);
-    }
     return result;
   });
   
@@ -69,6 +80,12 @@ const ProfessionalsPage = () => {
       current.includes(category)
         ? current.filter(s => s !== category)
         : [...current, category]
+    );
+  };
+
+  const toggleAllServices = () => {
+    setSelectedServices(current => 
+      current.length === allServices.length ? [] : [...allServices]
     );
   };
 
@@ -187,7 +204,20 @@ const ProfessionalsPage = () => {
           <PopoverContent className="w-80" align="start">
             <ScrollArea className="h-[300px] pr-4">
               <div className="space-y-4">
-                <h4 className="font-medium text-sm">Serviços Disponíveis</h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm">Serviços Disponíveis</h4>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={toggleAllServices}
+                    className="text-xs h-7"
+                  >
+                    {selectedServices.length === allServices.length 
+                      ? "Desmarcar todos" 
+                      : "Selecionar todos"
+                    }
+                  </Button>
+                </div>
                 <div className="grid grid-cols-1 gap-3">
                   {allServices.map((service) => (
                     <label
