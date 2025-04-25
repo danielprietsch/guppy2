@@ -34,7 +34,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
       if (isPastDate) return "bg-gray-300 text-gray-500 cursor-not-allowed";
       if (isClosed) return "bg-yellow-300 text-yellow-800 cursor-not-allowed";
       if (isSelected) return "bg-blue-500 text-white";
-      return "bg-secondary hover:bg-secondary/80";
+      return "bg-green-500 text-white hover:bg-green-600"; // Changed default state to green
     };
 
     return (
@@ -105,3 +105,4 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
 };
 
 export default BookingCalendar;
+
