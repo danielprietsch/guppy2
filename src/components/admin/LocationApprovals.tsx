@@ -40,7 +40,6 @@ export const LocationApprovals = () => {
           id,
           name,
           active,
-          cabins_count,
           created_at,
           owner_id
         `)
@@ -56,26 +55,25 @@ export const LocationApprovals = () => {
         return;
       }
 
-      // Now, fetch owner details for each location
-      const locationsWithOwners = await Promise.all((data || []).map(async (location) => {
-        // Get the owner info from auth.users function to avoid RLS issues
-        const { data: ownerData, error: ownerError } = await supabase
-          .rpc('check_owner_status', { user_id: location.owner_id });
+      if (!data || data.length === 0) {
+        setLocations([]);
+        setLoading(false);
+        return;
+      }
+
+      // Transformação para locationsWithDetails com contagem de cabines atual
+      const locationsWithDetails = await Promise.all((data || []).map(async (location) => {
+        // SOLUÇÃO DEFINITIVA: Obter contagem direta de cabines da tabela para cada localização
+        const { count: realCabinsCount, error: cabinsError } = await supabase
+          .from('cabins')
+          .select('*', { count: "exact", head: true })
+          .eq('location_id', location.id);
           
-        if (ownerError) {
-          debugError(`LocationApprovals: Error fetching owner for location ${location.id}:`, ownerError);
-          return {
-            id: location.id,
-            name: location.name,
-            cabins_count: location.cabins_count || 0,
-            active: location.active,
-            owner_name: "Desconhecido",
-            owner_email: "Desconhecido",
-            created_at: location.created_at
-          };
+        if (cabinsError) {
+          debugError(`LocationApprovals: Error getting cabins count for location ${location.id}:`, cabinsError);
         }
         
-        // Fetch user profile directly as a fallback
+        // Obter dados do proprietário
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('name, email')
@@ -84,42 +82,35 @@ export const LocationApprovals = () => {
         
         if (profileError) {
           debugError(`LocationApprovals: Error fetching profile for location ${location.id}:`, profileError);
-          return {
-            id: location.id,
-            name: location.name,
-            cabins_count: location.cabins_count || 0,
-            active: location.active,
-            owner_name: "Desconhecido",
-            owner_email: "Desconhecido",
-            created_at: location.created_at
-          };
         }
         
-        // Fetch the latest cabins count directly to ensure accuracy
-        const { count: currentCabinsCount, error: cabinsCountError } = await supabase
-          .from('cabins')
-          .select('id', { count: "exact" })
-          .eq('location_id', location.id);
-          
-        if (cabinsCountError) {
-          debugError(`LocationApprovals: Error fetching cabins count for location ${location.id}:`, cabinsCountError);
-        }
+        // Sempre use a contagem real obtida diretamente da tabela de cabines
+        const actualCabinsCount = cabinsError ? 0 : (realCabinsCount || 0);
         
-        // Use the directly queried cabins count if available, otherwise fall back to the stored value
-        const cabinsCount = cabinsCountError ? (location.cabins_count || 0) : (currentCabinsCount || 0);
+        // Se a contagem no registro da location está incorreta, atualize-a
+        if (actualCabinsCount !== 0) {
+          const { error: updateError } = await supabase
+            .from('locations')
+            .update({ cabins_count: actualCabinsCount })
+            .eq('id', location.id);
+            
+          if (updateError) {
+            debugError(`LocationApprovals: Error updating location cabins count for ${location.id}:`, updateError);
+          }
+        }
         
         return {
           id: location.id,
           name: location.name,
-          cabins_count: cabinsCount,
           active: location.active,
+          cabins_count: actualCabinsCount,
+          created_at: location.created_at,
           owner_name: profileData?.name || "Desconhecido",
-          owner_email: profileData?.email || "Desconhecido",
-          created_at: location.created_at
+          owner_email: profileData?.email || "Desconhecido"
         };
       }));
       
-      setLocations(locationsWithOwners);
+      setLocations(locationsWithDetails);
       
     } catch (error) {
       debugError("LocationApprovals: Error in fetchLocations:", error);
