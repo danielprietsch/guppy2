@@ -93,9 +93,10 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
       if (newPrice > 0) {
         debugAreaLog('PRICE_EDIT', 'New price after adjustment:', newPrice);
         
-        // Fixed: Convert to number instead of string
-        onPriceEdit(Number(newPrice.toFixed(2)));
-        setPriceValue(newPrice.toFixed(2));
+        // Ensure we pass a number with 2 decimal places
+        const formattedPrice = Number(newPrice.toFixed(2));
+        onPriceEdit(formattedPrice);
+        setPriceValue(formattedPrice.toString());
         
         setAnimatePrice(true);
         setTimeout(() => setAnimatePrice(false), 700);
