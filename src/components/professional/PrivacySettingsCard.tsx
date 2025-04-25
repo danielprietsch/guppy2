@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -21,17 +22,43 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
   const queryClient = useQueryClient();
 
   useEffect(() => {
+    // Set a timeout to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.log("Privacy settings loading timeout reached, using default value");
+        setIsLoading(false);
+        // Use default value if loading takes too long
+      }
+    }, 5000); // 5 second timeout
+
     const fetchPrivacySettings = async () => {
-      if (!user) return;
+      if (!user) {
+        console.log("No user found in PrivacySettingsCard, aborting fetch");
+        setIsLoading(false);
+        return;
+      }
       
       try {
-        // Instead of directly querying the profiles table, call a function
+        console.log("Fetching privacy settings for user:", user.id);
+        
+        // Direct query to profiles table to get is_public status
         const { data, error } = await supabase
-          .rpc('get_profile_visibility', { user_id: user.id });
+          .from('profiles')
+          .select('is_public')
+          .eq('id', user.id)
+          .maybeSingle();
         
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching privacy settings:", error);
+          throw error;
+        }
         
-        setIsPublic(data ?? true);
+        console.log("Privacy settings data received:", data);
+        
+        // If we got data back, use it; otherwise default to true
+        if (data) {
+          setIsPublic(data.is_public !== false); // Default to true if null
+        }
       } catch (error) {
         console.error("Error fetching privacy settings:", error);
         toast({
@@ -45,6 +72,9 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
     };
     
     fetchPrivacySettings();
+
+    // Clean up the timeout
+    return () => clearTimeout(loadingTimeout);
   }, [user]);
 
   const handleTogglePrivacy = async (value: string) => {
@@ -53,14 +83,18 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
     const newIsPublic = value === 'available';
     
     try {
-      // Use RPC function to update visibility to avoid RLS recursion
-      const { error } = await supabase
-        .rpc('update_profile_visibility', { 
-          user_id: user.id,
-          is_public: newIsPublic
-        });
+      console.log("Updating profile visibility to:", newIsPublic);
       
-      if (error) throw error;
+      // Direct update to profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_public: newIsPublic })
+        .eq('id', user.id);
+      
+      if (error) {
+        console.error("Error updating visibility:", error);
+        throw error;
+      }
       
       setIsPublic(newIsPublic);
       
@@ -87,7 +121,7 @@ const PrivacySettingsCard = ({ initialIsPublic }: PrivacySettingsCardProps = {})
     return (
       <Card className="mb-6">
         <CardContent className="p-6">
-          <div className="text-center">Carregando configurações...</div>
+          <div className="text-center">Carregando configurações de privacidade...</div>
         </CardContent>
       </Card>
     );
