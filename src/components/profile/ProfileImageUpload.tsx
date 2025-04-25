@@ -82,22 +82,8 @@ export function ProfileImageUpload({
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
-      // Use the update_avatar_everywhere function if available, otherwise fallback to manual updates
+      // Update both user metadata and profile with separate calls instead of using RPC
       try {
-        const { data, error } = await supabase.rpc(
-          'update_avatar_everywhere',
-          { user_id: userId, avatar_url: publicUrl }
-        );
-        
-        if (error) {
-          console.error("Error calling RPC function, falling back to manual updates:", error);
-          throw error;
-        } else {
-          console.log("Avatar updated everywhere via RPC function");
-        }
-      } catch (rpcError) {
-        console.warn("Falling back to manual avatar updates");
-        
         // Update user metadata with new avatar URL
         const { error: userUpdateError } = await supabase.auth.updateUser({
           data: { avatar_url: publicUrl }
@@ -121,6 +107,11 @@ export function ProfileImageUpload({
           console.error("Error updating profile:", profileUpdateError);
           throw new Error("Não foi possível atualizar o perfil no banco de dados");
         }
+        
+        console.log("Profile and user metadata updated successfully");
+      } catch (rpcError) {
+        console.error("Error updating avatar:", rpcError);
+        throw new Error("Não foi possível atualizar o avatar em todos os sistemas");
       }
 
       // Update local preview
