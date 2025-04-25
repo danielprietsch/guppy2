@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { services, appointments, reviews } from "@/lib/mock-data";
+import { services, appointments, reviews, bookings } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";

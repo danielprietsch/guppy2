@@ -1,10 +1,11 @@
+
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import LocationsPage from './pages/LocationsPage';
 import BookCabinPage from './pages/BookCabinPage';
-import { Toast } from "@/components/ui/toast"
+import { Toaster } from "@/components/ui/toaster";
 import ClientDashboardPage from './pages/ClientDashboardPage';
 import ClientReservationsPage from './pages/ClientReservationsPage';
 import ProfessionalsPage from './pages/ProfessionalsPage';
@@ -26,7 +27,7 @@ function App() {
         <Route path="/professional-dashboard" element={<ProfessionalDashboardPage />} />
         <Route path="/professional-reservations" element={<ProfessionalReservationsPage />} />
       </Routes>
-      <Toast />
+      <Toaster />
     </BrowserRouter>
   );
 }
