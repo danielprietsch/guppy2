@@ -118,6 +118,7 @@ const AvailabilityCalendar = () => {
       
       return data;
     },
+    enabled: !!user?.id,
   });
 
   // Set initial selected date based on user creation date or default to today
@@ -129,7 +130,8 @@ const AvailabilityCalendar = () => {
     }
   }, [userProfile]);
 
-  const { data: appointments = [] } = useQuery({
+  // Define the appointments query with proper typing to avoid infinite type instantiation
+  const appointmentsQuery = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -187,10 +189,14 @@ const AvailabilityCalendar = () => {
 
       return appointmentsWithClients as Appointment[];
     },
+    enabled: !!user?.id
   });
 
+  // Use the data from the query
+  const appointments = appointmentsQuery.data || [];
+
   const getAppointmentsForDay = (date: Date) => {
-    return appointments?.filter(app => 
+    return appointments.filter(app => 
       isSameDay(new Date(app.date), date)
     ) || [];
   };
@@ -285,7 +291,7 @@ const AvailabilityCalendar = () => {
               <CardContent className="p-0">
                 <WeeklyView
                   selectedDate={selectedDate}
-                  appointments={appointments || []}
+                  appointments={appointments}
                   onDateChange={handleDateChange}
                   workingHours={workingHours}
                   breakTime={breakTime}
@@ -298,7 +304,7 @@ const AvailabilityCalendar = () => {
               <CardContent className="p-0">
                 <DailyView
                   selectedDate={selectedDate}
-                  appointments={appointments || []}
+                  appointments={appointments}
                   onDateChange={handleDateChange}
                   workingHours={workingHours}
                   breakTime={breakTime}
