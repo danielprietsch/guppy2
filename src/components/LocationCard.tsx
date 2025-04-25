@@ -1,11 +1,9 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Location } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Calendar, ChevronRight, ChevronLeft } from "lucide-react";
-import { format, addDays, isSameDay } from "date-fns";
+import { Calendar, Check, X } from "lucide-react";
+import { format, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect } from "react";
@@ -27,6 +25,7 @@ type AvailabilityMap = {
   [date: string]: {
     totalCabins: number;
     availableCabins: number;
+    manuallyClosedCount: number;
   };
 };
 
@@ -35,7 +34,7 @@ interface LocationCardProps {
 }
 
 const LocationCard = ({ location }: LocationCardProps) => {
-  const [showAvailability, setShowAvailability] = useState(false);
+  const [showAvailability, setShowAvailability] = useState(true); // Changed to true by default
   const [availabilityData, setAvailabilityData] = useState<AvailabilityMap>({});
   const [isLoading, setIsLoading] = useState(false);
   const [currentDate] = useState(new Date());
@@ -49,8 +48,6 @@ const LocationCard = ({ location }: LocationCardProps) => {
 
   useEffect(() => {
     const fetchAvailabilityData = async () => {
-      if (!showAvailability) return;
-      
       setIsLoading(true);
       const startDate = new Date();
       const availabilityMap: AvailabilityMap = {};
@@ -61,7 +58,8 @@ const LocationCard = ({ location }: LocationCardProps) => {
         const dateStr = format(date, "yyyy-MM-dd");
         availabilityMap[dateStr] = { 
           totalCabins: location.cabinsCount, 
-          availableCabins: 0 
+          availableCabins: 0,
+          manuallyClosedCount: 0
         };
       }
 
@@ -69,7 +67,7 @@ const LocationCard = ({ location }: LocationCardProps) => {
         // Get all cabins for this location
         const { data: cabins, error: cabinsError } = await supabase
           .from('cabins')
-          .select('id')
+          .select('id, availability')
           .eq('location_id', location.id);
 
         if (cabinsError) throw cabinsError;
@@ -77,12 +75,18 @@ const LocationCard = ({ location }: LocationCardProps) => {
         if (cabins && cabins.length > 0) {
           const cabinIds = cabins.map(cabin => cabin.id);
           
-          // For each date, check bookings for all cabins
+          // For each date, check bookings and manual closures
           for (let i = 0; i < 7; i++) {
             const date = addDays(startDate, i);
             const dateStr = format(date, "yyyy-MM-dd");
             
-            // Get bookings for this date for all cabins of this location
+            // Count manually closed cabins
+            const manuallyClosedCount = cabins.filter(cabin => {
+              const availability = cabin.availability as any;
+              return availability && !availability.morning && !availability.afternoon && !availability.evening;
+            }).length;
+            
+            // Get bookings for this date
             const { data: bookings, error: bookingsError } = await supabase
               .from('bookings')
               .select('cabin_id, shift')
@@ -92,14 +96,14 @@ const LocationCard = ({ location }: LocationCardProps) => {
               
             if (bookingsError) throw bookingsError;
             
-            // Calculate available cabins (simple calculation: total cabins - booked cabins)
-            // This is a simplification - in reality you'd need to account for shifts
+            // Calculate available cabins
             const bookedCabinIds = new Set(bookings?.map(b => b.cabin_id) || []);
-            const availableCabins = cabinIds.length - bookedCabinIds.size;
+            const availableCabins = cabinIds.length - bookedCabinIds.size - manuallyClosedCount;
             
             availabilityMap[dateStr] = {
               totalCabins: cabinIds.length,
-              availableCabins: availableCabins > 0 ? availableCabins : 0
+              availableCabins: availableCabins > 0 ? availableCabins : 0,
+              manuallyClosedCount
             };
           }
         }
@@ -113,29 +117,32 @@ const LocationCard = ({ location }: LocationCardProps) => {
     };
 
     fetchAvailabilityData();
-  }, [showAvailability, location.id, location.cabinsCount]);
-
-  const toggleAvailabilityCalendar = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent Link navigation
-    setShowAvailability(!showAvailability);
-  };
+  }, [location.id, location.cabinsCount]);
 
   // Generate dates for the next 7 days
   const nextDays = Array.from({ length: 7 }, (_, i) => {
     return addDays(currentDate, i);
   });
 
-  // Function to determine availability color class
-  const getAvailabilityColorClass = (date: Date) => {
+  // Function to determine availability status and color
+  const getAvailabilityStatus = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
     const data = availabilityData[dateStr];
     
-    if (!data) return "bg-gray-200"; // No data
+    if (!data) return { color: "bg-gray-200", text: "Indisponível" };
     
-    const availabilityRatio = data.availableCabins / data.totalCabins;
-    if (availabilityRatio >= 0.5) return "bg-green-500"; // Good availability (50%+)
-    if (availabilityRatio > 0) return "bg-yellow-500"; // Limited availability
-    return "bg-red-500"; // No availability
+    if (data.manuallyClosedCount === data.totalCabins) {
+      return { color: "bg-red-500", text: "Fechado" };
+    }
+    
+    if (data.availableCabins === 0) {
+      return { color: "bg-yellow-500", text: "Reservado" };
+    }
+    
+    return { 
+      color: "bg-green-500", 
+      text: `${data.availableCabins} disponível${data.availableCabins > 1 ? 'is' : ''}`
+    };
   };
 
   return (
@@ -146,11 +153,10 @@ const LocationCard = ({ location }: LocationCardProps) => {
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-semibold text-lg">{location.name}</h3>
               <button 
-                onClick={toggleAvailabilityCalendar}
                 className="flex items-center text-primary text-sm hover:underline"
               >
                 <Calendar className="h-4 w-4 mr-1" />
-                {!showAvailability ? "Ver disponibilidade" : "Ocultar"}
+                Ver disponibilidade
               </button>
             </div>
             <p className="text-sm text-muted-foreground">{location.address}, {location.city}</p>
@@ -172,19 +178,22 @@ const LocationCard = ({ location }: LocationCardProps) => {
                   </div>
                 ) : (
                   <div className="grid grid-cols-7 gap-1 text-center">
-                    {nextDays.map((date, i) => (
-                      <div key={i} className="text-xs">
-                        <div className="font-medium mb-1">
-                          {format(date, "EEE", { locale: ptBR })}
+                    {nextDays.map((date, i) => {
+                      const status = getAvailabilityStatus(date);
+                      return (
+                        <div key={i} className="text-xs">
+                          <div className="font-medium mb-1">
+                            {format(date, "EEE", { locale: ptBR })}
+                          </div>
+                          <div className="text-[10px] mb-1">
+                            {format(date, "dd/MM")}
+                          </div>
+                          <div className={`h-8 mx-auto rounded-md flex items-center justify-center p-1 ${status.color} text-white text-[10px] leading-tight`}>
+                            {status.text}
+                          </div>
                         </div>
-                        <div className="text-[10px] mb-1">
-                          {format(date, "dd/MM")}
-                        </div>
-                        <div className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center ${getAvailabilityColorClass(date)} text-white`}>
-                          {availabilityData[format(date, "yyyy-MM-dd")]?.availableCabins || 0}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
