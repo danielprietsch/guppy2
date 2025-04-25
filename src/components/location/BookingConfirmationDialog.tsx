@@ -31,7 +31,7 @@ export const BookingConfirmationDialog = ({
     setIsChecking(true);
     
     try {
-      // Use only auth session - NO profile queries at all
+      // ONLY use auth.getSession() - avoid ALL database queries at this stage
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -47,10 +47,10 @@ export const BookingConfirmationDialog = ({
         return;
       }
 
-      // Check user type from user metadata - avoid profiles query
+      // Check user type directly from user metadata WITHOUT any database queries
       const userType = session.user.user_metadata?.userType;
       
-      // Only allow professionals to proceed
+      // Only allow professionals to proceed to booking page
       if (userType !== 'professional' && userType !== 'provider') {
         debugLog("BookingConfirmation: User is not a professional");
         toast({
