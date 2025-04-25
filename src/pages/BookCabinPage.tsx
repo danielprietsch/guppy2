@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { Cabin, Location } from "@/lib/types";
@@ -194,7 +195,7 @@ const BookCabinPage = () => {
   if (!cabin && !locationData) {
     return (
       <div className="container px-4 py-12 md:px-6 md:py-16 text-center">
-        <h2 className="text-2xl font-bold mb-4">Cabine não encontrada</h2>
+        <h2 className="text-2xl font-bold mb-4">Espaço de Trabalho não encontrado</h2>
         <Button onClick={() => navigate("/locations")}>
           Voltar para Locais
         </Button>
@@ -207,13 +208,13 @@ const BookCabinPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4 h-full p-4">
         <div className="space-y-4 overflow-y-auto">
           <h1 className="text-2xl font-bold mb-2">
-            {cabin ? `Reservar ${cabin.name}` : 'Reserva de Cabine'}
+            {cabin ? `Reservar ${cabin.name}` : 'Reservar Espaço de Trabalho'}
           </h1>
           
           <div className="relative max-w-md mb-4">
             <Input
               type="text"
-              placeholder="Buscar cabines..."
+              placeholder="Buscar espaços..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -223,7 +224,7 @@ const BookCabinPage = () => {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {isLoading ? (
-              <p>Carregando cabines...</p>
+              <p>Carregando espaços...</p>
             ) : cabins.length > 0 ? (
               cabins.map((cabin) => (
                 <Card key={cabin.id} className="overflow-hidden">
@@ -247,13 +248,13 @@ const BookCabinPage = () => {
                         state: { cabinDetails: cabin, locationDetails: locationData }
                       })}
                     >
-                      Selecionar Cabine
+                      Selecionar Espaço
                     </Button>
                   </CardFooter>
                 </Card>
               ))
             ) : (
-              <p>Nenhuma cabine encontrada.</p>
+              <p>Nenhum espaço encontrado.</p>
             )}
           </div>
 
@@ -345,7 +346,7 @@ const BookCabinPage = () => {
                   onClick={handleBookCabin}
                   disabled={!acceptTerms || Object.keys(selectedTurns).length === 0}
                 >
-                  Reservar Cabine
+                  Reservar Espaço
                 </Button>
               </div>
 

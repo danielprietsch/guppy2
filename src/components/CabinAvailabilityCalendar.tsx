@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { format, isBefore, startOfDay, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,7 +29,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   slotPrices = {},
   cabinCreatedAt
 }) => {
-  // FORÇAR o uso da data de criação como mês inicial - SEMPRE!
   const getInitialDate = React.useCallback(() => {
     if (cabinCreatedAt) {
       return parseISO(cabinCreatedAt);
@@ -40,7 +38,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   
   const [viewMonth, setViewMonth] = React.useState<Date>(getInitialDate);
   
-  // GARANTIR que a data de visualização seja SEMPRE atualizada quando mudar a cabine
   React.useEffect(() => {
     setViewMonth(getInitialDate());
   }, [cabinCreatedAt, getInitialDate]);
@@ -60,8 +57,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   };
 
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
-    // Removemos a verificação de datas passadas para permitir que a alteração de status ocorra em qualquer data
-    // Agora o controle é feito apenas no componente TimeSlotCard
     debugAreaLog('AVAILABILITY', 'Solicitação de alteração de status:', { date, turno, isManualClose });
     
     if (onStatusChange) {
@@ -93,7 +88,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: string) => {
     const dateObj = new Date(date);
     
-    // Apenas bloqueamos datas antes de hoje, não o próprio dia atual
     if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('PRICE_EDIT', 'Não é possível alterar preço de datas passadas');
       toast({
@@ -145,8 +139,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const renderDayContent = React.useCallback((day: Date) => {
     const dateStr = fmtDate(day);
     const turnos = ["morning", "afternoon", "evening"];
-    // Alterando a lógica aqui: apenas considerar como "passada" se a data for antes de hoje
-    // e NÃO for o dia de hoje (isToday retorna false)
     const isPastDate = isBefore(day, today) && !isToday(day);
 
     return (
@@ -181,7 +173,6 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
       locale={ptBR}
       disabled={(date) => {
         if (!cabinCreatedAt) return false;
-        // RIGOROSAMENTE desabilitar TODAS as datas anteriores à data de criação da cabine
         const creationDate = parseISO(cabinCreatedAt);
         return isBefore(startOfDay(date), startOfDay(creationDate));
       }}

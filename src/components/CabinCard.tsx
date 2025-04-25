@@ -91,7 +91,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
           </h2>
         )}
         <h3 className="font-semibold">
-          Cabine: {cabin.name}
+          Espaço: {cabin.name}
         </h3>
         {location && (
           <p className="text-sm text-muted-foreground">
@@ -132,7 +132,7 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
         ) : !isLoggedIn ? (
           <Link to="/register?type=professional" className="w-full">
             <Button size="sm" variant="outline" className="w-full">
-              Cadastre-se para poder reservar uma cabine
+              Cadastre-se para poder reservar um espaço
             </Button>
           </Link>
         ) : isProfessional ? (
@@ -142,12 +142,12 @@ const CabinCard = ({ cabin, location }: CabinCardProps) => {
             state={{ cabinDetails: cabin, locationDetails: location }}
           >
             <Button size="sm" className="w-full">
-              Reservar Cabine
+              Reservar Espaço
             </Button>
           </Link>
         ) : (
           <p className="text-sm text-muted-foreground text-center w-full">
-            Apenas profissionais podem reservar cabines
+            Apenas profissionais podem reservar espaços
           </p>
         )}
       </CardFooter>
