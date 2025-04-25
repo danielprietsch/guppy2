@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -21,7 +20,7 @@ const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const today = new Date();
-  const nextWeek = addDays(today, 7);
+  const nextWeek = today;
 
   // Get all unique categories from serviceData
   const allServices = Object.values(serviceData)

@@ -2,8 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { useUsers } from '@/hooks/useUsers';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 
 interface UseProfessionalsOptions {
   withSpecialties?: boolean;
@@ -30,18 +29,47 @@ export type Professional = User & {
 };
 
 export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
-  const { withSpecialties = true, withAvailability = false, date = null } = options;
+  const { withSpecialties = true, withAvailability = false, date = new Date() } = options;
 
   return useQuery<Professional[], Error>({
     queryKey: ['professionals', date ? format(date, 'yyyy-MM-dd') : null],
     queryFn: async () => {
       try {
-        const formattedDate = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-        console.log('Fetching professionals for date:', formattedDate);
-
-        // Using explicit type assertion for the RPC function
-        const { data: professionalsData, error } = await supabase.rpc('get_public_professionals');
+        // Calculate the start and end of the week for the given date
+        const weekStart = format(startOfWeek(date), 'yyyy-MM-dd');
+        const weekEnd = format(endOfWeek(date), 'yyyy-MM-dd');
         
+        console.log('Fetching professionals for week:', weekStart, 'to', weekEnd);
+
+        // First get all active bookings for the week
+        const { data: activeBookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select('professional_id')
+          .gte('date', weekStart)
+          .lte('date', weekEnd)
+          .eq('status', 'confirmed');
+
+        if (bookingsError) {
+          console.error('Error fetching bookings:', bookingsError);
+          return [];
+        }
+
+        // Get unique professional IDs from bookings
+        const professionalIds = [...new Set(activeBookings?.map(b => b.professional_id) || [])];
+
+        if (professionalIds.length === 0) {
+          console.log('No professionals with active bookings found');
+          return [];
+        }
+
+        // Get professionals that have active bookings
+        const { data: professionalsData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_type', 'professional')
+          .eq('is_public', true)
+          .in('id', professionalIds);
+
         if (error) {
           console.error('Error fetching professional profiles:', error);
           return [];
@@ -53,29 +81,26 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           return [];
         }
 
-        // Convert the raw data to the proper format
-        const professionals = professionalsData as any[];
-        
-        // Get services for all professionals
+        // Get services for the filtered professionals
         const { data: services, error: servicesError } = await supabase
           .from('services')
           .select('professional_id, name, category, price')
-          .in('professional_id', professionals.map(p => p.id));
+          .in('professional_id', professionalIds);
 
-        // Get reviews for all professionals
+        // Get reviews for the filtered professionals
         const { data: reviews, error: reviewsError } = await supabase
           .from('reviews')
           .select('professional_id, rating')
-          .in('professional_id', professionals.map(p => p.id));
+          .in('professional_id', professionalIds);
 
-        // Get availability for all professionals if requested
+        // Get availability if requested
         let availability = [];
         if (withAvailability) {
           const { data: availData, error: availError } = await supabase
             .from('professional_availability')
             .select('*')
-            .in('professional_id', professionals.map(p => p.id))
-            .eq('date', formattedDate);
+            .in('professional_id', professionalIds)
+            .eq('date', format(date, 'yyyy-MM-dd'));
           
           if (availError) {
             console.error('Error fetching availability:', availError);
@@ -85,7 +110,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         }
 
         // Process and combine all data
-        return professionals.map(prof => {
+        return professionalsData.map(prof => {
           // Calculate average rating
           const profReviews = reviews?.filter(r => r.professional_id === prof.id) || [];
           const avgRating = profReviews.length > 0
