@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -64,29 +65,18 @@ export function ProfileImageUpload({
 
       console.log("Image uploaded successfully, public URL:", publicUrl);
 
-      // First update the profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          avatar_url: publicUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', userId);
+      // Use the security definer function to update both profile and user metadata
+      const { data, error } = await supabase.rpc(
+        'update_avatar_everywhere',
+        { user_id: userId, avatar_url: publicUrl }
+      );
 
-      if (profileError) {
-        console.error("Error updating profile:", profileError);
-        throw new Error("Não foi possível atualizar o perfil");
+      if (error) {
+        console.error("Error updating avatar:", error);
+        throw new Error("Não foi possível atualizar o avatar: " + error.message);
       }
 
-      // Then update the user metadata
-      const { error: userError } = await supabase.auth.updateUser({
-        data: { avatar_url: publicUrl }
-      });
-
-      if (userError) {
-        console.error("Error updating user metadata:", userError);
-        throw new Error("Não foi possível atualizar os dados do usuário");
-      }
+      console.log("Avatar updated successfully via RPC function");
 
       // Update local state and notify parent
       setPreviewUrl(publicUrl);

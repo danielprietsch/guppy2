@@ -604,6 +604,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      update_avatar_everywhere: {
+        Args: { user_id: string; avatar_url: string }
+        Returns: boolean
+      }
       update_location_approval_status: {
         Args: { location_id: string; new_status: string; admin_id: string }
         Returns: boolean
