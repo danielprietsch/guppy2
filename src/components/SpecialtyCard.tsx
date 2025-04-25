@@ -6,7 +6,7 @@ import {
   Scissors, 
   Brush, 
   SprayCan, 
-  NailPolish as LucideNailPolish 
+  Paintbrush 
 } from "lucide-react";
 
 interface SpecialtyCardProps {
@@ -31,7 +31,7 @@ const getIconForSpecialty = (id: string) => {
     case "manicure_gel":
     case "pedicure_comum":
     case "pedicure_spa":
-      return <LucideNailPolish className="h-5 w-5" />;
+      return <Paintbrush className="h-5 w-5" />;
     default:
       return <Scissors className="h-5 w-5" />;
   }
