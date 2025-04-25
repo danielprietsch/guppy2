@@ -170,7 +170,9 @@ const SpecialtyCard = ({
     <div
       className={cn(
         "relative flex flex-col items-start p-6 rounded-lg border-2 transition-colors cursor-pointer",
-        checked ? "border-primary bg-accent" : "border-input"
+        checked 
+          ? "border-primary bg-[#F2FCE2] text-foreground" // Light, whitish green when selected
+          : "border-input"
       )}
       onClick={handleCardClick}
       role="checkbox"
