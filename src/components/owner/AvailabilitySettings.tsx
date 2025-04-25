@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useEffect } from "react";
 import {
   Card,
@@ -73,7 +72,8 @@ export const AvailabilitySettings = ({
     });
   }, []);
 
-  const handlePriceChange = useCallback((date: string, turn: string, price: number) => {
+  const handlePriceChange = useCallback((date: string, turn: string, price: string) => {
+    // Convert string price to number for internal state
     debugAreaLog('PRICE_EDIT', `Price change for ${date} ${turn} to ${price}`);
     
     setSlotPrices(prevState => {
@@ -83,7 +83,7 @@ export const AvailabilitySettings = ({
         newState[date] = {};
       }
       
-      newState[date][turn] = price;
+      newState[date][turn] = parseFloat(price);
       
       // Here you would save this to your backend
       // savePriceToBackend(selectedCabin, date, turn, price);
