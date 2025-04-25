@@ -10,13 +10,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useProfessionals } from "@/hooks/useProfessionals";
+import { useProfessionals, Professional } from "@/hooks/useProfessionals";
 import { serviceData } from "@/utils/serviceData";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { User } from "@/lib/types";
 
 const ProfessionalsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");

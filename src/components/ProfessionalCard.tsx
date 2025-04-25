@@ -4,23 +4,10 @@ import { User } from "@/lib/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Professional } from "@/hooks/useProfessionals";
 
 interface ProfessionalCardProps {
-  professional: User & {
-    specialties?: string[];
-    services?: Array<{
-      name: string;
-      category: string;
-      price: number;
-    }>;
-    rating?: number | null;
-    reviewCount?: number;
-    availability?: {
-      morning_status: string;
-      afternoon_status: string;
-      evening_status: string;
-    } | null;
-  };
+  professional: Professional;
 }
 
 const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
@@ -68,7 +55,7 @@ const ProfessionalCard = ({ professional }: ProfessionalCardProps) => {
           <div className="flex items-center gap-2 mt-1">
             <div className="flex items-center">
               <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <span className="text-sm ml-1">{rating.toFixed(1)}</span>
+              <span className="text-sm ml-1">{rating ? rating.toFixed(1) : "0.0"}</span>
             </div>
             <span className="text-sm text-gray-500">({reviewCount} avaliações)</span>
           </div>

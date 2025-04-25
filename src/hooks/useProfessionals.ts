@@ -11,10 +11,28 @@ interface UseProfessionalsOptions {
   date?: Date | null;
 }
 
+// Define a Professional type that extends User with the specific properties we need
+export type Professional = User & {
+  specialties: string[];
+  services: Array<{
+    professional_id: string;
+    name: string;
+    category: string;
+    price: number;
+  }>;
+  rating: number | null;
+  reviewCount: number;
+  availability?: {
+    morning_status: string;
+    afternoon_status: string;
+    evening_status: string;
+  } | null;
+};
+
 export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { withSpecialties = true, withAvailability = false, date = null } = options;
 
-  return useQuery({
+  return useQuery<Professional[], Error>({
     queryKey: ['professionals', date ? format(date, 'yyyy-MM-dd') : null],
     queryFn: async () => {
       try {
@@ -22,7 +40,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         console.log('Fetching professionals for date:', formattedDate);
 
         // Using explicit type assertion for the RPC function
-        const { data: professionals, error } = await supabase.rpc('get_public_professionals');
+        const { data: professionalsData, error } = await supabase.rpc('get_public_professionals');
         
         if (error) {
           console.error('Error fetching professional profiles:', error);
@@ -30,11 +48,14 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         }
 
         // If no professionals found, return empty array
-        if (!professionals || !Array.isArray(professionals) || professionals.length === 0) {
+        if (!professionalsData || !Array.isArray(professionalsData) || professionalsData.length === 0) {
           console.log('No professional profiles found');
           return [];
         }
 
+        // Convert the raw data to the proper format
+        const professionals = professionalsData as any[];
+        
         // Get services for all professionals
         const { data: services, error: servicesError } = await supabase
           .from('services')
@@ -78,14 +99,21 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           // Get availability status
           const profAvailability = availability.find(a => a.professional_id === prof.id);
 
+          // Ensure user_type is one of the allowed types
+          const userType = prof.user_type === 'professional' ? 'professional' : 
+                           prof.user_type === 'client' ? 'client' : 
+                           prof.user_type === 'owner' ? 'owner' : 
+                           prof.user_type === 'global_admin' ? 'global_admin' : 'professional';
+
           return {
             ...prof,
+            user_type: userType as "professional" | "client" | "owner" | "global_admin",
             specialties,
             services: profServices,
             rating: avgRating,
             reviewCount: profReviews.length,
             availability: profAvailability,
-          };
+          } as Professional;
         });
 
       } catch (error) {
