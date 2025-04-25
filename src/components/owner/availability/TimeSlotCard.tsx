@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, Lock, Pencil, ArrowUp, ArrowDown, Clock } from "lucide-react";
+import { Check, Lock, Pencil, ArrowUp, ArrowDown, Clock, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugLog, debugAreaLog } from "@/utils/debugLogger";
 
@@ -93,7 +93,11 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const getStatusColor = () => {
-    if (isPastDate) return "bg-gray-400"; // Cor para datas passadas
+    if (isPastDate) {
+      if (isBooked) return "bg-blue-400"; // Azul para datas passadas alugadas
+      if (isManuallyClosed) return "bg-gray-400"; // Cinza para datas passadas fechadas manualmente
+      return "bg-red-400"; // Vermelho para datas passadas não alugadas (prejuízo)
+    }
     if (isBooked) return "bg-red-500";
     if (isManuallyClosed) return "bg-yellow-300";
     return "bg-green-500";
@@ -117,7 +121,7 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
         "p-2 rounded-lg shadow-sm transition-colors",
         getStatusColor(),
         isBooked && !isPastDate ? "cursor-pointer" : "",
-        isPastDate ? "opacity-70" : ""
+        isPastDate ? "opacity-90" : ""
       )} 
       onClick={handleCardClick}
     >
@@ -197,8 +201,22 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
 
         {isPastDate ? (
           <div className="flex items-center gap-1 text-white text-xs">
-            <Clock className="w-3 h-3" />
-            <span>Data passada</span>
+            {isBooked ? (
+              <>
+                <Lock className="w-3 h-3" />
+                <span>Alugada</span>
+              </>
+            ) : isManuallyClosed ? (
+              <>
+                <Clock className="w-3 h-3" />
+                <span>Fechada</span>
+              </>
+            ) : (
+              <>
+                <AlertCircle className="w-3 h-3" />
+                <span>Não utilizada</span>
+              </>
+            )}
           </div>
         ) : isBooked ? (
           <div className="flex items-center gap-1 text-white text-xs">
@@ -231,3 +249,4 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
     </div>
   );
 };
+
