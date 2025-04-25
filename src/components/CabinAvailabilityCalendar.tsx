@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { format, isBefore, startOfDay } from "date-fns";
+import { format, isBefore, startOfDay, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
@@ -18,6 +18,7 @@ interface CabinAvailabilityCalendarProps {
   onStatusChange?: (date: string, turn: string, isManualClose: boolean) => void;
   manuallyClosedDates?: { [date: string]: { [turn: string]: boolean } };
   slotPrices?: { [date: string]: { [turn: string]: number } };
+  cabinCreatedAt?: string;
 }
 
 const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
@@ -26,9 +27,20 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   onStatusChange,
   manuallyClosedDates = {},
   pricePerDay,
-  slotPrices = {}
+  slotPrices = {},
+  cabinCreatedAt
 }) => {
-  const [viewMonth, setViewMonth] = React.useState<Date>(new Date());
+  // Use cabin creation date if available
+  const defaultViewMonth = cabinCreatedAt ? parseISO(cabinCreatedAt) : new Date();
+  const [viewMonth, setViewMonth] = React.useState<Date>(defaultViewMonth);
+  
+  // Update viewMonth when cabinCreatedAt changes
+  React.useEffect(() => {
+    if (cabinCreatedAt) {
+      setViewMonth(parseISO(cabinCreatedAt));
+    }
+  }, [cabinCreatedAt]);
+  
   const navigate = useNavigate();
   const today = startOfDay(new Date());
 

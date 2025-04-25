@@ -1,3 +1,4 @@
+
 import { memo } from "react";
 import { Location, Cabin } from "@/lib/types";
 import { LocationsOverview } from "./LocationsOverview";
@@ -7,7 +8,7 @@ import { EquipmentSettings } from "./EquipmentSettings";
 import { AvailabilitySettings } from "./AvailabilitySettings";
 import { LocationSettings } from "./LocationSettings";
 import { EmptyLocationState } from "./EmptyLocationState";
-import { CabinsLossReport } from "@/pages/owner/CabinsLossReport";
+import CabinsLossReport from "@/pages/owner/CabinsLossReport";
 
 interface DashboardContentProps {
   selectedLocation: Location | null;

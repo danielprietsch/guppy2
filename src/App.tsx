@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import Index from './pages/Index';
@@ -18,6 +19,7 @@ import ClientReservationsPage from './pages/ClientReservationsPage';
 import ClientProfilePage from './pages/ClientProfilePage';
 import OwnerDashboardPage from './pages/OwnerDashboardPage';
 import OwnerProfilePage from './pages/OwnerProfilePage';
+import CabinsLossReport from './pages/owner/CabinsLossReport';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import GlobalAdminDashboardPage from './pages/GlobalAdminDashboardPage';
 import GlobalAdminProfilePage from './pages/GlobalAdminProfilePage';

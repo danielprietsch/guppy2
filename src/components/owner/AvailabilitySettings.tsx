@@ -103,6 +103,13 @@ export const AvailabilitySettings = ({
     return cabin.pricing.defaultPricing[1]?.morning || 100;
   };
 
+  const getSelectedCabinCreationDate = (): string | undefined => {
+    if (!selectedCabin) return undefined;
+    
+    const cabin = locationCabins.find(c => c.id === selectedCabin);
+    return cabin?.created_at;
+  };
+
   return (
     <div className="space-y-8">
       <Card>
@@ -149,6 +156,7 @@ export const AvailabilitySettings = ({
                         onPriceChange={handlePriceChange}
                         manuallyClosedDates={manuallyClosedDates}
                         slotPrices={slotPrices}
+                        cabinCreatedAt={getSelectedCabinCreationDate()}
                       />
                     </div>
                   </CardContent>

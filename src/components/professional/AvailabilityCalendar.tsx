@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, isSameDay } from "date-fns";
+import { format, isSameDay, parseISO } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from "@/lib/auth";
 import {
@@ -36,11 +37,41 @@ interface Appointment {
 
 const AvailabilityCalendar = () => {
   const { user } = useAuth();
-  const today = new Date();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(today);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const { availability, updateAvailability } = useAvailability(user?.id);
   const { workingHours, breakTime } = useWorkingHours(user?.id);
+  const [viewMode, setViewMode] = useState<"weekly" | "daily">("weekly");
+
+  // Fetch user profile to get creation date
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !data) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      
+      return data;
+    },
+  });
+
+  // Set initial selected date based on user creation date or default to today
+  useEffect(() => {
+    if (userProfile?.created_at) {
+      setSelectedDate(parseISO(userProfile.created_at));
+    } else {
+      setSelectedDate(new Date());
+    }
+  }, [userProfile]);
 
   const { data: appointments = [] } = useQuery({
     queryKey: ['professional-appointments', user?.id],
@@ -118,62 +149,52 @@ const AvailabilityCalendar = () => {
     return dayAvail[`${shift}_status` as keyof typeof dayAvail] as ShiftStatus;
   };
 
-  const dayClass = (date: Date) => {
-    const dayAppointments = getAppointmentsForDay(date);
-    const morning = getShiftStatus(date, 'morning');
-    const afternoon = getShiftStatus(date, 'afternoon');
-    const evening = getShiftStatus(date, 'evening');
-    
-    let className = "relative h-full w-full ";
-    
-    if (dayAppointments.length > 0) {
-      className += "bg-blue-50 ";
-    } else if (morning === 'closed' && afternoon === 'closed' && evening === 'closed') {
-      className += "bg-amber-100 ";
-    } else if (morning === 'busy' && afternoon === 'busy' && evening === 'busy') {
-      className += "bg-red-100 ";
-    } else if (morning === 'free' && afternoon === 'free' && evening === 'free') {
-      className += "bg-green-100 ";
-    } else {
-      className += "bg-gradient-to-br from-green-100 via-white to-amber-100 ";
-    }
-
-    return className;
-  };
-
   const handleDateChange = (newDate: Date) => {
     setSelectedDate(newDate);
   };
+
+  if (!selectedDate) {
+    return <div>Carregando...</div>;
+  }
 
   return (
     <Card className="mb-8">
       <CardContent className="p-4 flex flex-col space-y-6">
         <WorkingHoursSettings />
 
-        <div className="space-y-8">
-          <Card>
-            <CardContent className="p-0">
-              <WeeklyView
-                selectedDate={selectedDate || today}
-                appointments={appointments || []}
-                onDateChange={handleDateChange}
-                workingHours={workingHours}
-                breakTime={breakTime}
-              />
-            </CardContent>
-          </Card>
+        <div className="flex justify-center mb-4">
+          <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as "weekly" | "daily")}>
+            <ToggleGroupItem value="weekly">Semanal</ToggleGroupItem>
+            <ToggleGroupItem value="daily">Diário</ToggleGroupItem>
+          </ToggleGroup>
+        </div>
 
-          <Card>
-            <CardContent className="p-0">
-              <DailyView
-                selectedDate={selectedDate || today}
-                appointments={appointments || []}
-                onDateChange={handleDateChange}
-                workingHours={workingHours}
-                breakTime={breakTime}
-              />
-            </CardContent>
-          </Card>
+        <div className="space-y-8">
+          {viewMode === "weekly" ? (
+            <Card>
+              <CardContent className="p-0">
+                <WeeklyView
+                  selectedDate={selectedDate}
+                  appointments={appointments || []}
+                  onDateChange={handleDateChange}
+                  workingHours={workingHours}
+                  breakTime={breakTime}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardContent className="p-0">
+                <DailyView
+                  selectedDate={selectedDate}
+                  appointments={appointments || []}
+                  onDateChange={handleDateChange}
+                  workingHours={workingHours}
+                  breakTime={breakTime}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         <Dialog open={!!selectedAppointment} onOpenChange={() => setSelectedAppointment(null)}>

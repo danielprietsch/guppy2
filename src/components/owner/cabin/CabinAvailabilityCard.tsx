@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { DailyAvailabilityCell } from "@/components/location/DailyAvailabilityCell";
 import { format, addDays, startOfWeek, isBefore, startOfDay } from "date-fns";
@@ -8,11 +8,21 @@ import { ptBR } from 'date-fns/locale';
 interface CabinAvailabilityCardProps {
   cabinId: string;
   pricing: any;
+  createdAt?: string;
 }
 
-export const CabinAvailabilityCard = ({ cabinId, pricing }: CabinAvailabilityCardProps) => {
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+export const CabinAvailabilityCard = ({ cabinId, pricing, createdAt }: CabinAvailabilityCardProps) => {
+  // Use cabin creation date if available, otherwise use today
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  
+  useEffect(() => {
+    if (createdAt) {
+      const cabinCreationDate = new Date(createdAt);
+      setStartDate(cabinCreationDate);
+    }
+  }, [createdAt]);
+  
+  const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const currentDay = startOfDay(new Date());
 

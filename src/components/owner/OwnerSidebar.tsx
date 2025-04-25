@@ -1,4 +1,4 @@
-import { Building, DollarSign, Calendar, Plus, Settings, Bed, FileChart } from "lucide-react";
+import { Building, DollarSign, Calendar, Plus, Settings, Bed, FileBarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LocationSelector } from "./LocationSelector";
@@ -91,7 +91,7 @@ export const OwnerSidebar = ({
             className="w-full justify-start"
             onClick={() => setActiveTab("reports")}
           >
-            <FileChart className="mr-2 h-4 w-4" />
+            <FileBarChart className="mr-2 h-4 w-4" />
             Relatórios
           </Button>
         </CardContent>
