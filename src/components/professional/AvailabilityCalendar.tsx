@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { format, isSameDay, parseISO } from "date-fns";
@@ -11,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, UseQueryResult } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useAvailability, ShiftStatus } from "@/hooks/useAvailability";
 import { useWorkingHours } from "@/hooks/useWorkingHours";
@@ -62,6 +61,22 @@ interface CabinDetails {
     city: string;
     state: string;
   };
+}
+
+// Define interface for raw appointment data from Supabase
+interface RawAppointmentData {
+  id: string;
+  date: string;
+  time: string;
+  client_id: string;
+  status: string;
+  professional_id: string;
+}
+
+// Define interface for profile data from Supabase
+interface ProfileData {
+  name: string | null;
+  email: string | null;
 }
 
 const AvailabilityCalendar = () => {
@@ -130,10 +145,10 @@ const AvailabilityCalendar = () => {
     }
   }, [userProfile]);
 
-  // Define the appointments query with proper typing to avoid infinite type instantiation
-  const appointmentsQuery = useQuery({
+  // Define the appointments query with explicit types to avoid infinite type instantiation
+  const appointmentsQuery: UseQueryResult<Appointment[], Error> = useQuery({
     queryKey: ['professional-appointments', user?.id, cabinId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Appointment[]> => {
       if (!user?.id) return [];
       
       // Base query
@@ -154,8 +169,12 @@ const AvailabilityCalendar = () => {
         return [];
       }
 
-      const appointmentsWithClients = await Promise.all(
-        data.map(async (appointment) => {
+      // Type assertion for the raw data
+      const rawAppointments = data as RawAppointmentData[];
+      
+      // Process appointments to include client information
+      const appointmentsWithClients: Appointment[] = await Promise.all(
+        rawAppointments.map(async (appointment) => {
           if (appointment.client_id) {
             const { data: clientData, error: clientError } = await supabase
               .from('profiles')
@@ -163,7 +182,9 @@ const AvailabilityCalendar = () => {
               .eq('id', appointment.client_id)
               .single();
             
-            if (clientError || !clientData) {
+            const typedClientData = clientData as ProfileData | null;
+            
+            if (clientError || !typedClientData) {
               console.error('Error fetching client:', clientError);
               return {
                 ...appointment,
@@ -174,8 +195,8 @@ const AvailabilityCalendar = () => {
             return {
               ...appointment,
               client: {
-                name: clientData.name || 'Nome não disponível',
-                email: clientData.email || 'Email não disponível'
+                name: typedClientData.name || 'Nome não disponível',
+                email: typedClientData.email || 'Email não disponível'
               }
             };
           }
@@ -187,7 +208,7 @@ const AvailabilityCalendar = () => {
         })
       );
 
-      return appointmentsWithClients as Appointment[];
+      return appointmentsWithClients;
     },
     enabled: !!user?.id
   });
@@ -195,17 +216,17 @@ const AvailabilityCalendar = () => {
   // Use the data from the query
   const appointments = appointmentsQuery.data || [];
 
-  const getAppointmentsForDay = (date: Date) => {
+  const getAppointmentsForDay = (date: Date): Appointment[] => {
     return appointments.filter(app => 
       isSameDay(new Date(app.date), date)
-    ) || [];
+    );
   };
 
-  const formatAppointmentTime = (time: string) => {
+  const formatAppointmentTime = (time: string): string => {
     return format(new Date(`2000-01-01T${time}`), 'HH:mm');
   };
 
-  const handleShiftStatusChange = async (date: Date, shift: 'morning' | 'afternoon' | 'evening', newStatus: ShiftStatus) => {
+  const handleShiftStatusChange = async (date: Date, shift: 'morning' | 'afternoon' | 'evening', newStatus: ShiftStatus): Promise<void> => {
     try {
       await updateAvailability.mutateAsync({ date, shift, status: newStatus });
     } catch (error) {
@@ -219,7 +240,7 @@ const AvailabilityCalendar = () => {
     return dayAvail[`${shift}_status` as keyof typeof dayAvail] as ShiftStatus;
   };
 
-  const handleDateChange = (newDate: Date) => {
+  const handleDateChange = (newDate: Date): void => {
     setSelectedDate(newDate);
   };
 
