@@ -98,7 +98,7 @@ export const LocationApprovals = () => {
         // Fetch the latest cabins count directly to ensure accuracy
         const { count: currentCabinsCount, error: cabinsCountError } = await supabase
           .from('cabins')
-          .select('id', { count: true })
+          .select('id', { count: "exact" })
           .eq('location_id', location.id);
           
         if (cabinsCountError) {
