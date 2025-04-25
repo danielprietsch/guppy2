@@ -14,7 +14,6 @@ import { Location } from "@/lib/types";
 import { debugLog, debugError } from "@/utils/debugLogger";
 import { Badge } from "@/components/ui/badge";
 
-// Type for available filters
 interface FilterOptions {
   city: string;
   amenities: string[];
@@ -22,7 +21,6 @@ interface FilterOptions {
   availableOn: Date | null;
 }
 
-// Type for sorting options
 type SortOption = "availability" | "name" | "cabins" | "newest";
 
 const LocationsPage = () => {
@@ -40,8 +38,7 @@ const LocationsPage = () => {
   const [nextWeekAvailability, setNextWeekAvailability] = useState<{[id: string]: number}>({});
   const [allCities, setAllCities] = useState<string[]>([]);
   const [allAmenities, setAllAmenities] = useState<string[]>([]);
-  
-  // Function to get all unique cities and amenities from locations
+
   const extractFilterOptions = (locationsList: Location[]) => {
     const cities = new Set<string>();
     const amenities = new Set<string>();
@@ -54,12 +51,11 @@ const LocationsPage = () => {
     setAllCities(Array.from(cities).sort());
     setAllAmenities(Array.from(amenities).sort());
   };
-  
+
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         debugLog("LocationsPage: Fetching locations");
-        // First get all active locations
         const { data: locationsData, error: locationsError } = await supabase
           .from('locations')
           .select('*')
@@ -71,9 +67,7 @@ const LocationsPage = () => {
           return;
         }
 
-        // For each location, fetch the actual count of cabins
         const enhancedLocations = await Promise.all(locationsData.map(async (location) => {
-          // Get cabins count for this location
           const { count, error: cabinsError } = await supabase
             .from('cabins')
             .select('*', { count: 'exact', head: true })
@@ -83,12 +77,10 @@ const LocationsPage = () => {
             debugError(`LocationsPage: Error fetching cabins for location ${location.id}:`, cabinsError);
           }
           
-          // Parse opening_hours safely
           let openingHours = { open: "09:00", close: "18:00" };
           
           if (location.opening_hours) {
             try {
-              // Handle cases where opening_hours could be a string or object
               if (typeof location.opening_hours === 'string') {
                 const parsed = JSON.parse(location.opening_hours);
                 if (parsed && typeof parsed === 'object' && 'open' in parsed && 'close' in parsed) {
@@ -108,7 +100,6 @@ const LocationsPage = () => {
               }
             } catch (e) {
               debugError("LocationsPage: Error parsing opening hours:", e);
-              // Keep default values if parsing fails
             }
           }
 
@@ -119,7 +110,7 @@ const LocationsPage = () => {
             city: location.city,
             state: location.state,
             zipCode: location.zip_code,
-            cabinsCount: count || 0, // Use actual count instead of location.cabins_count
+            cabinsCount: count || 0,
             openingHours: openingHours,
             amenities: location.amenities || [],
             imageUrl: location.image_url || "",
@@ -128,10 +119,8 @@ const LocationsPage = () => {
           };
         }));
 
-        // Extract filter options
         extractFilterOptions(enhancedLocations);
         
-        // Get availability data for the next 7 days
         await fetchNextWeekAvailability(enhancedLocations);
         
         setLocations(enhancedLocations);
@@ -144,17 +133,14 @@ const LocationsPage = () => {
 
     fetchLocations();
   }, []);
-  
-  // Function to fetch next week's availability for each location
+
   const fetchNextWeekAvailability = async (locationsList: Location[]) => {
     try {
       const availabilityMap: {[id: string]: number} = {};
       const startDate = new Date();
       const endDate = addDays(startDate, 7);
       
-      // For each location, check availability for the next 7 days
       for (const location of locationsList) {
-        // Get all cabins for this location
         const { data: cabins, error: cabinsError } = await supabase
           .from('cabins')
           .select('id')
@@ -172,7 +158,6 @@ const LocationsPage = () => {
         
         const cabinIds = cabins.map(cabin => cabin.id);
         
-        // Count bookings for these cabins in the next 7 days
         const { count: bookedCount, error: bookingsError } = await supabase
           .from('bookings')
           .select('*', { count: 'exact', head: true })
@@ -186,8 +171,7 @@ const LocationsPage = () => {
           continue;
         }
         
-        // Calculate an availability score (total cabins * 7 days - booked slots)
-        const totalSlots = cabins.length * 7; // All potential slots for 7 days
+        const totalSlots = cabins.length * 7;
         const availableSlots = totalSlots - (bookedCount || 0);
         const availabilityScore = Math.max(0, availableSlots);
         
@@ -199,13 +183,11 @@ const LocationsPage = () => {
       debugError("Error fetching next week availability:", error);
     }
   };
-  
-  // Toggle filter visibility
+
   const toggleFilters = () => {
     setShowFilters(!showFilters);
   };
-  
-  // Reset all filters
+
   const resetFilters = () => {
     setActiveFilters({
       city: "",
@@ -214,26 +196,22 @@ const LocationsPage = () => {
       availableOn: null
     });
   };
-  
-  // Handle filter changes
+
   const handleFilterChange = (filterType: keyof FilterOptions, value: any) => {
     setActiveFilters(prev => ({
       ...prev,
       [filterType]: value
     }));
   };
-  
-  // Toggle amenity filter
+
   const toggleAmenityFilter = (amenity: string) => {
     setActiveFilters(prev => {
       const amenities = [...prev.amenities];
       const index = amenities.indexOf(amenity);
       
       if (index > -1) {
-        // Remove if already exists
         amenities.splice(index, 1);
       } else {
-        // Add if doesn't exist
         amenities.push(amenity);
       }
       
@@ -243,8 +221,7 @@ const LocationsPage = () => {
       };
     });
   };
-  
-  // Active filter count for badge
+
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (activeFilters.city) count++;
@@ -254,11 +231,9 @@ const LocationsPage = () => {
     return count;
   }, [activeFilters]);
 
-  // Apply all filters and sorting to locations
   const filteredAndSortedLocations = useMemo(() => {
     let result = [...locations];
     
-    // Apply text search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(location => 
@@ -270,58 +245,45 @@ const LocationsPage = () => {
       );
     }
     
-    // Apply city filter
     if (activeFilters.city) {
       result = result.filter(location => location.city === activeFilters.city);
     }
     
-    // Apply amenities filter
     if (activeFilters.amenities.length > 0) {
       result = result.filter(location => 
         activeFilters.amenities.every(amenity => location.amenities.includes(amenity))
       );
     }
     
-    // Apply minimum cabins filter
     if (activeFilters.cabinsMin > 0) {
       result = result.filter(location => location.cabinsCount >= activeFilters.cabinsMin);
     }
     
-    // Apply date availability filter (placeholder - would need actual booking data)
     if (activeFilters.availableOn) {
-      // This would check real availability, for now it's just a placeholder
-      // In a real implementation, we would check the actual bookings for this date
       const dateStr = format(activeFilters.availableOn, 'yyyy-MM-dd');
       debugLog(`Checking availability for date: ${dateStr}`);
       
-      // Since we don't have real availability data for specific dates in this implementation,
-      // We use the overall availability score as a proxy
       result = result.filter(location => nextWeekAvailability[location.id] > 0);
     }
     
-    // Apply sorting
     switch (sortBy) {
       case "availability":
-        // Sort by availability in the next week (highest first)
         result.sort((a, b) => (nextWeekAvailability[b.id] || 0) - (nextWeekAvailability[a.id] || 0));
         break;
       case "name":
-        // Sort alphabetically by name
         result.sort((a, b) => a.name.localeCompare(b.name));
         break;
       case "cabins":
-        // Sort by number of cabins (highest first)
         result.sort((a, b) => b.cabinsCount - a.cabinsCount);
         break;
       case "newest":
-        // Newest locations should be first - we assume the order from the DB is correct
-        // No additional sorting needed as the initial data is already ordered by created_at
+        result.sort((a, b) => (new Date(b.created_at) - new Date(a.created_at)));
         break;
     }
     
     return result;
   }, [locations, searchQuery, activeFilters, sortBy, nextWeekAvailability]);
-  
+
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
@@ -332,7 +294,6 @@ const LocationsPage = () => {
       </div>
       
       <div className="mt-8 space-y-4 max-w-5xl mx-auto">
-        {/* Search bar */}
         <div className="flex items-center gap-2 border rounded-lg p-2">
           <Search className="h-5 w-5 text-muted-foreground" />
           <Input
@@ -357,12 +318,10 @@ const LocationsPage = () => {
           </Button>
         </div>
         
-        {/* Filter and sort section */}
         {showFilters && (
           <Card className="p-4">
             <CardContent className="p-0 pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* City filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Cidade</label>
                   <Select 
@@ -381,7 +340,6 @@ const LocationsPage = () => {
                   </Select>
                 </div>
                 
-                {/* Minimum cabins filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Qtd. Mínima de Cabines</label>
                   <Select 
@@ -401,7 +359,6 @@ const LocationsPage = () => {
                   </Select>
                 </div>
                 
-                {/* Date availability filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Disponibilidade</label>
                   <Popover>
@@ -433,7 +390,6 @@ const LocationsPage = () => {
                   </Popover>
                 </div>
                 
-                {/* Sort by filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Ordenar por</label>
                   <Select 
@@ -453,7 +409,6 @@ const LocationsPage = () => {
                 </div>
               </div>
               
-              {/* Amenities filter */}
               <div className="mt-6">
                 <label className="text-sm font-medium">Comodidades</label>
                 <div className="flex flex-wrap gap-2 mt-2">
@@ -470,7 +425,6 @@ const LocationsPage = () => {
                 </div>
               </div>
               
-              {/* Filter actions */}
               <div className="flex justify-end mt-6">
                 <Button 
                   variant="outline" 
@@ -492,13 +446,12 @@ const LocationsPage = () => {
         )}
       </div>
       
-      {/* Results section */}
       {loading ? (
         <div className="mt-12 text-center">
           <p className="text-muted-foreground">Carregando locais...</p>
         </div>
       ) : (
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid grid-cols-1 gap-6">
           {filteredAndSortedLocations.length > 0 ? (
             filteredAndSortedLocations.map((location) => (
               <LocationCard key={location.id} location={location} />
