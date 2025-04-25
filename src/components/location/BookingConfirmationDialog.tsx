@@ -31,12 +31,25 @@ export const BookingConfirmationDialog = ({
     setIsChecking(true);
     
     try {
-      // Validate cabin ID
-      if (!cabinId || cabinId.trim() === "") {
-        debugLog("BookingConfirmation: Invalid cabin ID");
+      // Validate cabin ID - check for empty or undefined values
+      if (!cabinId || typeof cabinId !== 'string' || cabinId.trim() === "") {
+        debugLog("BookingConfirmation: Invalid cabin ID", cabinId);
         toast({
           title: "Erro",
           description: "ID do espaço inválido. Por favor, selecione um espaço válido.",
+          variant: "destructive",
+        });
+        onClose();
+        return;
+      }
+
+      // Check if ID format is valid UUID
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(cabinId)) {
+        debugLog("BookingConfirmation: Malformed UUID for cabin ID", cabinId);
+        toast({
+          title: "Formato inválido",
+          description: "O formato do ID do espaço é inválido.",
           variant: "destructive",
         });
         onClose();
@@ -74,7 +87,7 @@ export const BookingConfirmationDialog = ({
         return;
       }
       
-      debugLog("BookingConfirmation: Professional user found, proceeding to booking page");
+      debugLog("BookingConfirmation: Professional user found, proceeding to booking page with cabin ID:", cabinId);
       onClose();
       navigate(`/book-cabin/${cabinId}`);
       

@@ -14,6 +14,13 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
   const [bookingInProgress, setBookingInProgress] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
 
+  // Validate if cabinId is a proper UUID
+  const isValidUUID = (id: string): boolean => {
+    if (!id || typeof id !== 'string' || id.trim() === "") return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const handleTurnSelection = (date: string, turn: string) => {
     setSelectedTurns(prev => {
       const newTurns = { ...prev };
@@ -64,7 +71,8 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
     }
 
     // Validate cabin ID before proceeding
-    if (!cabinId || cabinId.trim() === "") {
+    if (!isValidUUID(cabinId)) {
+      debugError("handleBookCabin: Invalid cabin ID:", cabinId);
       toast({
         title: "Erro",
         description: "ID do espaço inválido. Por favor, selecione um espaço válido.",
@@ -122,14 +130,14 @@ export const useBookingManagement = (cabinId: string, onClose: () => void) => {
       }
 
       // Verify all fields are valid before calling the RPC function
-      if (!cabinId || cabinId.trim() === "") {
-        debugError("createBooking: Invalid cabin ID");
+      if (!isValidUUID(cabinId)) {
+        debugError("createBooking: Invalid cabin ID:", cabinId);
         throw new Error("ID do espaço inválido");
       }
 
       const professionalId = data.session.user.id;
-      if (!professionalId || professionalId.trim() === "") {
-        debugError("createBooking: Invalid professional ID");
+      if (!isValidUUID(professionalId)) {
+        debugError("createBooking: Invalid professional ID:", professionalId);
         throw new Error("ID do profissional inválido");
       }
 
