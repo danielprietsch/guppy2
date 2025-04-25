@@ -1,3 +1,4 @@
+
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ const NavBar = () => {
           avatar: avatarFromMetadata
         });
         
+        // If found in metadata, use that data first
         if (userTypeFromMetadata) {
           const userData: User = {
             id: session.user.id,
@@ -51,6 +53,7 @@ const NavBar = () => {
           console.log("NavBar: Setting user from metadata:", userData);
           setCurrentUser(userData);
           
+          // Still get profile data to make sure we have the most recent info
           try {
             const { data: profileData, error: profileError } = await supabase
               .from('profiles')
@@ -73,6 +76,7 @@ const NavBar = () => {
             console.error("Error fetching profile:", err);
           }
         } else {
+          // Fallback to fetching from database
           const { data: profileData, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -114,6 +118,7 @@ const NavBar = () => {
         if (event === "SIGNED_OUT") {
           setCurrentUser(null);
         } else if (session) {
+          // Set initial user data immediately from session metadata
           if (session.user.user_metadata?.userType) {
             const initialUserData: User = {
               id: session.user.id,
@@ -125,11 +130,13 @@ const NavBar = () => {
             setCurrentUser(initialUserData);
           }
           
+          // Then do a full check
           checkAuth();
         }
       }
     );
     
+    // Setup real-time subscription for profile updates
     const channel = supabase
       .channel('navbar-profile-updates')
       .on(
@@ -224,7 +231,7 @@ const NavBar = () => {
           </div>
 
           {currentUser ? (
-            <UserMenu user={currentUser} signOut={handleLogout} />
+            <UserMenu currentUser={currentUser} onLogout={handleLogout} />
           ) : (
             <div className="flex items-center gap-2">
               <Link to="/login">

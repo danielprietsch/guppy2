@@ -3,18 +3,17 @@ import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   Calendar,
   Clock,
   Users,
+  Scissors,
   DollarSign,
   Star,
+  PieChart,
   Loader2,
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-import { services, appointments, reviews, bookings } from "@/lib/mock-data";
+import { services, bookings, appointments, reviews } from "@/lib/mock-data";
 import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +24,6 @@ import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar
 const ProfessionalDashboardPage = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [reservations, setReservations] = useState<any[]>([]);
   const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
   const [isPublicProfile, setIsPublicProfile] = useState(true);
 
@@ -96,83 +94,6 @@ const ProfessionalDashboardPage = () => {
       }, 1000);
     }
   }, [user]);
-
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('bookings')
-          .select(`
-            id,
-            date,
-            shift,
-            price,
-            status,
-            cabin:cabins (
-              name,
-              location:locations (
-                name
-              )
-            )
-          `)
-          .eq('professional_id', user?.id)
-          .order('date', { ascending: false })
-          .limit(5);
-
-        if (error) throw error;
-        setReservations(data || []);
-      } catch (error) {
-        console.error("Error fetching reservations:", error);
-      }
-    };
-
-    if (user?.id) {
-      fetchReservations();
-    }
-  }, [user?.id]);
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-green-100 text-green-800";
-      case "payment_pending":
-        return "bg-amber-100 text-amber-800";
-      case "pending":
-        return "bg-blue-100 text-blue-800";
-      case "cancelled":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "Confirmada";
-      case "payment_pending":
-        return "Aguardando Pagamento";
-      case "pending":
-        return "Pendente";
-      case "cancelled":
-        return "Cancelada";
-      default:
-        return status;
-    }
-  };
-
-  const getShiftText = (shift: string) => {
-    switch (shift) {
-      case "morning":
-        return "Manhã";
-      case "afternoon":
-        return "Tarde";
-      case "evening":
-        return "Noite";
-      default:
-        return shift;
-    }
-  };
 
   if (loading) {
     return (
@@ -377,55 +298,41 @@ const ProfessionalDashboardPage = () => {
         <TabsContent value="bookings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex justify-between items-center">
-                <span>Últimas Reservas de Cabine</span>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/professional-reservations">
-                    Ver Todas
-                  </Link>
-                </Button>
-              </CardTitle>
+              <CardTitle>Reservas de Cabine</CardTitle>
             </CardHeader>
             <CardContent>
-              {reservations.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Local</TableHead>
-                      <TableHead>Cabine</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Turno</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reservations.map((reservation) => (
-                      <TableRow key={reservation.id}>
-                        <TableCell>{reservation.cabin?.location?.name || "Local não encontrado"}</TableCell>
-                        <TableCell>{reservation.cabin?.name || "Cabine não encontrada"}</TableCell>
-                        <TableCell>
-                          {format(new Date(reservation.date), "dd/MM/yyyy", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>{getShiftText(reservation.shift)}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(reservation.status)}`}>
-                            {getStatusText(reservation.status)}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground mb-4">
-                    Você ainda não possui nenhuma reserva de cabine.
-                  </p>
-                  <Button asChild>
-                    <Link to="/locations">Procurar Cabines</Link>
-                  </Button>
-                </div>
-              )}
+              <div className="space-y-4">
+                {bookings
+                  .filter((booking) => booking.professionalId === user?.id)
+                  .map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="flex justify-between items-center border-b pb-4"
+                    >
+                      <div>
+                        <p className="font-medium">Cabine #{booking.cabinId}</p>
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {booking.date}
+                          <Clock className="h-3 w-3 ml-2 mr-1" />
+                          {booking.shift}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-semibold">R$ {booking.price}</p>
+                        <p className="text-sm text-right text-muted-foreground">
+                          Status: {booking.status}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                {bookings.filter((booking) => booking.professionalId === user?.id).length === 0 && (
+                  <div className="text-center py-6 text-muted-foreground">
+                    Você não tem reservas de cabine.
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
