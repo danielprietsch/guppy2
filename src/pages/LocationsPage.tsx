@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import LocationCard from "@/components/LocationCard";
 import { Input } from "@/components/ui/input";
@@ -277,7 +278,10 @@ const LocationsPage = () => {
         result.sort((a, b) => b.cabinsCount - a.cabinsCount);
         break;
       case "newest":
-        result.sort((a, b) => (new Date(b.created_at) - new Date(a.created_at)));
+        // Fix: Sort by id since created_at isn't available in the Location type
+        // This is a simple workaround assuming newer locations have higher/newer IDs
+        // If there's an actual created_at field in the database, it should be added to the Location type
+        result.sort((a, b) => b.id.localeCompare(a.id));
         break;
     }
     
