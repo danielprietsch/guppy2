@@ -24,6 +24,8 @@ const BookCabinPage = () => {
 
   const [selectedTurns, setSelectedTurns] = useState<{ [date: string]: string[] }>({});
   const [total, setTotal] = useState(0);
+  const [subtotalTurns, setSubtotalTurns] = useState(0);
+  const [serviceFee, setServiceFee] = useState(0);
 
   useEffect(() => {
     const loadCabinData = async () => {
@@ -147,16 +149,18 @@ const BookCabinPage = () => {
   useEffect(() => {
     if (!cabin) return;
 
-    let subtotalTurns = 0;
+    let calculatedSubtotal = 0;
     Object.entries(selectedTurns).forEach(([date, turns]) => {
       turns.forEach(turn => {
         const turnPrice = cabin.pricing?.defaultPricing?.[turn] || cabin.price || 50;
-        subtotalTurns += turnPrice;
+        calculatedSubtotal += turnPrice;
       });
     });
     
-    const serviceFee = Object.keys(selectedTurns).length > 0 ? subtotalTurns * 0.1 : 0;
-    setTotal(subtotalTurns + serviceFee);
+    setSubtotalTurns(calculatedSubtotal);
+    const calculatedServiceFee = Object.keys(selectedTurns).length > 0 ? calculatedSubtotal * 0.1 : 0;
+    setServiceFee(calculatedServiceFee);
+    setTotal(calculatedSubtotal + calculatedServiceFee);
   }, [selectedTurns, cabin]);
 
   const handleBookCabin = () => {
@@ -321,11 +325,11 @@ const BookCabinPage = () => {
                 <div className="space-y-1">
                   <div className="flex items-center justify-between">
                     <span>Valor total da reserva de Turnos no espaço</span>
-                    <span>R$ {(total * 0.9).toFixed(2).replace('.', ',')}</span>
+                    <span>R$ {subtotalTurns.toFixed(2).replace('.', ',')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Taxa de serviço (10%)</span>
-                    <span>R$ {(total * 0.1).toFixed(2).replace('.', ',')}</span>
+                    <span>R$ {serviceFee.toFixed(2).replace('.', ',')}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex items-center justify-between font-bold">
