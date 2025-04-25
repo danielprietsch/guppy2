@@ -1,5 +1,4 @@
-
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { User } from "@/lib/types";
 import { LogOut } from "lucide-react";
@@ -10,6 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
@@ -17,32 +17,29 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 interface UserMenuProps {
-  currentUser: User;
-  onLogout: () => void;
+  user: User;
+  signOut: () => void;
 }
 
-export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
+export const UserMenu = ({ user, signOut }: UserMenuProps) => {
   const navigate = useNavigate();
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
-  // Apply cache busting to all avatar URLs
   useEffect(() => {
-    if (currentUser?.avatarUrl) {
-      console.log("UserMenu: Setting avatar URL from currentUser:", currentUser.avatarUrl);
-      const urlWithCache = currentUser.avatarUrl.includes('?') 
-        ? `${currentUser.avatarUrl}&t=${Date.now()}`
-        : `${currentUser.avatarUrl}?t=${Date.now()}`;
+    if (user?.avatarUrl) {
+      console.log("UserMenu: Setting avatar URL from currentUser:", user.avatarUrl);
+      const urlWithCache = user.avatarUrl.includes('?') 
+        ? `${user.avatarUrl}&t=${Date.now()}`
+        : `${user.avatarUrl}?t=${Date.now()}`;
       setAvatarUrl(urlWithCache);
     }
-  }, [currentUser]);
+  }, [user]);
   
-  // Set up realtime subscription for profile updates with unique channel name
   useEffect(() => {
-    if (currentUser?.id) {
-      console.log("UserMenu: Setting up realtime subscription for profile updates", currentUser.id);
+    if (user?.id) {
+      console.log("UserMenu: Setting up realtime subscription for profile updates", user.id);
       
-      // Use a unique channel name with timestamp to prevent duplicate channels
-      const channelName = `avatar-updates-${currentUser.id}-${Date.now()}`;
+      const channelName = `avatar-updates-${user.id}-${Date.now()}`;
       
       const channel = supabase
         .channel(channelName)
@@ -52,7 +49,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
             event: 'UPDATE',
             schema: 'public',
             table: 'profiles',
-            filter: `id=eq.${currentUser.id}`,
+            filter: `id=eq.${user.id}`,
           },
           (payload) => {
             console.log("UserMenu received profile update:", payload);
@@ -70,15 +67,14 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         )
         .subscribe();
 
-      // Fetch latest profile data when component mounts
-      fetchLatestProfile(currentUser.id);
+      fetchLatestProfile(user.id);
 
       return () => {
         console.log("UserMenu: Cleaning up realtime subscription");
         supabase.removeChannel(channel);
       };
     }
-  }, [currentUser?.id]);
+  }, [user?.id]);
 
   const fetchLatestProfile = async (userId: string) => {
     try {
@@ -104,28 +100,28 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
     }
   };
 
-  if (!currentUser) {
+  if (!user) {
     console.error("UserMenu rendered with no user data!");
     return null;
   }
 
-  const dashboardRoute = currentUser.user_type === "global_admin"
+  const dashboardRoute = user.user_type === "global_admin"
     ? "/admin/global"
-    : currentUser.user_type === "professional"
+    : user.user_type === "professional"
     ? "/professional/dashboard"
-    : currentUser.user_type === "owner"
+    : user.user_type === "owner"
     ? "/owner/dashboard"
     : "/client/dashboard";
       
-  const profileRoute = currentUser.user_type === "global_admin"
+  const profileRoute = user.user_type === "global_admin"
     ? "/admin/profile"
-    : currentUser.user_type === "professional"
+    : user.user_type === "professional"
     ? "/professional/profile"
-    : currentUser.user_type === "owner"
+    : user.user_type === "owner"
     ? "/owner/profile"
     : "/client/profile";
 
-  const firstLetter = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : '?';
+  const firstLetter = user.name ? user.name.charAt(0).toUpperCase() : '?';
 
   const handleLogout = async () => {
     try {
@@ -138,7 +134,7 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
         description: "Você foi desconectado com sucesso.",
       });
       
-      onLogout();
+      signOut();
       
       navigate("/login");
     } catch (error) {
@@ -152,38 +148,37 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
   };
 
   return (
-    <div className="flex items-center gap-4">
-      <DropdownMenu>
-        <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
-          <Avatar className="h-10 w-10 border-2 border-primary/20">
-            <AvatarImage 
-              src={avatarUrl || undefined}
-              alt={currentUser.name || "User"} 
-              className="object-cover"
-              onError={() => {
-                console.error("Avatar failed to load, retrying with new URL");
-                if (currentUser.avatarUrl) {
-                  // Create a new URL with fresh cache buster if loading fails
-                  setAvatarUrl(`${currentUser.avatarUrl}?t=${Date.now()}`);
-                }
-              }}
-            />
-            <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
-              {firstLetter}
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-sm font-medium hover:underline hidden md:inline-block">
-            {currentUser.name || "Usuário"}
-          </span>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{currentUser.name}</p>
-              <p className="text-xs leading-none text-muted-foreground">{currentUser.email}</p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex items-center gap-2 focus:outline-none">
+        <Avatar className="h-10 w-10 border-2 border-primary/20">
+          <AvatarImage 
+            src={avatarUrl || undefined}
+            alt={user.name || "User"} 
+            className="object-cover"
+            onError={() => {
+              console.error("Avatar failed to load, retrying with new URL");
+              if (user.avatarUrl) {
+                setAvatarUrl(`${user.avatarUrl}?t=${Date.now()}`);
+              }
+            }}
+          />
+          <AvatarFallback className="bg-primary/10 text-primary text-lg font-semibold">
+            {firstLetter}
+          </AvatarFallback>
+        </Avatar>
+        <span className="text-sm font-medium hover:underline hidden md:inline-block">
+          {user.name || "Usuário"}
+        </span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuGroup>
           <DropdownMenuItem asChild>
             <Link to={dashboardRoute} className="cursor-pointer">
               Meu Dashboard
@@ -194,13 +189,22 @@ export const UserMenu = ({ currentUser, onLogout }: UserMenuProps) => {
               Meu Perfil
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
-            <LogOut className="mr-2 h-4 w-4" />
-            Sair
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+          {user?.user_type === 'professional' && (
+            <>
+              <DropdownMenuItem asChild>
+                <Link to="/professional-reservations" className="cursor-pointer">
+                  Minhas Reservas
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
+          <LogOut className="mr-2 h-4 w-4" />
+          Sair
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
