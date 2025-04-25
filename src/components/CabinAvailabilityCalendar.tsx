@@ -1,5 +1,5 @@
 import * as React from "react";
-import { format, isBefore, startOfDay, parseISO } from "date-fns";
+import { format, isBefore, startOfDay, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import { TimeSlotCard } from "@/components/owner/availability/TimeSlotCard";
@@ -54,7 +54,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
 
   const handleStatusChange = React.useCallback((date: string, turno: string, isManualClose: boolean) => {
     const dateObj = new Date(date);
-    if (isBefore(dateObj, today)) {
+    if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('AVAILABILITY', 'Não é possível alterar status de datas passadas');
       toast({
         title: "Operação não permitida",
@@ -94,7 +94,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
 
   const handlePriceEdit = React.useCallback((date: string, turno: string, newPrice: string) => {
     const dateObj = new Date(date);
-    if (isBefore(dateObj, today)) {
+    if (isBefore(dateObj, today) && !isToday(dateObj)) {
       debugAreaLog('PRICE_EDIT', 'Não é possível alterar preço de datas passadas');
       toast({
         title: "Operação não permitida",
@@ -145,7 +145,7 @@ const CabinAvailabilityCalendar: React.FC<CabinAvailabilityCalendarProps> = ({
   const renderDayContent = React.useCallback((day: Date) => {
     const dateStr = fmtDate(day);
     const turnos = ["morning", "afternoon", "evening"];
-    const isPastDate = isBefore(day, today);
+    const isPastDate = isBefore(day, startOfDay(new Date())) && !isToday(day);
 
     return (
       <div className="flex flex-col p-1 h-full">

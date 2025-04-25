@@ -1,10 +1,11 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Check, Lock, Clock, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { debugAreaLog } from "@/utils/debugLogger";
-import { format, isToday, isBefore } from 'date-fns';
+import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { toast } from "@/hooks/use-toast";
 
 interface TimeSlotCardProps {
@@ -139,7 +140,9 @@ export const TimeSlotCard: React.FC<TimeSlotCardProps> = ({
   };
 
   const getStatusColor = () => {
-    if (isPastDate) {
+    // Fix the past date check - only consider dates before today as past dates
+    // The current day should not be considered a past date
+    if (isBefore(date, startOfDay(new Date())) && !isToday(date)) {
       if (isBooked) return "bg-blue-400";
       if (isManuallyClosed) return "bg-gray-400";
       return "bg-red-400";
