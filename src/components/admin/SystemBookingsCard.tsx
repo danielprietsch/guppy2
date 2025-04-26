@@ -7,6 +7,8 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { debugLog, debugError } from "@/utils/debugLogger";
+import { ReloadIcon } from "@radix-ui/react-icons";
+import { Button } from "@/components/ui/button";
 
 interface Booking {
   id: string;
@@ -25,20 +27,22 @@ export function SystemBookingsCard() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchAllBookings();
   }, []);
 
-  // Function to force refresh data
+  // Função para forçar atualização dos dados
   const fetchAllBookings = async () => {
     try {
       setLoading(true);
       setError(null);
-      debugLog("SystemBookingsCard: INICIANDO BUSCA DIRETA DE TODAS AS RESERVAS");
-      console.log("Tentando buscar todas as reservas do sistema...");
+      setRefreshing(true);
+      debugLog("SystemBookingsCard: INICIANDO BUSCA COMO ADMINISTRADOR GLOBAL");
+      console.log("Buscando todas as reservas com permissões de administrador...");
       
-      // Direct raw query to get ALL bookings with no filters
+      // Consulta direta sem filtros - as políticas RLS agora devem permitir ver todas as reservas
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
@@ -50,34 +54,42 @@ export function SystemBookingsCard() {
         throw error;
       }
 
-      // Log raw data for inspection
-      console.log("RAW BOOKING DATA RECEBIDO:", data);
+      // Log dados brutos para inspeção
+      console.log("DADOS DE RESERVAS RECEBIDOS:", data);
       debugLog(`SystemBookingsCard: ${data?.length || 0} RESERVAS ENCONTRADAS NO BANCO`);
 
       if (!data || data.length === 0) {
-        debugLog("SystemBookingsCard: NENHUMA RESERVA NA TABELA BOOKINGS");
+        debugError("SystemBookingsCard: NENHUMA RESERVA ENCONTRADA - VERIFICANDO SE É ERRO DE PERMISSÃO");
+        
+        // Verificar se o usuário é realmente um admin global
+        const { data: isAdmin, error: adminCheckError } = await supabase
+          .rpc('is_global_admin', { user_id: (await supabase.auth.getUser()).data.user?.id });
+          
+        if (adminCheckError || !isAdmin) {
+          debugError("SystemBookingsCard: USUÁRIO NÃO TEM PERMISSÕES DE ADMIN GLOBAL");
+          throw new Error("Você não parece ter permissões de administrador global. Contate o suporte.");
+        }
+        
         setBookings([]);
-        setLoading(false);
         return;
       }
 
-      // Get all professional IDs
+      // Obter IDs de profissionais e cabines para buscar nomes
       const professionalIds = data
         .filter(booking => booking.professional_id)
         .map(booking => booking.professional_id);
         
-      // Get all cabin IDs
       const cabinIds = data
         .filter(booking => booking.cabin_id)
         .map(booking => booking.cabin_id);
-        
+      
       debugLog(`SystemBookingsCard: Buscando detalhes para ${professionalIds.length} profissionais e ${cabinIds.length} cabines`);
       
-      // Create maps for names
+      // Mapas para armazenar nomes
       let professionalNames: Record<string, string> = {};
       let cabinNames: Record<string, string> = {};
       
-      // Fetch professional names if there are any professional IDs
+      // Buscar nomes de profissionais
       if (professionalIds.length > 0) {
         try {
           const { data: professionals, error: profError } = await supabase
@@ -96,11 +108,11 @@ export function SystemBookingsCard() {
           }
         } catch (e) {
           console.error("EXCEÇÃO AO BUSCAR PROFISSIONAIS:", e);
-          // Continue processing even if we can't get professional names
+          // Continuar processamento mesmo se não conseguirmos obter nomes
         }
       }
       
-      // Fetch cabin names if there are any cabin IDs
+      // Buscar nomes de cabines
       if (cabinIds.length > 0) {
         try {
           const { data: cabins, error: cabinError } = await supabase
@@ -119,11 +131,11 @@ export function SystemBookingsCard() {
           }
         } catch (e) {
           console.error("EXCEÇÃO AO BUSCAR CABINES:", e);
-          // Continue processing even if we can't get cabin names
+          // Continuar processamento mesmo se não conseguirmos obter nomes
         }
       }
       
-      // Process bookings and add names
+      // Processar reservas e adicionar nomes
       const processedBookings = data.map(booking => ({
         ...booking,
         professionalName: booking.professional_id ? 
@@ -138,6 +150,14 @@ export function SystemBookingsCard() {
       console.log("RESERVAS PROCESSADAS:", processedBookings);
       
       setBookings(processedBookings);
+      
+      // Mostrar toast de sucesso se era uma atualização manual
+      if (refreshing) {
+        toast({
+          title: "Reservas atualizadas",
+          description: `${processedBookings.length} reservas carregadas com sucesso.`,
+        });
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       debugError(`SystemBookingsCard: ERRO FATAL: ${errorMessage}`);
@@ -151,65 +171,57 @@ export function SystemBookingsCard() {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
-
-  // Render loading state
-  if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Reservas do Sistema</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-6">
-            Carregando reservas...
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Render error state
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Reservas do Sistema</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6 text-red-500">
-            <p>{error}</p>
-            <button 
-              onClick={fetchAllBookings}
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            >
-              Tentar Novamente
-            </button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Reservas do Sistema</CardTitle>
-        <button
+        <Button
           onClick={fetchAllBookings}
-          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+          variant="outline"
+          size="sm"
+          disabled={loading}
+          className="flex items-center gap-1"
         >
+          {refreshing ? (
+            <ReloadIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <ReloadIcon className="h-4 w-4" />
+          )}
           Atualizar
-        </button>
+        </Button>
       </CardHeader>
       <CardContent>
-        {bookings.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-6">
+            <ReloadIcon className="h-6 w-6 animate-spin mr-2" />
+            <span>Carregando reservas...</span>
+          </div>
+        ) : error ? (
+          <div className="text-center py-6 text-red-500">
+            <p>{error}</p>
+            <Button 
+              onClick={fetchAllBookings}
+              className="mt-4"
+              variant="outline"
+            >
+              Tentar Novamente
+            </Button>
+          </div>
+        ) : bookings.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <p>Nenhuma reserva encontrada no sistema.</p>
-            <p className="mt-2 text-sm text-red-500">
-              Verifique se existem registros na tabela 'bookings' no banco de dados.
+            <p className="mt-2 text-sm text-amber-500">
+              As permissões para visualização das reservas foram configuradas. Se você está vendo esta mensagem, pode ser que:
             </p>
+            <ul className="mt-2 text-sm list-disc list-inside text-left max-w-md mx-auto">
+              <li>Não existam reservas na tabela 'bookings'</li>
+              <li>Houve um erro na consulta ao banco de dados</li>
+              <li>Sua sessão de administrador precisa ser renovada (tente fazer logout e login novamente)</li>
+            </ul>
           </div>
         ) : (
           <div className="overflow-x-auto">
