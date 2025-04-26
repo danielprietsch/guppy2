@@ -493,6 +493,21 @@ export type Database = {
         }
         Returns: string
       }
+      fetch_all_bookings_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          professional_id: string
+          cabin_id: string
+          date: string
+          shift: string
+          price: number
+          status: string
+          created_at: string
+          professional_name: string
+          cabin_name: string
+        }[]
+      }
       fetch_all_locations: {
         Args: Record<PropertyKey, never>
         Returns: {

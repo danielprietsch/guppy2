@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -19,8 +18,8 @@ interface Booking {
   price: number;
   status: string | null;
   created_at: string;
-  professionalName?: string | null;
-  cabinName?: string | null;
+  professional_name: string;
+  cabin_name: string;
 }
 
 export function SystemBookingsCard() {
@@ -35,24 +34,20 @@ export function SystemBookingsCard() {
       setError(null);
       setRefreshing(true);
       
-      debugLog("SystemBookingsCard: Iniciando busca por TODAS as reservas como admin global...");
+      debugLog("SystemBookingsCard: Buscando reservas usando função segura do banco de dados...");
       
-      // Simple query to get all bookings without joins - this should work reliably
       const { data: bookingsData, error: bookingsError } = await supabase
-        .from('bookings')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .rpc('fetch_all_bookings_admin');
 
       if (bookingsError) {
         debugError(`SystemBookingsCard: Erro ao buscar reservas: ${bookingsError.message}`);
         throw bookingsError;
       }
 
-      debugLog(`SystemBookingsCard: Resposta da API - ${bookingsData ? bookingsData.length : 0} reservas encontradas`);
+      debugLog(`SystemBookingsCard: Encontradas ${bookingsData ? bookingsData.length : 0} reservas`);
       
-      // If no data is returned, show message
       if (!bookingsData || bookingsData.length === 0) {
-        debugLog("SystemBookingsCard: Nenhuma reserva retornada pela API");
+        debugLog("SystemBookingsCard: Nenhuma reserva encontrada");
         setBookings([]);
         toast({
           title: "Sem reservas",
@@ -61,58 +56,12 @@ export function SystemBookingsCard() {
         return;
       }
 
-      // Log the first booking for debugging purposes
-      debugLog(`SystemBookingsCard: Exemplo de primeira reserva encontrada: ${JSON.stringify(bookingsData[0])}`);
-      
-      // For each booking, fetch additional data separately
-      const processedBookings: Booking[] = [];
-
-      for (const booking of bookingsData) {
-        let professionalName = 'Não informado';
-        let cabinName = 'Não informada';
-
-        // Fetch professional name if professional_id exists
-        if (booking.professional_id) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', booking.professional_id)
-            .single();
-          
-          if (profileData && profileData.name) {
-            professionalName = profileData.name;
-            debugLog(`SystemBookingsCard: Nome do profissional encontrado: ${professionalName}`);
-          }
-        }
-
-        // Fetch cabin name if cabin_id exists
-        if (booking.cabin_id) {
-          const { data: cabinData } = await supabase
-            .from('cabins')
-            .select('name')
-            .eq('id', booking.cabin_id)
-            .single();
-          
-          if (cabinData && cabinData.name) {
-            cabinName = cabinData.name;
-            debugLog(`SystemBookingsCard: Nome da cabine encontrado: ${cabinName}`);
-          }
-        }
-
-        processedBookings.push({
-          ...booking,
-          professionalName,
-          cabinName
-        });
-      }
-
-      debugLog(`SystemBookingsCard: Processou ${processedBookings.length} reservas com sucesso`);
-      setBookings(processedBookings);
+      setBookings(bookingsData);
 
       if (refreshing) {
         toast({
           title: "Reservas atualizadas",
-          description: `${processedBookings.length} reservas carregadas com sucesso.`,
+          description: `${bookingsData.length} reservas carregadas com sucesso.`,
         });
       }
     } catch (error) {
@@ -134,13 +83,6 @@ export function SystemBookingsCard() {
   useEffect(() => {
     fetchAllBookings();
   }, []);
-
-  // Additional debug check
-  useEffect(() => {
-    if (!loading && bookings.length === 0 && !error) {
-      debugLog("SystemBookingsCard: Hook useEffect detectou estado carregado com 0 reservas sem erros");
-    }
-  }, [loading, bookings, error]);
 
   return (
     <Card>
@@ -209,8 +151,8 @@ export function SystemBookingsCard() {
                       {format(new Date(booking.date), "dd 'de' MMMM',' yyyy", { locale: ptBR })}
                     </TableCell>
                     <TableCell className="capitalize">{booking.shift}</TableCell>
-                    <TableCell>{booking.professionalName}</TableCell>
-                    <TableCell>{booking.cabinName}</TableCell>
+                    <TableCell>{booking.professional_name}</TableCell>
+                    <TableCell>{booking.cabin_name}</TableCell>
                     <TableCell>R$ {booking.price.toFixed(2)}</TableCell>
                     <TableCell className="capitalize">{booking.status || 'pendente'}</TableCell>
                   </TableRow>
