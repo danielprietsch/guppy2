@@ -29,44 +29,26 @@ export function SystemBookingsCard() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    fetchAllBookings();
-  }, []);
-
   const fetchAllBookings = async () => {
     try {
       setLoading(true);
       setError(null);
       setRefreshing(true);
       
-      debugLog("SystemBookingsCard: INICIANDO BUSCA FORÇADA DE TODAS AS RESERVAS");
-      console.log("Buscando todas as reservas - MODO FORÇADO");
-      
-      // Acessar diretamente usando serviço com permissões elevadas
-      // Esta abordagem ignora RLS e permissões para garantir visualização das reservas
-      const response = await fetch('https://teicwhbrboudzrjvtarg.supabase.co/rest/v1/bookings?select=*&order=created_at.desc', {
-        method: 'GET',
-        headers: {
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaWN3aGJyYm91ZHpyanZ0YXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTk5NTcsImV4cCI6MjA2MDk3NTk1N30.WvPJQ3MAmRF8Y9EH_m9BMD7Iq2NoRpcL8ykP3RCZN_Q',
-          'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaWN3aGJyYm91ZHpyanZ0YXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTk5NTcsImV4cCI6MjA2MDk3NTk1N30.WvPJQ3MAmRF8Y9EH_m9BMD7Iq2NoRpcL8ykP3RCZN_Q`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Falha na requisição HTTP: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      console.log("DADOS DE RESERVAS RECEBIDOS (MÉTODO DIRETO):", data);
-      debugLog(`SystemBookingsCard: ${data?.length || 0} RESERVAS ENCONTRADAS`);
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          cabins (name),
+          profiles (name)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
 
       if (!data || data.length === 0) {
-        debugLog("SystemBookingsCard: Nenhuma reserva encontrada no banco");
+        debugLog("SystemBookingsCard: No bookings found");
         setBookings([]);
-        
         toast({
           title: "Sem reservas",
           description: "Não existem reservas cadastradas no sistema.",
@@ -74,93 +56,15 @@ export function SystemBookingsCard() {
         return;
       }
 
-      // Buscar informações de profissionais e cabines
-      let professionalNames: Record<string, string> = {};
-      let cabinNames: Record<string, string> = {};
-      
-      const professionalIds = data
-        .filter((booking: any) => booking.professional_id)
-        .map((booking: any) => booking.professional_id);
-        
-      const cabinIds = data
-        .filter((booking: any) => booking.cabin_id)
-        .map((booking: any) => booking.cabin_id);
-      
-      debugLog(`SystemBookingsCard: Buscando detalhes para ${professionalIds.length} profissionais e ${cabinIds.length} cabines`);
-      
-      // Buscar nomes de profissionais diretamente via REST API
-      if (professionalIds.length > 0) {
-        try {
-          const profResponse = await fetch(
-            `https://teicwhbrboudzrjvtarg.supabase.co/rest/v1/profiles?select=id,name&id=in.(${professionalIds.join(',')})`, 
-            {
-              method: 'GET',
-              headers: {
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaWN3aGJyYm91ZHpyanZ0YXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTk5NTcsImV4cCI6MjA2MDk3NTk1N30.WvPJQ3MAmRF8Y9EH_m9BMD7Iq2NoRpcL8ykP3RCZN_Q',
-                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaWN3aGJyYm91ZHpyanZ0YXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTk5NTcsImV4cCI6MjA2MDk3NTk1N30.WvPJQ3MAmRF8Y9EH_m9BMD7Iq2NoRpcL8ykP3RCZN_Q`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-          
-          if (profResponse.ok) {
-            const professionals = await profResponse.json();
-            debugLog(`SystemBookingsCard: ${professionals.length} perfis de profissionais encontrados`);
-            professionals.forEach((prof: any) => {
-              professionalNames[prof.id] = prof.name || 'Nome não disponível';
-            });
-          } else {
-            console.error("ERRO AO BUSCAR PROFISSIONAIS (MÉTODO DIRETO):", profResponse.status);
-          }
-        } catch (e) {
-          console.error("EXCEÇÃO AO BUSCAR PROFISSIONAIS:", e);
-        }
-      }
-      
-      // Buscar nomes de cabines diretamente via REST API
-      if (cabinIds.length > 0) {
-        try {
-          const cabinResponse = await fetch(
-            `https://teicwhbrboudzrjvtarg.supabase.co/rest/v1/cabins?select=id,name&id=in.(${cabinIds.join(',')})`, 
-            {
-              method: 'GET',
-              headers: {
-                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaWN3aGJyYm91ZHpyanZ0YXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTk5NTcsImV4cCI6MjA2MDk3NTk1N30.WvPJQ3MAmRF8Y9EH_m9BMD7Iq2NoRpcL8ykP3RCZN_Q',
-                'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaWN3aGJyYm91ZHpyanZ0YXJnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzOTk5NTcsImV4cCI6MjA2MDk3NTk1N30.WvPJQ3MAmRF8Y9EH_m9BMD7Iq2NoRpcL8ykP3RCZN_Q`,
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-          
-          if (cabinResponse.ok) {
-            const cabins = await cabinResponse.json();
-            debugLog(`SystemBookingsCard: ${cabins.length} cabines encontradas`);
-            cabins.forEach((cabin: any) => {
-              cabinNames[cabin.id] = cabin.name || 'Nome não disponível';
-            });
-          } else {
-            console.error("ERRO AO BUSCAR CABINES (MÉTODO DIRETO):", cabinResponse.status);
-          }
-        } catch (e) {
-          console.error("EXCEÇÃO AO BUSCAR CABINES:", e);
-        }
-      }
-      
-      const processedBookings = data.map((booking: any) => ({
+      const processedBookings = data.map(booking => ({
         ...booking,
-        professionalName: booking.professional_id ? 
-          (professionalNames[booking.professional_id] || 'Profissional ID: ' + booking.professional_id) : 
-          'Não informado',
-        cabinName: booking.cabin_id ? 
-          (cabinNames[booking.cabin_id] || 'Cabine ID: ' + booking.cabin_id) : 
-          'Não informada'
+        professionalName: booking.profiles?.name || 'Não informado',
+        cabinName: booking.cabins?.name || 'Não informada'
       }));
-      
-      debugLog(`SystemBookingsCard: Processadas ${processedBookings.length} reservas com sucesso`);
-      console.log("RESERVAS PROCESSADAS:", processedBookings);
-      
+
+      debugLog(`SystemBookingsCard: ${processedBookings.length} bookings found`);
       setBookings(processedBookings);
-      
+
       if (refreshing) {
         toast({
           title: "Reservas atualizadas",
@@ -170,7 +74,6 @@ export function SystemBookingsCard() {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       debugError(`SystemBookingsCard: ERRO FATAL: ${errorMessage}`);
-      console.error('ERRO DETALHADO NA BUSCA DE RESERVAS:', error);
       setError(`Falha ao carregar reservas: ${errorMessage}`);
       
       toast({
@@ -183,6 +86,10 @@ export function SystemBookingsCard() {
       setRefreshing(false);
     }
   };
+
+  useEffect(() => {
+    fetchAllBookings();
+  }, []);
 
   return (
     <Card>
