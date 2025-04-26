@@ -35,12 +35,13 @@ export function SystemBookingsCard() {
       setError(null);
       setRefreshing(true);
       
-      debugLog("SystemBookingsCard: Iniciando busca por reservas no perfil admin global...");
+      debugLog("SystemBookingsCard: Iniciando busca por TODAS as reservas como admin global...");
       
-      // Fetch all bookings directly with a simple query first
+      // Simple query to get all bookings without joins - this should work reliably
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (bookingsError) {
         debugError(`SystemBookingsCard: Erro ao buscar reservas: ${bookingsError.message}`);
@@ -49,6 +50,7 @@ export function SystemBookingsCard() {
 
       debugLog(`SystemBookingsCard: Resposta da API - ${bookingsData ? bookingsData.length : 0} reservas encontradas`);
       
+      // If no data is returned, show message
       if (!bookingsData || bookingsData.length === 0) {
         debugLog("SystemBookingsCard: Nenhuma reserva retornada pela API");
         setBookings([]);
@@ -59,49 +61,41 @@ export function SystemBookingsCard() {
         return;
       }
 
-      // Log for debug
-      debugLog(`SystemBookingsCard: Exemplo de reserva encontrada: ${JSON.stringify(bookingsData[0])}`);
-
+      // Log the first booking for debugging purposes
+      debugLog(`SystemBookingsCard: Exemplo de primeira reserva encontrada: ${JSON.stringify(bookingsData[0])}`);
+      
+      // For each booking, fetch additional data separately
       const processedBookings: Booking[] = [];
 
-      // Process each booking to get related names
       for (const booking of bookingsData) {
         let professionalName = 'Não informado';
         let cabinName = 'Não informada';
 
         // Fetch professional name if professional_id exists
         if (booking.professional_id) {
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('name')
-              .eq('id', booking.professional_id)
-              .single();
-            
-            if (profileData?.name) {
-              professionalName = profileData.name;
-              debugLog(`SystemBookingsCard: Nome do profissional encontrado: ${professionalName}`);
-            }
-          } catch (err) {
-            debugError(`SystemBookingsCard: Erro ao buscar profissional: ${err}`);
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', booking.professional_id)
+            .single();
+          
+          if (profileData && profileData.name) {
+            professionalName = profileData.name;
+            debugLog(`SystemBookingsCard: Nome do profissional encontrado: ${professionalName}`);
           }
         }
 
         // Fetch cabin name if cabin_id exists
         if (booking.cabin_id) {
-          try {
-            const { data: cabinData } = await supabase
-              .from('cabins')
-              .select('name')
-              .eq('id', booking.cabin_id)
-              .single();
-            
-            if (cabinData?.name) {
-              cabinName = cabinData.name;
-              debugLog(`SystemBookingsCard: Nome da cabine encontrado: ${cabinName}`);
-            }
-          } catch (err) {
-            debugError(`SystemBookingsCard: Erro ao buscar cabine: ${err}`);
+          const { data: cabinData } = await supabase
+            .from('cabins')
+            .select('name')
+            .eq('id', booking.cabin_id)
+            .single();
+          
+          if (cabinData && cabinData.name) {
+            cabinName = cabinData.name;
+            debugLog(`SystemBookingsCard: Nome da cabine encontrado: ${cabinName}`);
           }
         }
 
