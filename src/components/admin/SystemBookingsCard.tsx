@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,7 +6,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { debugLog, debugError } from "@/utils/debugLogger";
-import { ReloadIcon } from "@radix-ui/react-icons";
+import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Booking {
@@ -33,7 +32,6 @@ export function SystemBookingsCard() {
     fetchAllBookings();
   }, []);
 
-  // Função para forçar atualização dos dados
   const fetchAllBookings = async () => {
     try {
       setLoading(true);
@@ -42,7 +40,6 @@ export function SystemBookingsCard() {
       debugLog("SystemBookingsCard: INICIANDO BUSCA COMO ADMINISTRADOR GLOBAL");
       console.log("Buscando todas as reservas com permissões de administrador...");
       
-      // Consulta direta sem filtros - as políticas RLS agora devem permitir ver todas as reservas
       const { data, error } = await supabase
         .from('bookings')
         .select('*')
@@ -54,14 +51,12 @@ export function SystemBookingsCard() {
         throw error;
       }
 
-      // Log dados brutos para inspeção
       console.log("DADOS DE RESERVAS RECEBIDOS:", data);
       debugLog(`SystemBookingsCard: ${data?.length || 0} RESERVAS ENCONTRADAS NO BANCO`);
 
       if (!data || data.length === 0) {
         debugError("SystemBookingsCard: NENHUMA RESERVA ENCONTRADA - VERIFICANDO SE É ERRO DE PERMISSÃO");
         
-        // Verificar se o usuário é realmente um admin global
         const { data: isAdmin, error: adminCheckError } = await supabase
           .rpc('is_global_admin', { user_id: (await supabase.auth.getUser()).data.user?.id });
           
@@ -74,7 +69,6 @@ export function SystemBookingsCard() {
         return;
       }
 
-      // Obter IDs de profissionais e cabines para buscar nomes
       const professionalIds = data
         .filter(booking => booking.professional_id)
         .map(booking => booking.professional_id);
@@ -85,11 +79,9 @@ export function SystemBookingsCard() {
       
       debugLog(`SystemBookingsCard: Buscando detalhes para ${professionalIds.length} profissionais e ${cabinIds.length} cabines`);
       
-      // Mapas para armazenar nomes
       let professionalNames: Record<string, string> = {};
       let cabinNames: Record<string, string> = {};
       
-      // Buscar nomes de profissionais
       if (professionalIds.length > 0) {
         try {
           const { data: professionals, error: profError } = await supabase
@@ -108,11 +100,9 @@ export function SystemBookingsCard() {
           }
         } catch (e) {
           console.error("EXCEÇÃO AO BUSCAR PROFISSIONAIS:", e);
-          // Continuar processamento mesmo se não conseguirmos obter nomes
         }
       }
       
-      // Buscar nomes de cabines
       if (cabinIds.length > 0) {
         try {
           const { data: cabins, error: cabinError } = await supabase
@@ -131,11 +121,9 @@ export function SystemBookingsCard() {
           }
         } catch (e) {
           console.error("EXCEÇÃO AO BUSCAR CABINES:", e);
-          // Continuar processamento mesmo se não conseguirmos obter nomes
         }
       }
       
-      // Processar reservas e adicionar nomes
       const processedBookings = data.map(booking => ({
         ...booking,
         professionalName: booking.professional_id ? 
@@ -151,7 +139,6 @@ export function SystemBookingsCard() {
       
       setBookings(processedBookings);
       
-      // Mostrar toast de sucesso se era uma atualização manual
       if (refreshing) {
         toast({
           title: "Reservas atualizadas",
@@ -187,9 +174,9 @@ export function SystemBookingsCard() {
           className="flex items-center gap-1"
         >
           {refreshing ? (
-            <ReloadIcon className="h-4 w-4 animate-spin" />
+            <RefreshCw className="h-4 w-4 animate-spin" />
           ) : (
-            <ReloadIcon className="h-4 w-4" />
+            <RefreshCw className="h-4 w-4" />
           )}
           Atualizar
         </Button>
@@ -197,7 +184,7 @@ export function SystemBookingsCard() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-6">
-            <ReloadIcon className="h-6 w-6 animate-spin mr-2" />
+            <RefreshCw className="h-6 w-6 animate-spin mr-2" />
             <span>Carregando reservas...</span>
           </div>
         ) : error ? (
