@@ -35,18 +35,15 @@ export function SystemBookingsCard() {
       setError(null);
       setRefreshing(true);
       
-      const { data, error } = await supabase
+      // Modified query to use separate queries to fetch related data
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          cabins (name),
-          profiles (name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (bookingsError) throw bookingsError;
 
-      if (!data || data.length === 0) {
+      if (!bookingsData || bookingsData.length === 0) {
         debugLog("SystemBookingsCard: No bookings found");
         setBookings([]);
         toast({
@@ -56,11 +53,45 @@ export function SystemBookingsCard() {
         return;
       }
 
-      const processedBookings = data.map(booking => ({
-        ...booking,
-        professionalName: booking.profiles?.name || 'Não informado',
-        cabinName: booking.cabins?.name || 'Não informada'
-      }));
+      const processedBookings: Booking[] = [];
+
+      // Process each booking to get related cabin and professional names
+      for (const booking of bookingsData) {
+        let professionalName = 'Não informado';
+        let cabinName = 'Não informada';
+
+        // Get professional name if professional_id exists
+        if (booking.professional_id) {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', booking.professional_id)
+            .single();
+          
+          if (profileData?.name) {
+            professionalName = profileData.name;
+          }
+        }
+
+        // Get cabin name if cabin_id exists
+        if (booking.cabin_id) {
+          const { data: cabinData } = await supabase
+            .from('cabins')
+            .select('name')
+            .eq('id', booking.cabin_id)
+            .single();
+          
+          if (cabinData?.name) {
+            cabinName = cabinData.name;
+          }
+        }
+
+        processedBookings.push({
+          ...booking,
+          professionalName,
+          cabinName
+        });
+      }
 
       debugLog(`SystemBookingsCard: ${processedBookings.length} bookings found`);
       setBookings(processedBookings);
