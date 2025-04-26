@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { addDays, format } from "date-fns";
+import { addDays, format, isValid } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
 const ProfessionalsPage = () => {
@@ -29,7 +30,7 @@ const ProfessionalsPage = () => {
   
   const [selectedServices, setSelectedServices] = useState<string[]>(allServices);
   
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [dateMode, setDateMode] = useState<'day' | 'month' | 'any'>('month');
   
   console.log("ProfessionalsPage: Rendering with date", selectedDate, "in mode", dateMode);
@@ -44,8 +45,8 @@ const ProfessionalsPage = () => {
   } = useProfessionals({ 
     withSpecialties: false,
     withAvailability: false,
-    date: null,
-    ignoreAvailability: true
+    date: dateMode === 'any' ? null : selectedDate,
+    ignoreAvailability: dateMode === 'any'
   });
 
   useEffect(() => {
@@ -98,9 +99,16 @@ const ProfessionalsPage = () => {
   };
 
   const changeDate = (daysToAdd: number) => {
-    const newDate = addDays(selectedDate, daysToAdd);
-    setSelectedDate(newDate);
-    setDateMode('day');
+    if (selectedDate) {
+      const newDate = addDays(selectedDate, daysToAdd);
+      setSelectedDate(newDate);
+      setDateMode('day');
+    } else {
+      // If selectedDate is null, create a new date from today
+      const newDate = addDays(new Date(), daysToAdd);
+      setSelectedDate(newDate);
+      setDateMode('day');
+    }
   };
 
   const setThisMonth = () => {
@@ -122,6 +130,17 @@ const ProfessionalsPage = () => {
       description: "Atualizando a lista de profissionais...",
       variant: "default",
     });
+  };
+
+  // Safe formatting function to handle null dates
+  const safeFormatDate = (date: Date | null, formatString: string): string => {
+    if (!date || !isValid(date)) return "Data inválida";
+    try {
+      return format(date, formatString);
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Data inválida";
+    }
   };
 
   return (
@@ -147,9 +166,11 @@ const ProfessionalsPage = () => {
           <span className="font-medium">
             {dateMode === 'any' 
               ? 'Qualquer data'
-              : dateMode === 'day' 
-                ? format(selectedDate, "dd/MM/yyyy") 
-                : `Mês de ${format(selectedDate, "MMMM yyyy")}`
+              : dateMode === 'day' && selectedDate
+                ? safeFormatDate(selectedDate, "dd/MM/yyyy") 
+                : selectedDate 
+                  ? `Mês de ${safeFormatDate(selectedDate, "MMMM yyyy")}`
+                  : 'Qualquer data'
             }
           </span>
         </div>
@@ -176,9 +197,13 @@ const ProfessionalsPage = () => {
       <div className="mt-4 text-center text-sm text-gray-500">
         <span>Filtro atual: </span>
         <span className="font-medium">
-          {dateMode === 'day' 
-            ? `Dia: ${format(selectedDate, "dd/MM/yyyy")}` 
-            : `Mês: ${format(selectedDate, "MMMM yyyy")}`
+          {dateMode === 'any' 
+            ? 'Qualquer data'
+            : dateMode === 'day' && selectedDate
+              ? `Dia: ${safeFormatDate(selectedDate, "dd/MM/yyyy")}`
+              : selectedDate
+                ? `Mês: ${safeFormatDate(selectedDate, "MMMM yyyy")}`
+                : 'Qualquer data'
           }
         </span>
         <span> • </span>

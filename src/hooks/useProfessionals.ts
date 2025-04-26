@@ -1,14 +1,15 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { debugAreaLog } from '@/utils/debugLogger';
 
 interface UseProfessionalsOptions {
   withSpecialties?: boolean;
   withAvailability?: boolean;
   date?: Date | null;
-  ignoreAvailability?: boolean; // New option to bypass availability filtering
+  ignoreAvailability?: boolean;
 }
 
 export type Professional = User & {
@@ -33,14 +34,22 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { 
     withSpecialties = true, 
     withAvailability = false, 
-    date = new Date(),
+    date = null,
     ignoreAvailability = true 
   } = options;
+
+  // Safely format the date if it exists and is valid
+  const safelyFormatDate = (date: Date | null): string | null => {
+    if (!date) return null;
+    return isValid(date) ? format(date, 'yyyy-MM') : null;
+  };
+
+  const formattedDate = safelyFormatDate(date);
 
   return useQuery<Professional[], Error>({
     queryKey: [
       'professionals', 
-      ignoreAvailability ? 'all' : (date ? (date instanceof Date ? format(date, 'yyyy-MM') : date) : 'any'),
+      ignoreAvailability ? 'all' : (formattedDate || 'any'),
       withSpecialties,
       withAvailability
     ],
@@ -50,7 +59,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         debugAreaLog('USER_ACTIONS', 'Fetching professionals with options:', { 
           withSpecialties, 
           withAvailability, 
-          date: date instanceof Date ? format(date, 'yyyy-MM-dd') : 'any',
+          date: formattedDate || 'any',
           ignoreAvailability
         });
 
