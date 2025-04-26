@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { debugLog, debugError } from "@/utils/debugLogger";
 
 interface Booking {
   id: string;
@@ -27,20 +28,65 @@ export function SystemBookingsCard() {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        // First check if user is a global admin
+        debugLog("SystemBookingsCard: Fetching bookings for global admin");
+        // Check session exists
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
+          debugError("SystemBookingsCard: No session found");
           throw new Error("No session found");
         }
 
-        const { data: isAdmin } = await supabase.rpc('is_global_admin', {
-          user_id: session.user.id
-        });
-
+        // Try multiple approaches to verify admin status to ensure we don't get stuck
+        // in permission issues - this offers more reliable authentication
+        
+        // Approach 1: Check user metadata first (fastest and most reliable)
+        const userMetadata = session.user.user_metadata;
+        const userTypeFromMetadata = userMetadata?.userType;
+        
+        debugLog(`SystemBookingsCard: User type from metadata: ${userTypeFromMetadata}`);
+        
+        let isAdmin = userTypeFromMetadata === "global_admin";
+        
+        // Approach 2: If not in metadata, use RPC function
         if (!isAdmin) {
+          debugLog("SystemBookingsCard: Checking admin status using RPC function");
+          const { data: rpcResult, error: rpcError } = await supabase.rpc('is_global_admin', {
+            user_id: session.user.id
+          });
+          
+          if (rpcError) {
+            debugError(`SystemBookingsCard: RPC error: ${rpcError.message}`);
+          } else {
+            isAdmin = !!rpcResult;
+            debugLog(`SystemBookingsCard: RPC result: ${isAdmin}`);
+          }
+        }
+
+        // Approach 3: Direct query as last resort
+        if (!isAdmin) {
+          debugLog("SystemBookingsCard: Checking admin status via direct query");
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('id', session.user.id)
+            .single();
+            
+          if (!profileError && profileData) {
+            isAdmin = profileData.user_type === 'global_admin';
+            debugLog(`SystemBookingsCard: Profile query result: ${isAdmin}`);
+          } else if (profileError) {
+            debugError(`SystemBookingsCard: Profile query error: ${profileError.message}`);
+          }
+        }
+
+        // If after all checks, still not admin, throw error
+        if (!isAdmin) {
+          debugError("SystemBookingsCard: User is not a global admin");
           throw new Error("Unauthorized - Only global admins can view all bookings");
         }
 
+        debugLog("SystemBookingsCard: User is confirmed as global admin, fetching bookings");
+        
         // If user is admin, fetch all bookings
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
@@ -103,8 +149,10 @@ export function SystemBookingsCard() {
         }));
         
         setBookings(processedBookings);
+        debugLog(`SystemBookingsCard: Successfully loaded ${processedBookings.length} bookings`);
       } catch (error) {
         console.error('Error fetching bookings:', error);
+        debugError(`SystemBookingsCard: Error fetching bookings: ${error}`);
         toast({
           title: "Erro ao carregar reservas",
           description: "Não foi possível carregar as reservas do sistema.",
