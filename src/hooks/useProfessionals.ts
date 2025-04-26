@@ -9,6 +9,7 @@ interface UseProfessionalsOptions {
   withSpecialties?: boolean;
   withAvailability?: boolean;
   date?: Date | null;
+  ignoreAvailability?: boolean; // New option to bypass availability filtering
 }
 
 export type Professional = User & {
@@ -33,22 +34,25 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
   const { 
     withSpecialties = true, 
     withAvailability = false, 
-    date = new Date() 
+    date = new Date(),
+    ignoreAvailability = true // Default to true to show all professionals
   } = options;
 
   return useQuery<Professional[], Error>({
     queryKey: [
       'professionals', 
-      date ? (date instanceof Date ? format(date, 'yyyy-MM') : date) : null,
+      ignoreAvailability ? 'all' : (date ? (date instanceof Date ? format(date, 'yyyy-MM') : date) : null),
       withSpecialties,
       withAvailability
     ],
     queryFn: async () => {
       try {
+        console.log('CRITICAL: Fetching all professionals, ignoring availability filters...');
         debugAreaLog('USER_ACTIONS', 'Fetching professionals with options:', { 
           withSpecialties, 
           withAvailability, 
-          date: date instanceof Date ? format(date, 'yyyy-MM-dd') : date 
+          date: date instanceof Date ? format(date, 'yyyy-MM-dd') : date,
+          ignoreAvailability
         });
         
         // First, directly query the profiles table for ALL professional users
@@ -68,6 +72,8 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         // If no professionals found, log this clearly
         if (!professionalsData || professionalsData.length === 0) {
           console.log('CRITICAL: No professional profiles found in database. Check your Supabase data.');
+          
+          // Return empty array but don't throw an error so the UI can show "no professionals found" message
           return [];
         }
         
@@ -124,11 +130,11 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             services: profServices,
             rating: avgRating,
             reviewCount: profReviews.length,
-            // Always set to true for now to make professionals appear
+            // Always set to true to make professionals appear
             hasConfirmedBookings: true
           } as Professional;
           
-          console.log(`Professional ${prof.id}: ${prof.name} with ${profServices.length} services and ${specialties.length} specialties`);
+          console.log(`Professional ${prof.id}: ${prof.name || 'unnamed'} with ${profServices.length} services and ${specialties.length} specialties`);
           
           return professional;
         });

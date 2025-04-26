@@ -45,9 +45,10 @@ const ProfessionalsPage = () => {
     error,
     refetch,
   } = useProfessionals({ 
-    withSpecialties: false, // Changed to false to not filter based on specialties
-    withAvailability: dateMode === 'day',
-    date: selectedDate
+    withSpecialties: false,
+    withAvailability: false,
+    date: null, // Don't filter by date
+    ignoreAvailability: true // Always show all professionals
   });
 
   useEffect(() => {
@@ -114,6 +115,16 @@ const ProfessionalsPage = () => {
     const now = new Date();
     setSelectedDate(now);
     setDateMode('month');
+  };
+
+  const handleRetryClick = () => {
+    console.log("Retry button clicked - forcing refetch of professionals");
+    refetch();
+    toast({
+      title: "Buscando profissionais",
+      description: "Atualizando a lista de profissionais...",
+      variant: "default",
+    });
   };
 
   return (
@@ -295,14 +306,11 @@ const ProfessionalsPage = () => {
                 Nenhum profissional encontrado
               </h3>
               <p className="text-gray-500 max-w-md mx-auto">
-                {dateMode === 'day'
-                  ? `Não foram encontrados profissionais disponíveis na data ${format(selectedDate, "dd/MM/yyyy")}.`
-                  : `Não foram encontrados profissionais disponíveis no mês de ${format(selectedDate, "MMMM yyyy")}.`
-                }
+                Não foram encontrados profissionais disponíveis no sistema.
               </p>
               <div className="mt-6 space-y-4">
                 <Button 
-                  onClick={() => refetch()}
+                  onClick={handleRetryClick}
                   className="mb-2"
                 >
                   Tentar novamente
