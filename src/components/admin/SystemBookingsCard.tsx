@@ -27,7 +27,21 @@ export function SystemBookingsCard() {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        // First, fetch all bookings
+        // First check if user is a global admin
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("No session found");
+        }
+
+        const { data: isAdmin } = await supabase.rpc('is_global_admin', {
+          user_id: session.user.id
+        });
+
+        if (!isAdmin) {
+          throw new Error("Unauthorized - Only global admins can view all bookings");
+        }
+
+        // If user is admin, fetch all bookings
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
           .select('*')
