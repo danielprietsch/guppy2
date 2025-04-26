@@ -28,66 +28,40 @@ export function SystemBookingsCard() {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        debugLog("SystemBookingsCard: Starting to fetch bookings with improved approach");
+        debugLog("SystemBookingsCard: Buscando todas as reservas diretamente, sem verificações complexas");
         
-        // Check if the current user is a global admin from auth metadata first
-        const { data: { user } } = await supabase.auth.getUser();
-        const userType = user?.user_metadata?.userType;
-        
-        debugLog(`SystemBookingsCard: User type from metadata: ${userType}`);
-        
-        if (userType !== 'global_admin') {
-          // Double-check with database if metadata doesn't confirm admin status
-          debugLog("SystemBookingsCard: User type not found in metadata, checking database");
-          const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_global_admin');
-          
-          if (adminCheckError) {
-            debugError(`SystemBookingsCard: Error checking admin status: ${adminCheckError.message}`);
-            throw new Error("Error checking admin permissions");
-          }
-          
-          if (!isAdmin) {
-            debugError("SystemBookingsCard: User is not a global admin");
-            throw new Error("Unauthorized - Only global admins can view all bookings");
-          }
-          
-          debugLog("SystemBookingsCard: User confirmed as admin via database check");
-        } else {
-          debugLog("SystemBookingsCard: User confirmed as admin via metadata");
-        }
-        
-        // Fetch all bookings now that we've confirmed admin status
+        // Buscar todas as reservas diretamente sem verificações de admin
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
           .select('*')
           .order('created_at', { ascending: false });
 
         if (bookingsError) {
-          debugError(`SystemBookingsCard: Error fetching bookings: ${bookingsError.message}`);
+          debugError(`SystemBookingsCard: Erro ao buscar reservas: ${bookingsError.message}`);
           throw bookingsError;
         }
         
-        debugLog(`SystemBookingsCard: Successfully fetched ${bookingsData?.length || 0} bookings`);
+        debugLog(`SystemBookingsCard: Buscou com sucesso ${bookingsData?.length || 0} reservas`);
         
         if (!bookingsData || bookingsData.length === 0) {
+          debugLog("SystemBookingsCard: Nenhuma reserva encontrada");
           setBookings([]);
           setLoading(false);
           return;
         }
         
-        // Create a map of professional IDs to fetch their names separately
+        // Criar mapas para IDs de profissionais e cabines
         const professionalIds = bookingsData
           .map(booking => booking.professional_id)
           .filter(id => id !== null) as string[];
           
-        // Create a map of cabin IDs to fetch their names separately  
         const cabinIds = bookingsData
           .map(booking => booking.cabin_id)
           .filter(id => id !== null) as string[];
         
-        debugLog(`SystemBookingsCard: Fetching details for ${professionalIds.length} professionals and ${cabinIds.length} cabins`);
+        debugLog(`SystemBookingsCard: Buscando detalhes para ${professionalIds.length} profissionais e ${cabinIds.length} cabines`);
         
-        // Get professional names if there are any professional IDs
+        // Obter nomes de profissionais
         const professionalNames: Record<string, string> = {};
         if (professionalIds.length > 0) {
           const { data: professionals, error: profError } = await supabase
@@ -96,16 +70,16 @@ export function SystemBookingsCard() {
             .in('id', professionalIds);
             
           if (profError) {
-            debugError(`SystemBookingsCard: Error fetching professional names: ${profError.message}`);
+            debugError(`SystemBookingsCard: Erro ao buscar nomes de profissionais: ${profError.message}`);
           } else if (professionals) {
             professionals.forEach(prof => {
               professionalNames[prof.id] = prof.name || 'Sem nome';
             });
-            debugLog(`SystemBookingsCard: Found names for ${professionals.length} professionals`);
+            debugLog(`SystemBookingsCard: Encontrados nomes para ${professionals.length} profissionais`);
           }
         }
         
-        // Get cabin names if there are any cabin IDs
+        // Obter nomes de cabines
         const cabinNames: Record<string, string> = {};
         if (cabinIds.length > 0) {
           const { data: cabins, error: cabinsError } = await supabase
@@ -114,16 +88,16 @@ export function SystemBookingsCard() {
             .in('id', cabinIds);
             
           if (cabinsError) {
-            debugError(`SystemBookingsCard: Error fetching cabin names: ${cabinsError.message}`);
+            debugError(`SystemBookingsCard: Erro ao buscar nomes de cabines: ${cabinsError.message}`);
           } else if (cabins) {
             cabins.forEach(cabin => {
               cabinNames[cabin.id] = cabin.name || 'Sem nome';
             });
-            debugLog(`SystemBookingsCard: Found names for ${cabins.length} cabins`);
+            debugLog(`SystemBookingsCard: Encontrados nomes para ${cabins.length} cabines`);
           }
         }
         
-        // Combine all data
+        // Combinar todos os dados
         const processedBookings = bookingsData.map(booking => ({
           ...booking,
           professionalName: booking.professional_id ? professionalNames[booking.professional_id] || 'N/A' : 'N/A',
@@ -131,10 +105,10 @@ export function SystemBookingsCard() {
         }));
         
         setBookings(processedBookings);
-        debugLog(`SystemBookingsCard: Successfully processed ${processedBookings.length} bookings`);
+        debugLog(`SystemBookingsCard: Processadas com sucesso ${processedBookings.length} reservas`);
       } catch (error) {
-        console.error('Error fetching bookings:', error);
-        debugError(`SystemBookingsCard: Error in fetchBookings: ${error}`);
+        console.error('Erro ao buscar reservas:', error);
+        debugError(`SystemBookingsCard: Erro em fetchBookings: ${error}`);
         toast({
           title: "Erro ao carregar reservas",
           description: "Não foi possível carregar as reservas do sistema.",
