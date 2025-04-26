@@ -28,9 +28,35 @@ export function SystemBookingsCard() {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        debugLog("SystemBookingsCard: Simplified approach - fetching bookings directly");
+        debugLog("SystemBookingsCard: Starting to fetch bookings with improved approach");
         
-        // Fetch all bookings without complex admin checks
+        // Check if the current user is a global admin from auth metadata first
+        const { data: { user } } = await supabase.auth.getUser();
+        const userType = user?.user_metadata?.userType;
+        
+        debugLog(`SystemBookingsCard: User type from metadata: ${userType}`);
+        
+        if (userType !== 'global_admin') {
+          // Double-check with database if metadata doesn't confirm admin status
+          debugLog("SystemBookingsCard: User type not found in metadata, checking database");
+          const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_global_admin');
+          
+          if (adminCheckError) {
+            debugError(`SystemBookingsCard: Error checking admin status: ${adminCheckError.message}`);
+            throw new Error("Error checking admin permissions");
+          }
+          
+          if (!isAdmin) {
+            debugError("SystemBookingsCard: User is not a global admin");
+            throw new Error("Unauthorized - Only global admins can view all bookings");
+          }
+          
+          debugLog("SystemBookingsCard: User confirmed as admin via database check");
+        } else {
+          debugLog("SystemBookingsCard: User confirmed as admin via metadata");
+        }
+        
+        // Fetch all bookings now that we've confirmed admin status
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
           .select('*')
