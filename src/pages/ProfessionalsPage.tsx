@@ -36,6 +36,7 @@ const ProfessionalsPage = () => {
   const [dateMode, setDateMode] = useState<'day' | 'month'>('month');
   
   console.log("ProfessionalsPage: Rendering with date", selectedDate, "in mode", dateMode);
+  console.log("Current selected services:", selectedServices);
 
   const { 
     data: professionals = [], 
@@ -44,7 +45,7 @@ const ProfessionalsPage = () => {
     error,
     refetch,
   } = useProfessionals({ 
-    withSpecialties: true,
+    withSpecialties: false, // Changed to false to not filter based on specialties
     withAvailability: dateMode === 'day',
     date: selectedDate
   });
@@ -60,17 +61,21 @@ const ProfessionalsPage = () => {
     }
   }, [isError, error, toast]);
 
-  console.log("ProfessionalsPage: Received professionals data", professionals.length);
+  console.log("ProfessionalsPage: Raw professionals data received", professionals);
   
   const professionalsList = Array.isArray(professionals) ? professionals : [];
+  console.log("ProfessionalsPage: Professionals list after conversion", professionalsList.length);
   
   const filteredProfessionals = professionalsList.filter(professional => {
-    const matchesSearch = professional.name?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesService = selectedServices.length === 0 || 
-      professional.specialties?.some(specialty => selectedServices.includes(specialty));
+    // Include any professional with a name (don't filter out based on no name)
+    const matchesSearch = !searchQuery || 
+      (professional.name && professional.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    const result = matchesSearch && matchesService;
-    return result;
+    // If no services are selected, show all. Otherwise, filter by selected services
+    const matchesService = selectedServices.length === 0 || 
+      (professional.specialties && professional.specialties.some(specialty => selectedServices.includes(specialty)));
+    
+    return matchesSearch && matchesService;
   });
   
   console.log("ProfessionalsPage: Filtered professionals", filteredProfessionals.length);
@@ -100,15 +105,6 @@ const ProfessionalsPage = () => {
     setSelectedDate(now);
     setDateMode('month');
   };
-
-  // Debug function to log current filter settings
-  useEffect(() => {
-    console.log("Current filter settings:", {
-      dateMode,
-      selectedDate: format(selectedDate, "yyyy-MM-dd"),
-      selectedServices,
-    });
-  }, [dateMode, selectedDate, selectedServices]);
 
   return (
     <div className="container px-4 py-12 md:px-6 md:py-16">
@@ -247,6 +243,11 @@ const ProfessionalsPage = () => {
           <AlertTitle>Erro</AlertTitle>
           <AlertDescription>
             Ocorreu um erro ao carregar os profissionais. Por favor, tente novamente mais tarde.
+            {error && error.message && (
+              <div className="mt-2 text-sm opacity-80">
+                Detalhes: {error.message}
+              </div>
+            )}
           </AlertDescription>
         </Alert>
       )}
