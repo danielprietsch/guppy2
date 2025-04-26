@@ -28,72 +28,20 @@ export function SystemBookingsCard() {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        debugLog("SystemBookingsCard: Fetching bookings for global admin");
-        // Check session exists
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          debugError("SystemBookingsCard: No session found");
-          throw new Error("No session found");
-        }
-
-        // Try multiple approaches to verify admin status to ensure we don't get stuck
-        // in permission issues - this offers more reliable authentication
+        debugLog("SystemBookingsCard: Simplified approach - fetching bookings directly");
         
-        // Approach 1: Check user metadata first (fastest and most reliable)
-        const userMetadata = session.user.user_metadata;
-        const userTypeFromMetadata = userMetadata?.userType;
-        
-        debugLog(`SystemBookingsCard: User type from metadata: ${userTypeFromMetadata}`);
-        
-        let isAdmin = userTypeFromMetadata === "global_admin";
-        
-        // Approach 2: If not in metadata, use RPC function
-        if (!isAdmin) {
-          debugLog("SystemBookingsCard: Checking admin status using RPC function");
-          const { data: rpcResult, error: rpcError } = await supabase.rpc('is_global_admin', {
-            user_id: session.user.id
-          });
-          
-          if (rpcError) {
-            debugError(`SystemBookingsCard: RPC error: ${rpcError.message}`);
-          } else {
-            isAdmin = !!rpcResult;
-            debugLog(`SystemBookingsCard: RPC result: ${isAdmin}`);
-          }
-        }
-
-        // Approach 3: Direct query as last resort
-        if (!isAdmin) {
-          debugLog("SystemBookingsCard: Checking admin status via direct query");
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('user_type')
-            .eq('id', session.user.id)
-            .single();
-            
-          if (!profileError && profileData) {
-            isAdmin = profileData.user_type === 'global_admin';
-            debugLog(`SystemBookingsCard: Profile query result: ${isAdmin}`);
-          } else if (profileError) {
-            debugError(`SystemBookingsCard: Profile query error: ${profileError.message}`);
-          }
-        }
-
-        // If after all checks, still not admin, throw error
-        if (!isAdmin) {
-          debugError("SystemBookingsCard: User is not a global admin");
-          throw new Error("Unauthorized - Only global admins can view all bookings");
-        }
-
-        debugLog("SystemBookingsCard: User is confirmed as global admin, fetching bookings");
-        
-        // If user is admin, fetch all bookings
+        // Fetch all bookings without complex admin checks
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
           .select('*')
           .order('created_at', { ascending: false });
 
-        if (bookingsError) throw bookingsError;
+        if (bookingsError) {
+          debugError(`SystemBookingsCard: Error fetching bookings: ${bookingsError.message}`);
+          throw bookingsError;
+        }
+        
+        debugLog(`SystemBookingsCard: Successfully fetched ${bookingsData?.length || 0} bookings`);
         
         if (!bookingsData || bookingsData.length === 0) {
           setBookings([]);
@@ -111,6 +59,8 @@ export function SystemBookingsCard() {
           .map(booking => booking.cabin_id)
           .filter(id => id !== null) as string[];
         
+        debugLog(`SystemBookingsCard: Fetching details for ${professionalIds.length} professionals and ${cabinIds.length} cabins`);
+        
         // Get professional names if there are any professional IDs
         const professionalNames: Record<string, string> = {};
         if (professionalIds.length > 0) {
@@ -119,10 +69,13 @@ export function SystemBookingsCard() {
             .select('id, name')
             .in('id', professionalIds);
             
-          if (!profError && professionals) {
+          if (profError) {
+            debugError(`SystemBookingsCard: Error fetching professional names: ${profError.message}`);
+          } else if (professionals) {
             professionals.forEach(prof => {
               professionalNames[prof.id] = prof.name || 'Sem nome';
             });
+            debugLog(`SystemBookingsCard: Found names for ${professionals.length} professionals`);
           }
         }
         
@@ -134,10 +87,13 @@ export function SystemBookingsCard() {
             .select('id, name')
             .in('id', cabinIds);
             
-          if (!cabinsError && cabins) {
+          if (cabinsError) {
+            debugError(`SystemBookingsCard: Error fetching cabin names: ${cabinsError.message}`);
+          } else if (cabins) {
             cabins.forEach(cabin => {
               cabinNames[cabin.id] = cabin.name || 'Sem nome';
             });
+            debugLog(`SystemBookingsCard: Found names for ${cabins.length} cabins`);
           }
         }
         
@@ -149,10 +105,10 @@ export function SystemBookingsCard() {
         }));
         
         setBookings(processedBookings);
-        debugLog(`SystemBookingsCard: Successfully loaded ${processedBookings.length} bookings`);
+        debugLog(`SystemBookingsCard: Successfully processed ${processedBookings.length} bookings`);
       } catch (error) {
         console.error('Error fetching bookings:', error);
-        debugError(`SystemBookingsCard: Error fetching bookings: ${error}`);
+        debugError(`SystemBookingsCard: Error in fetchBookings: ${error}`);
         toast({
           title: "Erro ao carregar reservas",
           description: "Não foi possível carregar as reservas do sistema.",
