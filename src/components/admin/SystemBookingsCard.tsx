@@ -35,16 +35,23 @@ export function SystemBookingsCard() {
       setError(null);
       setRefreshing(true);
       
-      // Modified query to use separate queries to fetch related data
+      debugLog("SystemBookingsCard: Iniciando busca por reservas...");
+      
+      // Buscar todas as reservas primeiro
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (bookingsError) throw bookingsError;
+      if (bookingsError) {
+        debugError(`SystemBookingsCard: Erro ao buscar reservas: ${bookingsError.message}`);
+        throw bookingsError;
+      }
 
+      debugLog(`SystemBookingsCard: Resposta da API - ${bookingsData ? bookingsData.length : 0} reservas encontradas`);
+      
       if (!bookingsData || bookingsData.length === 0) {
-        debugLog("SystemBookingsCard: No bookings found");
+        debugLog("SystemBookingsCard: Nenhuma reserva retornada pela API");
         setBookings([]);
         toast({
           title: "Sem reservas",
@@ -53,36 +60,53 @@ export function SystemBookingsCard() {
         return;
       }
 
+      // Log para debug de uma das reservas encontradas para conferência
+      if (bookingsData.length > 0) {
+        debugLog(`SystemBookingsCard: Exemplo de reserva encontrada: ${JSON.stringify(bookingsData[0])}`);
+      }
+
       const processedBookings: Booking[] = [];
 
-      // Process each booking to get related cabin and professional names
+      // Processar cada reserva para obter nomes relacionados
       for (const booking of bookingsData) {
         let professionalName = 'Não informado';
         let cabinName = 'Não informada';
 
-        // Get professional name if professional_id exists
+        // Buscar nome do profissional se professional_id existir
         if (booking.professional_id) {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('name')
-            .eq('id', booking.professional_id)
-            .single();
-          
-          if (profileData?.name) {
-            professionalName = profileData.name;
+          try {
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('name')
+              .eq('id', booking.professional_id)
+              .single();
+            
+            if (profileError) {
+              debugError(`SystemBookingsCard: Erro ao buscar profissional ${booking.professional_id}: ${profileError.message}`);
+            } else if (profileData?.name) {
+              professionalName = profileData.name;
+            }
+          } catch (err) {
+            debugError(`SystemBookingsCard: Exceção ao buscar profissional: ${err}`);
           }
         }
 
-        // Get cabin name if cabin_id exists
+        // Buscar nome da cabine se cabin_id existir
         if (booking.cabin_id) {
-          const { data: cabinData } = await supabase
-            .from('cabins')
-            .select('name')
-            .eq('id', booking.cabin_id)
-            .single();
-          
-          if (cabinData?.name) {
-            cabinName = cabinData.name;
+          try {
+            const { data: cabinData, error: cabinError } = await supabase
+              .from('cabins')
+              .select('name')
+              .eq('id', booking.cabin_id)
+              .single();
+            
+            if (cabinError) {
+              debugError(`SystemBookingsCard: Erro ao buscar cabine ${booking.cabin_id}: ${cabinError.message}`);
+            } else if (cabinData?.name) {
+              cabinName = cabinData.name;
+            }
+          } catch (err) {
+            debugError(`SystemBookingsCard: Exceção ao buscar cabine: ${err}`);
           }
         }
 
@@ -93,7 +117,7 @@ export function SystemBookingsCard() {
         });
       }
 
-      debugLog(`SystemBookingsCard: ${processedBookings.length} bookings found`);
+      debugLog(`SystemBookingsCard: Processou ${processedBookings.length} reservas com sucesso`);
       setBookings(processedBookings);
 
       if (refreshing) {
@@ -121,6 +145,13 @@ export function SystemBookingsCard() {
   useEffect(() => {
     fetchAllBookings();
   }, []);
+
+  // Verificação adicional para debug
+  useEffect(() => {
+    if (!loading && bookings.length === 0 && !error) {
+      debugLog("SystemBookingsCard: Hook useEffect detectou estado carregado com 0 reservas sem erros");
+    }
+  }, [loading, bookings, error]);
 
   return (
     <Card>
@@ -161,12 +192,16 @@ export function SystemBookingsCard() {
         ) : bookings.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <p>Nenhuma reserva encontrada no sistema.</p>
+            <p className="text-sm mt-2">
+              (Verifique os logs de console para detalhes do problema)
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>ID</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Turno</TableHead>
                   <TableHead>Profissional</TableHead>
@@ -178,6 +213,9 @@ export function SystemBookingsCard() {
               <TableBody>
                 {bookings.map((booking) => (
                   <TableRow key={booking.id}>
+                    <TableCell className="font-mono text-xs">
+                      {booking.id}
+                    </TableCell>
                     <TableCell>
                       {format(new Date(booking.date), "dd 'de' MMMM',' yyyy", { locale: ptBR })}
                     </TableCell>
