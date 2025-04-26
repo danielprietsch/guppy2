@@ -29,9 +29,9 @@ export function SystemBookingsCard() {
     async function fetchBookings() {
       try {
         setLoading(true);
-        debugLog("SystemBookingsCard: Iniciando busca de TODAS as reservas do sistema");
+        debugLog("SystemBookingsCard: Iniciando busca de reservas");
         
-        // Abordagem direta e simples: buscar todas as reservas da tabela
+        // Fetch ALL bookings from the database without any filters
         const { data, error } = await supabase
           .from('bookings')
           .select('*')
@@ -40,17 +40,17 @@ export function SystemBookingsCard() {
         if (error) {
           throw error;
         }
-        
-        debugLog(`SystemBookingsCard: Encontradas ${data?.length || 0} reservas no banco de dados`);
-        console.log("Reservas encontradas:", data);
+
+        debugLog(`SystemBookingsCard: Encontradas ${data?.length || 0} reservas`);
+        console.log("Dados brutos de reservas:", data);
         
         if (!data || data.length === 0) {
-          debugLog("SystemBookingsCard: Nenhuma reserva foi encontrada no banco de dados");
+          debugLog("SystemBookingsCard: Nenhuma reserva encontrada");
           setBookings([]);
           return;
         }
-        
-        // Extrair IDs para buscar detalhes adicionais
+
+        // Get all professional IDs and cabin IDs
         const professionalIds = data
           .filter(booking => booking.professional_id)
           .map(booking => booking.professional_id);
@@ -58,46 +58,42 @@ export function SystemBookingsCard() {
         const cabinIds = data
           .filter(booking => booking.cabin_id)
           .map(booking => booking.cabin_id);
-        
+          
         debugLog(`SystemBookingsCard: Buscando detalhes para ${professionalIds.length} profissionais e ${cabinIds.length} cabines`);
         
-        // Buscar detalhes dos profissionais
-        const professionalNames: Record<string, string> = {};
+        // Fetch professional names
+        let professionalNames: Record<string, string> = {};
         if (professionalIds.length > 0) {
-          const { data: professionals, error: profError } = await supabase
+          const { data: professionals } = await supabase
             .from('profiles')
             .select('id, name')
             .in('id', professionalIds as string[]);
             
-          if (profError) {
-            debugError(`Erro ao buscar perfis de profissionais: ${profError.message}`);
-          } else if (professionals) {
+          if (professionals) {
+            debugLog(`SystemBookingsCard: Encontrados ${professionals.length} perfis de profissionais`);
             professionals.forEach(prof => {
               professionalNames[prof.id] = prof.name || 'Nome não disponível';
             });
-            debugLog(`Encontrados ${professionals.length} perfis de profissionais`);
           }
         }
         
-        // Buscar detalhes das cabines
-        const cabinNames: Record<string, string> = {};
+        // Fetch cabin names
+        let cabinNames: Record<string, string> = {};
         if (cabinIds.length > 0) {
-          const { data: cabins, error: cabinsError } = await supabase
+          const { data: cabins } = await supabase
             .from('cabins')
             .select('id, name')
             .in('id', cabinIds as string[]);
             
-          if (cabinsError) {
-            debugError(`Erro ao buscar cabines: ${cabinsError.message}`);
-          } else if (cabins) {
+          if (cabins) {
+            debugLog(`SystemBookingsCard: Encontradas ${cabins.length} cabines`);
             cabins.forEach(cabin => {
               cabinNames[cabin.id] = cabin.name || 'Nome não disponível';
             });
-            debugLog(`Encontrados ${cabins.length} cabines`);
           }
         }
         
-        // Processar e formatar os dados
+        // Process bookings with names
         const processedBookings = data.map(booking => ({
           ...booking,
           professionalName: booking.professional_id ? professionalNames[booking.professional_id] || 'Não encontrado' : 'N/A',
@@ -146,7 +142,7 @@ export function SystemBookingsCard() {
       <CardContent>
         {bookings.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
-            Nenhuma reserva encontrada no sistema. Verifique se existem registros na tabela bookings.
+            Nenhuma reserva encontrada no sistema.
           </div>
         ) : (
           <div className="overflow-x-auto">
