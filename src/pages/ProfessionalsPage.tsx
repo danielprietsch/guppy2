@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -23,7 +22,6 @@ const ProfessionalsPage = () => {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Get all unique categories from serviceData and initialize selectedServices with all of them
   const allServices = Object.values(serviceData)
     .map(service => service.category)
     .filter((value, index, self) => self.indexOf(value) === index)
@@ -31,9 +29,8 @@ const ProfessionalsPage = () => {
   
   const [selectedServices, setSelectedServices] = useState<string[]>(allServices);
   
-  // Initialize with current date and 'month' mode as default
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [dateMode, setDateMode] = useState<'day' | 'month'>('month');
+  const [dateMode, setDateMode] = useState<'day' | 'month' | 'any'>('month');
   
   console.log("ProfessionalsPage: Rendering with date", selectedDate, "in mode", dateMode);
   console.log("Current selected services:", selectedServices);
@@ -47,16 +44,14 @@ const ProfessionalsPage = () => {
   } = useProfessionals({ 
     withSpecialties: false,
     withAvailability: false,
-    date: null, // Don't filter by date
-    ignoreAvailability: true // Always show all professionals
+    date: null,
+    ignoreAvailability: true
   });
 
   useEffect(() => {
-    // Force an immediate refetch when component mounts to ensure we have fresh data
     refetch();
   }, [refetch]);
 
-  // Show error toast if query fails
   useEffect(() => {
     if (isError && error) {
       toast({
@@ -73,12 +68,9 @@ const ProfessionalsPage = () => {
   console.log("ProfessionalsPage: Professionals list after conversion:", professionalsList.length);
   
   const filteredProfessionals = professionalsList.filter(professional => {
-    // Include any professional with a name (don't filter out based on no name)
     const matchesSearch = !searchQuery || 
       (professional.name && professional.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
-    // If no services are selected, show all. Otherwise, filter by selected services
-    // If professional has no specialties, still include them
     const hasSpecialties = professional.specialties && professional.specialties.length > 0;
     
     const matchesService = 
@@ -117,6 +109,11 @@ const ProfessionalsPage = () => {
     setDateMode('month');
   };
 
+  const setAnyDate = () => {
+    setSelectedDate(null);
+    setDateMode('any');
+  };
+
   const handleRetryClick = () => {
     console.log("Retry button clicked - forcing refetch of professionals");
     refetch();
@@ -148,9 +145,11 @@ const ProfessionalsPage = () => {
         <div className="flex items-center px-4 py-2 border rounded-md bg-background">
           <Calendar className="h-5 w-5 mr-2 text-muted-foreground" />
           <span className="font-medium">
-            {dateMode === 'day' 
-              ? format(selectedDate, "dd/MM/yyyy") 
-              : `Mês de ${format(selectedDate, "MMMM yyyy")}`
+            {dateMode === 'any' 
+              ? 'Qualquer data'
+              : dateMode === 'day' 
+                ? format(selectedDate, "dd/MM/yyyy") 
+                : `Mês de ${format(selectedDate, "MMMM yyyy")}`
             }
           </span>
         </div>
@@ -165,6 +164,12 @@ const ProfessionalsPage = () => {
           onClick={setThisMonth}
         >
           Este mês
+        </Button>
+        <Button 
+          variant={dateMode === 'any' ? 'default' : 'outline'} 
+          onClick={setAnyDate}
+        >
+          Qualquer data
         </Button>
       </div>
       

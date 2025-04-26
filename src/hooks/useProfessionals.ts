@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,26 +34,26 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
     withSpecialties = true, 
     withAvailability = false, 
     date = new Date(),
-    ignoreAvailability = true // Default to true to show all professionals
+    ignoreAvailability = true 
   } = options;
 
   return useQuery<Professional[], Error>({
     queryKey: [
       'professionals', 
-      ignoreAvailability ? 'all' : (date ? (date instanceof Date ? format(date, 'yyyy-MM') : date) : null),
+      ignoreAvailability ? 'all' : (date ? (date instanceof Date ? format(date, 'yyyy-MM') : date) : 'any'),
       withSpecialties,
       withAvailability
     ],
     queryFn: async () => {
       try {
-        console.log('CRITICAL: Fetching all professionals, ignoring availability filters...');
+        console.log('CRITICAL: Fetching all professionals...');
         debugAreaLog('USER_ACTIONS', 'Fetching professionals with options:', { 
           withSpecialties, 
           withAvailability, 
-          date: date instanceof Date ? format(date, 'yyyy-MM-dd') : date,
+          date: date instanceof Date ? format(date, 'yyyy-MM-dd') : 'any',
           ignoreAvailability
         });
-        
+
         // First, directly query the profiles table for ALL professional users
         // WITHOUT any filtering at this stage
         const { data: professionalsData, error } = await supabase
@@ -147,7 +146,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: true,
     refetchOnReconnect: false,
