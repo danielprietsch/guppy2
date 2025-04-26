@@ -16,7 +16,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { addDays, format, startOfMonth, endOfMonth } from "date-fns";
+import { addDays, format } from "date-fns";
 import { useToast } from "@/components/ui/use-toast";
 
 const ProfessionalsPage = () => {
@@ -50,6 +50,11 @@ const ProfessionalsPage = () => {
     date: selectedDate
   });
 
+  useEffect(() => {
+    // Force an immediate refetch when component mounts to ensure we have fresh data
+    refetch();
+  }, [refetch]);
+
   // Show error toast if query fails
   useEffect(() => {
     if (isError && error) {
@@ -61,10 +66,10 @@ const ProfessionalsPage = () => {
     }
   }, [isError, error, toast]);
 
-  console.log("ProfessionalsPage: Raw professionals data received", professionals);
+  console.log("ProfessionalsPage: Raw professionals data received:", professionals);
   
   const professionalsList = Array.isArray(professionals) ? professionals : [];
-  console.log("ProfessionalsPage: Professionals list after conversion", professionalsList.length);
+  console.log("ProfessionalsPage: Professionals list after conversion:", professionalsList.length);
   
   const filteredProfessionals = professionalsList.filter(professional => {
     // Include any professional with a name (don't filter out based on no name)
@@ -72,13 +77,18 @@ const ProfessionalsPage = () => {
       (professional.name && professional.name.toLowerCase().includes(searchQuery.toLowerCase()));
     
     // If no services are selected, show all. Otherwise, filter by selected services
-    const matchesService = selectedServices.length === 0 || 
-      (professional.specialties && professional.specialties.some(specialty => selectedServices.includes(specialty)));
+    // If professional has no specialties, still include them
+    const hasSpecialties = professional.specialties && professional.specialties.length > 0;
+    
+    const matchesService = 
+      selectedServices.length === 0 || 
+      !hasSpecialties || 
+      professional.specialties.some(specialty => selectedServices.includes(specialty));
     
     return matchesSearch && matchesService;
   });
   
-  console.log("ProfessionalsPage: Filtered professionals", filteredProfessionals.length);
+  console.log("ProfessionalsPage: Filtered professionals:", filteredProfessionals.length);
   
   const toggleService = (category: string) => {
     setSelectedServices(current => 
@@ -290,12 +300,23 @@ const ProfessionalsPage = () => {
                   : `Não foram encontrados profissionais disponíveis no mês de ${format(selectedDate, "MMMM yyyy")}.`
                 }
               </p>
-              <Button 
-                onClick={() => refetch()}
-                className="mt-4"
-              >
-                Tentar novamente
-              </Button>
+              <div className="mt-6 space-y-4">
+                <Button 
+                  onClick={() => refetch()}
+                  className="mb-2"
+                >
+                  Tentar novamente
+                </Button>
+                
+                <div className="text-sm text-gray-500">
+                  <p>Possíveis motivos:</p>
+                  <ul className="list-disc list-inside mt-2 text-left max-w-md mx-auto">
+                    <li>Não existem profissionais cadastrados no sistema</li>
+                    <li>Os profissionais não definiram suas especialidades</li>
+                    <li>Os filtros aplicados são muito restritivos</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           )}
         </div>

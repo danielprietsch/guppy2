@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { User } from '@/lib/types';
 import { supabase } from '@/integrations/supabase/client';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { debugAreaLog } from '@/utils/debugLogger';
 
 interface UseProfessionalsOptions {
@@ -45,13 +45,14 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
     ],
     queryFn: async () => {
       try {
-        console.log('Fetching professionals with options:', { 
+        debugAreaLog('USER_ACTIONS', 'Fetching professionals with options:', { 
           withSpecialties, 
           withAvailability, 
           date: date instanceof Date ? format(date, 'yyyy-MM-dd') : date 
         });
         
-        // First, directly query the profiles table for professional users
+        // First, directly query the profiles table for ALL professional users
+        // WITHOUT any filtering at this stage
         const { data: professionalsData, error } = await supabase
           .from('profiles')
           .select('*')
@@ -62,17 +63,16 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           throw error;
         }
 
-        console.log(`Raw professionals data returned from database:`, professionalsData);
-
-        // If no professionals found, return empty array
-        if (!professionalsData || !Array.isArray(professionalsData) || professionalsData.length === 0) {
-          console.log('No professional profiles found in database');
+        console.log(`Found ${professionalsData?.length || 0} professional profiles:`, professionalsData);
+        
+        // If no professionals found, log this clearly
+        if (!professionalsData || professionalsData.length === 0) {
+          console.log('CRITICAL: No professional profiles found in database. Check your Supabase data.');
           return [];
         }
         
         // Get professional IDs
         const professionalIds = professionalsData.map(prof => prof.id);
-        console.log(`Found ${professionalIds.length} professional IDs:`, professionalIds);
         
         // Get services for the professionals
         const { data: services, error: servicesError } = await supabase
@@ -84,7 +84,7 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           console.error('Error fetching services:', servicesError);
         }
         
-        console.log(`Services data:`, services || 'No services found');
+        console.log(`Services data for ${services?.length || 0} services:`, services || 'No services found');
 
         // Get reviews for the professionals
         const { data: reviews, error: reviewsError } = await supabase
@@ -96,9 +96,8 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           console.error('Error fetching reviews:', reviewsError);
         }
         
-        console.log(`Reviews data:`, reviews || 'No reviews found');
-
-        // Process and combine all data
+        // Process and combine all data - ALWAYS RETURN ALL PROFESSIONALS
+        // even if they don't have services or reviews yet
         const professionals = professionalsData.map(prof => {
           // Calculate average rating
           const profReviews = reviews?.filter(r => r.professional_id === prof.id) || [];
@@ -111,10 +110,6 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           
           // Get unique specialties from services
           const specialties = [...new Set(profServices.map(s => s.category))];
-          
-          // Important: Don't filter out professionals who have no services/specialties
-          // when withSpecialties is true - temporarily disabling this filter
-          // to troubleshoot why no professionals are showing
           
           // Ensure user_type is one of the allowed types
           const userType = prof.user_type === 'professional' ? 'professional' : 
@@ -133,12 +128,12 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
             hasConfirmedBookings: true
           } as Professional;
           
-          console.log(`Processed professional: ${prof.id} - ${prof.name} - Services: ${profServices.length}, Specialties: ${specialties.join(', ')}`);
+          console.log(`Professional ${prof.id}: ${prof.name} with ${profServices.length} services and ${specialties.length} specialties`);
           
           return professional;
         });
 
-        console.log(`Returning ${professionals.length} professionals after processing`);
+        console.log(`Final: Returning ${professionals.length} professionals after processing`);
         return professionals;
 
       } catch (error) {
