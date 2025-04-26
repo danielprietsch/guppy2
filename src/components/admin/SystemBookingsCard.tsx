@@ -28,87 +28,88 @@ export function SystemBookingsCard() {
   useEffect(() => {
     async function fetchBookings() {
       try {
-        debugLog("SystemBookingsCard: Buscando todas as reservas diretamente, sem verificações complexas");
+        setLoading(true);
+        debugLog("SystemBookingsCard: Iniciando busca de TODAS as reservas do sistema");
         
-        // Buscar todas as reservas diretamente sem verificações de admin
-        const { data: bookingsData, error: bookingsError } = await supabase
+        // Abordagem direta e simples: buscar todas as reservas da tabela
+        const { data, error } = await supabase
           .from('bookings')
           .select('*')
           .order('created_at', { ascending: false });
-
-        if (bookingsError) {
-          debugError(`SystemBookingsCard: Erro ao buscar reservas: ${bookingsError.message}`);
-          throw bookingsError;
+          
+        if (error) {
+          throw error;
         }
         
-        debugLog(`SystemBookingsCard: Buscou com sucesso ${bookingsData?.length || 0} reservas`);
+        debugLog(`SystemBookingsCard: Encontradas ${data?.length || 0} reservas no banco de dados`);
+        console.log("Reservas encontradas:", data);
         
-        if (!bookingsData || bookingsData.length === 0) {
-          debugLog("SystemBookingsCard: Nenhuma reserva encontrada");
+        if (!data || data.length === 0) {
+          debugLog("SystemBookingsCard: Nenhuma reserva foi encontrada no banco de dados");
           setBookings([]);
-          setLoading(false);
           return;
         }
         
-        // Criar mapas para IDs de profissionais e cabines
-        const professionalIds = bookingsData
-          .map(booking => booking.professional_id)
-          .filter(id => id !== null) as string[];
+        // Extrair IDs para buscar detalhes adicionais
+        const professionalIds = data
+          .filter(booking => booking.professional_id)
+          .map(booking => booking.professional_id);
           
-        const cabinIds = bookingsData
-          .map(booking => booking.cabin_id)
-          .filter(id => id !== null) as string[];
+        const cabinIds = data
+          .filter(booking => booking.cabin_id)
+          .map(booking => booking.cabin_id);
         
         debugLog(`SystemBookingsCard: Buscando detalhes para ${professionalIds.length} profissionais e ${cabinIds.length} cabines`);
         
-        // Obter nomes de profissionais
+        // Buscar detalhes dos profissionais
         const professionalNames: Record<string, string> = {};
         if (professionalIds.length > 0) {
           const { data: professionals, error: profError } = await supabase
             .from('profiles')
             .select('id, name')
-            .in('id', professionalIds);
+            .in('id', professionalIds as string[]);
             
           if (profError) {
-            debugError(`SystemBookingsCard: Erro ao buscar nomes de profissionais: ${profError.message}`);
+            debugError(`Erro ao buscar perfis de profissionais: ${profError.message}`);
           } else if (professionals) {
             professionals.forEach(prof => {
-              professionalNames[prof.id] = prof.name || 'Sem nome';
+              professionalNames[prof.id] = prof.name || 'Nome não disponível';
             });
-            debugLog(`SystemBookingsCard: Encontrados nomes para ${professionals.length} profissionais`);
+            debugLog(`Encontrados ${professionals.length} perfis de profissionais`);
           }
         }
         
-        // Obter nomes de cabines
+        // Buscar detalhes das cabines
         const cabinNames: Record<string, string> = {};
         if (cabinIds.length > 0) {
           const { data: cabins, error: cabinsError } = await supabase
             .from('cabins')
             .select('id, name')
-            .in('id', cabinIds);
+            .in('id', cabinIds as string[]);
             
           if (cabinsError) {
-            debugError(`SystemBookingsCard: Erro ao buscar nomes de cabines: ${cabinsError.message}`);
+            debugError(`Erro ao buscar cabines: ${cabinsError.message}`);
           } else if (cabins) {
             cabins.forEach(cabin => {
-              cabinNames[cabin.id] = cabin.name || 'Sem nome';
+              cabinNames[cabin.id] = cabin.name || 'Nome não disponível';
             });
-            debugLog(`SystemBookingsCard: Encontrados nomes para ${cabins.length} cabines`);
+            debugLog(`Encontrados ${cabins.length} cabines`);
           }
         }
         
-        // Combinar todos os dados
-        const processedBookings = bookingsData.map(booking => ({
+        // Processar e formatar os dados
+        const processedBookings = data.map(booking => ({
           ...booking,
-          professionalName: booking.professional_id ? professionalNames[booking.professional_id] || 'N/A' : 'N/A',
-          cabinName: booking.cabin_id ? cabinNames[booking.cabin_id] || 'N/A' : 'N/A'
+          professionalName: booking.professional_id ? professionalNames[booking.professional_id] || 'Não encontrado' : 'N/A',
+          cabinName: booking.cabin_id ? cabinNames[booking.cabin_id] || 'Não encontrada' : 'N/A'
         }));
         
         setBookings(processedBookings);
-        debugLog(`SystemBookingsCard: Processadas com sucesso ${processedBookings.length} reservas`);
+        debugLog(`SystemBookingsCard: ${processedBookings.length} reservas processadas com sucesso`);
       } catch (error) {
-        console.error('Erro ao buscar reservas:', error);
-        debugError(`SystemBookingsCard: Erro em fetchBookings: ${error}`);
+        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+        debugError(`SystemBookingsCard: Erro ao buscar reservas: ${errorMessage}`);
+        console.error('Erro detalhado:', error);
         toast({
           title: "Erro ao carregar reservas",
           description: "Não foi possível carregar as reservas do sistema.",
@@ -145,7 +146,7 @@ export function SystemBookingsCard() {
       <CardContent>
         {bookings.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
-            Nenhuma reserva encontrada no sistema.
+            Nenhuma reserva encontrada no sistema. Verifique se existem registros na tabela bookings.
           </div>
         ) : (
           <div className="overflow-x-auto">
