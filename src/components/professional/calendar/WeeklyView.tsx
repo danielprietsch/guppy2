@@ -151,12 +151,13 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
-            {/* Cabeçalho das horas - Fixed alignment issue */}
+            {/* Coluna de horários - alinhamento corrigido */}
             <div className="pt-10 pr-2">
               {timeSlots.map((timeSlot) => (
                 <div
                   key={timeSlot}
                   className="h-6 flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
+                  style={{ height: "1.5rem" }}
                 >
                   {timeSlot}
                 </div>
@@ -178,7 +179,7 @@ const WeeklyView = ({
                   </div>
                 </Card>
                 
-                {/* Time slots */}
+                {/* Time slots com altura fixa */}
                 {timeSlots.map((timeSlot) => {
                   const [hours, minutes] = timeSlot.split(':').map(Number);
                   const cellStatus = getCellStatus(date, hours, minutes);
@@ -186,7 +187,8 @@ const WeeklyView = ({
                   return (
                     <Card
                       key={`${date.toString()}-${timeSlot}`}
-                      className={`h-6 ${cellStatus.color} transition-colors`}
+                      className={`${cellStatus.color} transition-colors`}
+                      style={{ height: "1.5rem" }}
                       onClick={() => cellStatus.status === 'free' && handleSlotClick(date, timeSlot)}
                       title={cellStatus.label}
                     >
