@@ -1,4 +1,3 @@
-
 import React, { useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek, parseISO, isBefore, startOfDay } from "date-fns";
@@ -45,7 +44,6 @@ const WeeklyView = ({
 
   const { startHour, endHour } = getWorkingHourRange();
   
-  // Generate time slots in 15-minute increments
   const timeSlots = Array.from(
     { length: (endHour - startHour) * 4 }, 
     (_, i) => {
@@ -79,7 +77,7 @@ const WeeklyView = ({
     slotTime.setHours(hour, minutes, 0, 0);
     
     if (!workingHoursSettings || !workingHoursSettings[dayName]?.enabled) {
-      return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
+      return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
     }
     
     const daySettings = workingHoursSettings[dayName];
@@ -87,14 +85,14 @@ const WeeklyView = ({
     const endHour = parseInt(daySettings.end.split(':')[0]);
     
     if (hour < startHour || hour >= endHour) {
-      return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
+      return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
     }
     
     if (breakTime?.enabled) {
       const breakStartHour = parseInt(breakTime.start.split(':')[0]);
       const breakEndHour = parseInt(breakTime.end.split(':')[0]);
       if (hour >= breakStartHour && hour < breakEndHour) {
-        return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
+        return { status: 'lunch', color: 'bg-gray-200 cursor-not-allowed', label: 'Horário de almoço' };
       }
     }
     
@@ -109,15 +107,15 @@ const WeeklyView = ({
       const mainEvent = cellEvents[0];
       switch (mainEvent.event_type) {
         case 'appointment':
-          return { status: 'scheduled', color: 'bg-red-100', label: 'Agendamento' };
+          return { status: 'scheduled', color: 'bg-red-200 cursor-not-allowed', label: 'Ocupado' };
         case 'availability_block':
-          return { status: 'busy', color: 'bg-red-100', label: 'Indisponível' };
+          return { status: 'manually_closed', color: 'bg-yellow-200 cursor-pointer hover:bg-yellow-300', label: 'Fechado manualmente' };
         default:
-          return { status: 'scheduled', color: 'bg-blue-100', label: mainEvent.title };
+          return { status: 'scheduled', color: 'bg-red-200 cursor-not-allowed', label: 'Ocupado' };
       }
     }
 
-    return { status: 'free', color: 'bg-green-100 hover:bg-green-200 cursor-pointer', label: 'Livre' };
+    return { status: 'free', color: 'bg-green-200 hover:bg-green-300 cursor-pointer', label: 'Disponível' };
   };
 
   const handlePreviousWeek = () => {
@@ -136,10 +134,9 @@ const WeeklyView = ({
     onDateChange(addWeeks(selectedDate, 1));
   };
 
-  // Height constants for consistent sizing
-  const headerHeight = 72; // Height of day header cards
-  const slotHeight = 24; // Height of each time slot (1.5rem)
-  const slotMargin = 1; // Margin between slots
+  const headerHeight = 72;
+  const slotHeight = 24;
+  const slotMargin = 1;
 
   return (
     <div className="flex flex-col h-full">
@@ -157,16 +154,12 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
-            {/* Time slots column */}
             <div>
-              {/* Empty header card to align with day headers */}
               <div className="h-[72px] flex items-end pb-1">
                 <div className="w-full text-right pr-2 text-xs font-medium text-muted-foreground opacity-0">
                   00:00
                 </div>
               </div>
-              
-              {/* Time labels perfectly aligned with time slots */}
               {timeSlots.map((timeSlot) => (
                 <div
                   key={timeSlot}
@@ -177,8 +170,6 @@ const WeeklyView = ({
                 </div>
               ))}
             </div>
-
-            {/* Day columns with their time slots */}
             {weekDays.map((date) => (
               <div key={date.toString()} className="space-y-1">
                 <Card className={`text-center p-2 bg-background h-[${headerHeight}px] ${
@@ -192,8 +183,6 @@ const WeeklyView = ({
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
                 </Card>
-                
-                {/* Time slots aligned with the labels on the left */}
                 {timeSlots.map((timeSlot) => {
                   const [hours, minutes] = timeSlot.split(':').map(Number);
                   const cellStatus = getCellStatus(date, hours, minutes);
