@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useAuth } from "@/lib/auth";
-import { useWorkingHours, WorkingHours } from "@/hooks/useWorkingHours";
+import { useWorkingHours } from "@/hooks/useWorkingHours";
 
 interface WeeklyViewProps {
   selectedDate: Date;
@@ -124,7 +124,9 @@ const WeeklyView = ({
       return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
     }
     
-    const cellTime = new Date(new Date(date).setHours(hour, 0, 0, 0));
+    // Create a new date object to avoid mutating the original date
+    const cellTimeDate = new Date(date);
+    const cellTime = new Date(cellTimeDate.setHours(hour, 0, 0, 0));
     
     const cellEvents = events.filter(event => {
       const eventStart = new Date(event.start_time);

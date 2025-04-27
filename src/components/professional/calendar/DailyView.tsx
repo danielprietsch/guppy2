@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useAuth } from "@/lib/auth";
+import { useWorkingHours } from "@/hooks/useWorkingHours";
 
 interface DailyViewProps {
   selectedDate: Date;
@@ -20,7 +21,8 @@ const DailyView = ({
   createdAt 
 }: DailyViewProps) => {
   const { user } = useAuth();
-  const { events, isLoading, isWithinWorkingHours } = useCalendarEvents(user?.id, selectedDate);
+  const { events, isLoading } = useCalendarEvents(user?.id, selectedDate);
+  const { workingHours: workingHoursSettings, breakTime } = useWorkingHours(user?.id);
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handlePreviousDay = () => {
@@ -39,10 +41,42 @@ const DailyView = ({
     onDateChange(addDays(selectedDate, 1));
   };
 
+  // Check if a given hour is during break time
+  const isDuringBreak = (hour: number) => {
+    if (!breakTime?.enabled) return false;
+    
+    const breakStartHour = parseInt(breakTime.start.split(':')[0]);
+    const breakEndHour = parseInt(breakTime.end.split(':')[0]);
+    
+    return hour >= breakStartHour && hour < breakEndHour;
+  };
+
+  // Check if a given hour is within working hours for a specific day
+  const isWithinWorkingHours = (date: Date, hour: number) => {
+    if (!workingHoursSettings) return false;
+    
+    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
+    const daySettings = workingHoursSettings[dayName];
+    
+    // If day is not enabled or has no settings, it's not within working hours
+    if (!daySettings?.enabled) return false;
+    
+    const startHour = parseInt(daySettings.start.split(':')[0]);
+    const endHour = parseInt(daySettings.end.split(':')[0]);
+    
+    // Check if hour is within working hours
+    return hour >= startHour && hour < endHour;
+  };
+
   const getHourStatus = (hour: number) => {
     // Primeiro verificar se está dentro do horário de trabalho
     if (!isWithinWorkingHours(selectedDate, hour)) {
       return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
+    }
+
+    // Verificar se é horário de almoço
+    if (isDuringBreak(hour)) {
+      return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
     }
 
     // Verificar eventos para este horário
@@ -89,6 +123,7 @@ const DailyView = ({
         <div className="grid gap-2 p-4">
           {hours.map((hour) => {
             const hourStatus = getHourStatus(hour);
+            const isLunchHour = isDuringBreak(hour);
             
             return (
               <Card key={hour} className="border shadow-sm">
@@ -97,9 +132,9 @@ const DailyView = ({
                     <div className="col-span-2 text-sm font-medium text-muted-foreground flex items-center">
                       {`${hour.toString().padStart(2, '0')}:00`}
                     </div>
-                    <div className={`col-span-10 min-h-[3rem] rounded-md ${hourStatus.color} relative p-2`}>
+                    <div className={`col-span-10 min-h-[3rem] rounded-md ${isLunchHour ? 'bg-amber-100' : hourStatus.color} relative p-2`}>
                       <div className="absolute top-2 right-2 text-xs font-medium px-2 py-1 rounded-full bg-white/90">
-                        {hourStatus.label}
+                        {isLunchHour ? 'Almoço' : hourStatus.label}
                       </div>
                       {events
                         .filter(event => {
