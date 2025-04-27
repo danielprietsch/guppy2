@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useAuth } from "@/lib/auth";
+import { useWorkingHours } from "@/hooks/useWorkingHours";
 
 interface WeeklyViewProps {
   selectedDate: Date;
@@ -21,12 +22,13 @@ const WeeklyView = ({
 }: WeeklyViewProps) => {
   const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const { events, isLoading, isWithinWorkingHours } = useCalendarEvents(user?.id, selectedDate);
+  const { events, isLoading, isWithinWorkingHours, isDuringBreak } = useCalendarEvents(user?.id, selectedDate);
+  const { workingHours, breakTime } = useWorkingHours(user?.id);
   
-  // Filtrar apenas os dias da semana (segunda a sexta)
+  // Filter only weekdays (Monday to Friday)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
     .filter(date => {
-      // Verificar se a data está após a data de criação (se fornecida)
+      // Check if date is after creation date (if provided)
       if (createdAt) {
         const creationDate = parseISO(createdAt);
         return !isBefore(date, creationDate);
@@ -34,8 +36,32 @@ const WeeklyView = ({
       return true;
     });
 
-  // Definir horário de trabalho das 8h às 17h (9 horas)
-  const workingHours = Array.from({ length: 9 }, (_, i) => i + 8);
+  // Get appropriate working hours based on professional's settings
+  const getWorkingHourRange = () => {
+    if (!workingHours) return Array.from({ length: 9 }, (_, i) => i + 8); // Default 8AM-5PM
+    
+    // Find earliest start and latest end across all enabled days
+    let earliestStart = 23;
+    let latestEnd = 0;
+    
+    Object.values(workingHours).forEach(day => {
+      if (day.enabled) {
+        const startHour = parseInt(day.start.split(':')[0]);
+        const endHour = parseInt(day.end.split(':')[0]);
+        
+        if (startHour < earliestStart) earliestStart = startHour;
+        if (endHour > latestEnd) latestEnd = endHour;
+      }
+    });
+    
+    // Generate array of hours from earliest to latest
+    return Array.from(
+      { length: latestEnd - earliestStart }, 
+      (_, i) => i + earliestStart
+    );
+  };
+
+  const workingHours = getWorkingHourRange();
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
@@ -54,13 +80,22 @@ const WeeklyView = ({
   };
 
   const getCellStatus = (date: Date, hour: number) => {
-    // Verificar se está dentro do horário de trabalho
+    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
+    const daySettings = workingHours?.[dayName];
+    
+    // Check if this day is enabled in working hours
+    const isDayEnabled = daySettings?.enabled;
+    if (!isDayEnabled) {
+      return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
+    }
+    
+    // Check if within working hours
     if (!isWithinWorkingHours(date, hour)) {
       return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
     }
     
-    // Verificar se é horário de almoço (12h às 13h)
-    if (hour === 12) {
+    // Check if during break time
+    if (isDuringBreak(hour)) {
       return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
     }
     
@@ -133,6 +168,7 @@ const WeeklyView = ({
                 </Card>
                 {workingHours.map((hour) => {
                   const cellStatus = getCellStatus(date, hour);
+                  const isLunchHour = isDuringBreak(hour);
                   const cellEvents = events.filter(event => {
                     const eventStart = new Date(event.start_time);
                     const eventHour = eventStart.getHours();
@@ -146,11 +182,11 @@ const WeeklyView = ({
                   return (
                     <Card
                       key={hour}
-                      className={`h-12 ${isWeekend ? 'bg-gray-50' : cellStatus.color} relative`}
+                      className={`h-12 ${isWeekend ? 'bg-gray-50' : (isLunchHour ? 'bg-amber-100' : cellStatus.color)} relative`}
                     >
                       <CardContent className="p-1 h-full">
                         <div className="absolute top-0 right-0 text-[10px] font-medium px-1.5 py-0.5 rounded-bl bg-white/90">
-                          {hour === 12 ? 'Almoço' : cellStatus.label}
+                          {isLunchHour ? 'Almoço' : cellStatus.label}
                         </div>
                         {cellEvents.map((event) => (
                           <div

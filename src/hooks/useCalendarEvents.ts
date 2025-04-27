@@ -68,31 +68,31 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase() as keyof typeof workingHours;
     const daySettings = workingHours[dayName];
     
-    // Se o dia não está habilitado ou não tem configurações, não está dentro do horário de trabalho
+    // If day is not enabled or has no settings, it's not within working hours
     if (!daySettings?.enabled) return false;
     
     const startHour = parseInt(daySettings.start.split(':')[0]);
     const endHour = parseInt(daySettings.end.split(':')[0]);
     
-    // Verificar se está dentro do horário de trabalho
-    const isWorkingHour = hour >= startHour && hour < endHour;
+    // Check if it's within working hours
+    return hour >= startHour && hour < endHour;
+  };
+
+  // Function to check if a time is during break time
+  const isDuringBreak = (hour: number) => {
+    if (!breakTime?.enabled) return false;
     
-    // Verificar se é horário de almoço
-    let isBreakTime = false;
-    if (breakTime?.enabled) {
-      const breakStartHour = parseInt(breakTime.start.split(':')[0]);
-      const breakEndHour = parseInt(breakTime.end.split(':')[0]);
-      isBreakTime = hour >= breakStartHour && hour < breakEndHour;
-    }
+    const breakStartHour = parseInt(breakTime.start.split(':')[0]);
+    const breakEndHour = parseInt(breakTime.end.split(':')[0]);
     
-    // Está dentro do horário de trabalho, mas não durante o intervalo
-    return isWorkingHour && !isBreakTime;
+    return hour >= breakStartHour && hour < breakEndHour;
   };
 
   return {
     events,
     isLoading,
     error,
-    isWithinWorkingHours
+    isWithinWorkingHours,
+    isDuringBreak
   };
 }
