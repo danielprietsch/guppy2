@@ -23,14 +23,19 @@ const WeeklyView = ({
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const { events, isLoading, isWithinWorkingHours } = useCalendarEvents(user?.id, selectedDate);
   
+  // Filtrar apenas os dias da semana (segunda a sexta)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
     .filter(date => {
-      if (!createdAt) return true;
-      const creationDate = parseISO(createdAt);
-      return !isBefore(date, creationDate);
+      // Verificar se a data está após a data de criação (se fornecida)
+      if (createdAt) {
+        const creationDate = parseISO(createdAt);
+        return !isBefore(date, creationDate);
+      }
+      return true;
     });
 
-  const hours = Array.from({ length: 24 }, (_, i) => i);
+  // Definir horário de trabalho das 8h às 17h
+  const workingHours = Array.from({ length: 10 }, (_, i) => i + 8);
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
@@ -49,9 +54,14 @@ const WeeklyView = ({
   };
 
   const getCellStatus = (date: Date, hour: number) => {
-    // Primeiro verificar se está dentro do horário de trabalho
+    // Verificar se está dentro do horário de trabalho
     if (!isWithinWorkingHours(date, hour)) {
       return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
+    }
+    
+    // Verificar se é horário de almoço (12h às 13h)
+    if (hour === 12) {
+      return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
     }
     
     const cellTime = new Date(date.setHours(hour, 0, 0, 0));
@@ -98,7 +108,7 @@ const WeeklyView = ({
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-4">
             <div className="pt-10">
-              {hours.map((hour) => (
+              {workingHours.map((hour) => (
                 <div
                   key={hour}
                   className="h-12 text-sm font-medium text-muted-foreground flex items-center justify-end pr-2"
@@ -110,7 +120,10 @@ const WeeklyView = ({
 
             {weekDays.map((date) => (
               <div key={date.toString()} className="space-y-2">
-                <Card className="text-center p-2 bg-background">
+                <Card className={`text-center p-2 bg-background ${
+                  format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
+                  format(date, 'EEEE', { locale: ptBR }) === 'domingo' ? 'bg-gray-50' : ''
+                }`}>
                   <div className="font-semibold capitalize">
                     {format(date, 'EEE', { locale: ptBR })}
                   </div>
@@ -118,7 +131,7 @@ const WeeklyView = ({
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
                 </Card>
-                {hours.map((hour) => {
+                {workingHours.map((hour) => {
                   const cellStatus = getCellStatus(date, hour);
                   const cellEvents = events.filter(event => {
                     const eventStart = new Date(event.start_time);
@@ -127,14 +140,19 @@ const WeeklyView = ({
                            eventHour === hour;
                   });
 
+                  const isWeekend = format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
+                                    format(date, 'EEEE', { locale: ptBR }) === 'domingo';
+
                   return (
                     <Card
                       key={hour}
-                      className={`h-12 ${cellStatus.color} relative`}
+                      className={`h-12 ${isWeekend ? 'bg-gray-50' : cellStatus.color} relative ${
+                        hour === 12 ? 'bg-amber-100' : ''
+                      }`}
                     >
                       <CardContent className="p-1 h-full">
                         <div className="absolute top-0 right-0 text-[10px] font-medium px-1.5 py-0.5 rounded-bl bg-white/90">
-                          {cellStatus.label}
+                          {hour === 12 ? 'Almoço' : cellStatus.label}
                         </div>
                         {cellEvents.map((event) => (
                           <div
