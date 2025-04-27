@@ -9,6 +9,7 @@ import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useAuth } from "@/lib/auth";
 import { useWorkingHours } from "@/hooks/useWorkingHours";
 import { toast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface WeeklyViewProps {
   selectedDate: Date;
@@ -75,19 +76,19 @@ const WeeklyView = ({
         toast({
           title: "Horário indisponível",
           description: "Este horário está fora do seu horário de trabalho configurado",
-          variant: "warning"
+          variant: "destructive"
         });
       } else if (status === 'lunch') {
         toast({
           title: "Horário de pausa",
           description: "Este horário está configurado como horário de pausa/almoço",
-          variant: "warning"
+          variant: "destructive"
         });
       } else if (status === 'scheduled') {
         toast({
           title: "Horário ocupado",
           description: "Este horário já tem um compromisso agendado",
-          variant: "warning"
+          variant: "destructive"
         });
       }
       return;
