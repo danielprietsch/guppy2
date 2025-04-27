@@ -102,7 +102,7 @@ const WeeklyView = ({
   };
 
   const getCellStatus = (date: Date, hour: number, minutes: number) => {
-    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
+    // First check for events - they have priority over working hours settings
     const slotTime = new Date(date);
     slotTime.setHours(hour, minutes, 0, 0);
     
@@ -126,20 +126,30 @@ const WeeklyView = ({
       }
     }
     
-    // If no events, check working hours settings
-    if (!workingHoursSettings || !workingHoursSettings[dayName]?.enabled) {
+    // If no events, then check working hours settings
+    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
+    
+    if (!workingHoursSettings || !workingHoursSettings[dayName]) {
       return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
     }
     
     const daySettings = workingHoursSettings[dayName];
+    
+    // If this day is disabled in settings, slot is closed
+    if (!daySettings.enabled) {
+      return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
+    }
+    
     const startHour = parseInt(daySettings.start.split(':')[0]);
     const startMinutes = parseInt(daySettings.start.split(':')[1]);
     const endHour = parseInt(daySettings.end.split(':')[0]);
     const endMinutes = parseInt(daySettings.end.split(':')[1]);
     
     // Check if time slot is before start hour or after end hour
-    if (hour < startHour || (hour === startHour && minutes < startMinutes) || 
-        hour > endHour || (hour === endHour && minutes >= endMinutes)) {
+    const isBefore = hour < startHour || (hour === startHour && minutes < startMinutes);
+    const isAfter = hour > endHour || (hour === endHour && minutes >= endMinutes);
+    
+    if (isBefore || isAfter) {
       return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
     }
     
