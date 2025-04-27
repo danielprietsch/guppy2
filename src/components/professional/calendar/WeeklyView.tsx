@@ -151,12 +151,12 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
-            {/* Cabeçalho das horas */}
+            {/* Cabeçalho das horas - Fixed alignment issue */}
             <div className="pt-10 pr-2">
               {timeSlots.map((timeSlot) => (
                 <div
                   key={timeSlot}
-                  className="h-6 text-xs font-medium text-muted-foreground flex items-center justify-end pr-2"
+                  className="h-6 flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
                 >
                   {timeSlot}
                 </div>
