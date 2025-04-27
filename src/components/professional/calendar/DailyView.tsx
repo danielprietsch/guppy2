@@ -1,35 +1,30 @@
-
-import React, { useContext } from 'react';
+import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addDays, subDays, startOfDay, parseISO, isBefore } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { WorkingHours, BreakTime, isHourWithinWorkingHours } from "@/hooks/useWorkingHours";
+import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { useAuth } from "@/lib/auth";
 
 interface DailyViewProps {
   selectedDate: Date;
-  appointments: any[];
   onDateChange: (date: Date) => void;
-  workingHours: WorkingHours;
-  breakTime: BreakTime;
   createdAt?: string;
 }
 
 const DailyView = ({ 
   selectedDate, 
-  appointments, 
   onDateChange,
-  workingHours,
-  breakTime,
   createdAt 
 }: DailyViewProps) => {
+  const { user } = useAuth();
+  const { events, isLoading, isWithinWorkingHours } = useCalendarEvents(user?.id, selectedDate);
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handlePreviousDay = () => {
     const newDate = subDays(selectedDate, 1);
     
-    // ESTRITAMENTE impedir navegação para datas anteriores à data de criação
     if (createdAt) {
       const creationDate = parseISO(createdAt);
       if (isBefore(startOfDay(newDate), startOfDay(creationDate))) {
@@ -44,18 +39,34 @@ const DailyView = ({
   };
 
   const getHourStatus = (hour: number) => {
-    const hourAppointments = appointments.filter(app => {
-      const appHour = parseInt(app.time.split(':')[0]);
-      return appHour === hour;
+    // Primeiro verificar se está dentro do horário de trabalho
+    if (!isWithinWorkingHours(selectedDate, hour)) {
+      return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
+    }
+
+    const hourEvents = events.filter(event => {
+      const eventStart = new Date(event.start_time);
+      const eventHour = eventStart.getHours();
+      return eventHour === hour;
     });
 
-    if (hourAppointments.length > 0) {
-      return { status: 'scheduled', color: 'bg-red-100', label: 'Agendado' };
-    } else if (isHourWithinWorkingHours(hour, selectedDate, workingHours, breakTime)) {
-      return { status: 'free', color: 'bg-green-100', label: 'Livre' };
-    } else {
-      return { status: 'closed', color: 'bg-amber-100', label: 'Fechado' };
+    if (hourEvents.length > 0) {
+      const mainEvent = hourEvents[0];
+      switch (mainEvent.event_type) {
+        case 'appointment':
+          return { status: 'scheduled', color: 'bg-red-100', label: 'Agendado' };
+        case 'booking':
+          return { status: 'scheduled', color: 'bg-orange-100', label: 'Reservado' };
+        case 'availability_block':
+          return mainEvent.status === 'confirmed'
+            ? { status: 'busy', color: 'bg-red-100', label: 'Ocupado' }
+            : { status: 'tentative', color: 'bg-yellow-100', label: 'Provisório' };
+        default:
+          return { status: 'scheduled', color: 'bg-blue-100', label: mainEvent.title };
+      }
     }
+
+    return { status: 'free', color: 'bg-green-100', label: 'Livre' };
   };
 
   return (
@@ -87,14 +98,19 @@ const DailyView = ({
                       <div className="absolute top-2 right-2 text-xs font-medium px-2 py-1 rounded-full bg-white/90">
                         {hourStatus.label}
                       </div>
-                      {appointments
-                        .filter(app => parseInt(app.time.split(':')[0]) === hour)
-                        .map((app) => (
+                      {events
+                        .filter(event => {
+                          const eventStart = new Date(event.start_time);
+                          const eventHour = eventStart.getHours();
+                          return format(eventStart, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') && 
+                                 eventHour === hour;
+                        })
+                        .map((event) => (
                           <div
-                            key={app.id}
+                            key={event.id}
                             className="mt-2 p-2 bg-primary/10 rounded-md text-sm"
                           >
-                            {app.client.name} - {app.time}
+                            {event.title}
                           </div>
                         ))}
                     </div>

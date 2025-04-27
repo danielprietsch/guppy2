@@ -21,7 +21,7 @@ const WeeklyView = ({
 }: WeeklyViewProps) => {
   const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const { events, isLoading } = useCalendarEvents(user?.id, selectedDate);
+  const { events, isLoading, isWithinWorkingHours } = useCalendarEvents(user?.id, selectedDate);
   
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
     .filter(date => {
@@ -49,6 +49,11 @@ const WeeklyView = ({
   };
 
   const getCellStatus = (date: Date, hour: number) => {
+    // Primeiro verificar se está dentro do horário de trabalho
+    if (!isWithinWorkingHours(date, hour)) {
+      return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
+    }
+    
     const cellTime = new Date(date.setHours(hour, 0, 0, 0));
     
     const cellEvents = events.filter(event => {
