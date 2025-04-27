@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek, parseISO, isBefore, startOfDay } from "date-fns";
@@ -97,6 +98,7 @@ const WeeklyView = ({
     }
     
     const cellEvents = events.filter(event => {
+      if (!event) return false;
       const eventStart = new Date(event.start_time);
       const eventEnd = new Date(event.end_time);
       return slotTime >= eventStart && slotTime < eventEnd;
@@ -148,20 +150,22 @@ const WeeklyView = ({
       </div>
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
-          <div className="grid grid-cols-8 gap-4">
-            <div className="pt-10">
+          <div className="grid grid-cols-8 gap-1">
+            {/* Cabeçalho das horas */}
+            <div className="pt-10 pr-2">
               {timeSlots.map((timeSlot) => (
                 <div
                   key={timeSlot}
-                  className="h-3 text-[10px] font-medium text-muted-foreground flex items-center justify-end pr-2"
+                  className="h-6 text-xs font-medium text-muted-foreground flex items-center justify-end pr-2"
                 >
                   {timeSlot}
                 </div>
               ))}
             </div>
 
+            {/* Colunas de dias da semana */}
             {weekDays.map((date) => (
-              <div key={date.toString()} className="space-y-2">
+              <div key={date.toString()} className="space-y-1">
                 <Card className={`text-center p-2 bg-background ${
                   format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
                   format(date, 'EEEE', { locale: ptBR }) === 'domingo' ? 'bg-gray-50' : ''
@@ -173,6 +177,8 @@ const WeeklyView = ({
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
                 </Card>
+                
+                {/* Time slots */}
                 {timeSlots.map((timeSlot) => {
                   const [hours, minutes] = timeSlot.split(':').map(Number);
                   const cellStatus = getCellStatus(date, hours, minutes);
@@ -180,11 +186,11 @@ const WeeklyView = ({
                   return (
                     <Card
                       key={`${date.toString()}-${timeSlot}`}
-                      className={`h-3 ${cellStatus.color} transition-colors`}
+                      className={`h-6 ${cellStatus.color} transition-colors`}
                       onClick={() => cellStatus.status === 'free' && handleSlotClick(date, timeSlot)}
                       title={cellStatus.label}
                     >
-                      <CardContent className="p-0.5 h-full" />
+                      <CardContent className="p-0 h-full" />
                     </Card>
                   );
                 })}

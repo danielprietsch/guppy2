@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
+import { toast } from '@/hooks/use-toast';
 
 export interface CalendarEvent {
   id: string;
@@ -42,6 +43,11 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
 
         if (error) {
           console.error('Error fetching calendar events:', error);
+          toast({
+            title: "Erro ao carregar eventos",
+            description: "Não foi possível carregar os eventos do calendário",
+            variant: "destructive"
+          });
           throw error;
         }
         
@@ -61,59 +67,89 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     enabled: !!professionalId,
   });
 
-  const toggleSlotAvailability = async (slotDate: Date) => {
-    if (!professionalId) return;
+  const toggleSlotAvailabilityMutation = useMutation({
+    mutationFn: async (slotDate: Date) => {
+      if (!professionalId) throw new Error("ID do profissional não disponível");
 
-    const endDate = new Date(slotDate);
-    endDate.setMinutes(endDate.getMinutes() + 15);
+      const endDate = new Date(slotDate);
+      endDate.setMinutes(endDate.getMinutes() + 15);
 
-    try {
-      const { data: existingBlock, error: fetchError } = await supabase
-        .from('professional_calendar_events')
-        .select()
-        .eq('professional_id', professionalId)
-        .eq('event_type', 'availability_block')
-        .gte('start_time', slotDate.toISOString())
-        .lt('end_time', endDate.toISOString())
-        .single();
-
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('Error checking availability block:', fetchError);
-        return;
-      }
-
-      if (existingBlock) {
-        // Remove the availability block
-        const { error: deleteError } = await supabase
+      try {
+        const { data: existingBlock, error: fetchError } = await supabase
           .from('professional_calendar_events')
-          .delete()
-          .eq('id', existingBlock.id);
+          .select()
+          .eq('professional_id', professionalId)
+          .eq('event_type', 'availability_block')
+          .gte('start_time', slotDate.toISOString())
+          .lt('end_time', endDate.toISOString())
+          .single();
 
-        if (deleteError) {
-          console.error('Error deleting availability block:', deleteError);
-          return;
+        if (fetchError && fetchError.code !== 'PGRST116') {
+          console.error('Erro ao verificar bloco de disponibilidade:', fetchError);
+          throw fetchError;
         }
-      } else {
-        // Create new availability block
-        const { error: insertError } = await supabase
-          .from('professional_calendar_events')
-          .insert([{
-            professional_id: professionalId,
-            title: 'Indisponível',
-            start_time: slotDate.toISOString(),
-            end_time: endDate.toISOString(),
-            event_type: 'availability_block',
-            status: 'confirmed'
-          }]);
 
-        if (insertError) {
-          console.error('Error creating availability block:', insertError);
-          return;
+        if (existingBlock) {
+          // Remove o bloco de disponibilidade
+          const { error: deleteError } = await supabase
+            .from('professional_calendar_events')
+            .delete()
+            .eq('id', existingBlock.id);
+
+          if (deleteError) {
+            console.error('Erro ao excluir bloco de disponibilidade:', deleteError);
+            throw deleteError;
+          }
+          
+          toast({
+            title: "Disponibilidade atualizada",
+            description: "Horário marcado como disponível",
+          });
+        } else {
+          // Cria um novo bloco de indisponibilidade
+          const { error: insertError } = await supabase
+            .from('professional_calendar_events')
+            .insert([{
+              professional_id: professionalId,
+              title: 'Indisponível',
+              start_time: slotDate.toISOString(),
+              end_time: endDate.toISOString(),
+              event_type: 'availability_block',
+              status: 'confirmed'
+            }]);
+
+          if (insertError) {
+            console.error('Erro ao criar bloco de disponibilidade:', insertError);
+            throw insertError;
+          }
+          
+          toast({
+            title: "Disponibilidade atualizada",
+            description: "Horário marcado como indisponível",
+          });
         }
+
+        return true;
+      } catch (error) {
+        console.error('Erro ao atualizar disponibilidade:', error);
+        throw error;
       }
-
-      // Invalidate the calendar events query to refresh the data
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calendar-events', professionalId] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a disponibilidade",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const toggleSlotAvailability = async (slotDate: Date) => {
+    try {
+      await toggleSlotAvailabilityMutation.mutateAsync(slotDate);
     } catch (error) {
       console.error('Error toggling availability:', error);
     }
