@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,29 +28,37 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     queryFn: async () => {
       if (!professionalId) return [];
 
-      // Use a raw Supabase query to call our RPC function with proper type assertion
-      const { data, error } = await supabase
-        .from('professional_calendar_events')
-        .select('*')
-        .eq('professional_id', professionalId)
-        .gte('start_time', weekStart.toISOString())
-        .lte('start_time', weekEnd.toISOString());
+      try {
+        // Use a raw SQL query to avoid TypeScript issues with undefined tables
+        const { data, error } = await supabase
+          .rpc('fetch_professional_calendar_events', {
+            p_professional_id: professionalId,
+            p_start_date: weekStart.toISOString(),
+            p_end_date: weekEnd.toISOString()
+          });
 
-      if (error) {
-        console.error('Error fetching calendar events:', error);
-        throw error; // Make sure errors are thrown for query error handling
+        if (error) {
+          console.error('Error fetching calendar events:', error);
+          throw error; 
+        }
+        
+        // Parse the JSON results into our CalendarEvent type
+        if (!data) return [];
+        
+        return Array.isArray(data) ? data.map(item => {
+          // If item is a string (JSON string), parse it
+          const eventData = typeof item === 'string' ? JSON.parse(item) : item;
+          return eventData as CalendarEvent;
+        }) : [];
+      } catch (err) {
+        console.error('Error in calendar events query:', err);
+        return [];
       }
-      
-      // If no events are found, return an empty array
-      if (!data) return [];
-      
-      // Otherwise return the properly typed data
-      return data as unknown as CalendarEvent[];
     },
     enabled: !!professionalId,
   });
 
-  // Função auxiliar para verificar se um horário está dentro do horário de trabalho
+  // Function to check if a time is within working hours
   const isWithinWorkingHours = (date: Date, hour: number) => {
     if (!workingHours) return true;
     

@@ -1,4 +1,5 @@
 
+
 CREATE OR REPLACE FUNCTION public.fetch_professional_calendar_events(
   p_professional_id UUID,
   p_start_date TIMESTAMP WITH TIME ZONE,
