@@ -79,12 +79,15 @@ const DailyView = ({
       return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
     }
 
-    // Verificar eventos para este horário
+    // Create a date object for the current hour
+    const hourDate = new Date(selectedDate);
+    hourDate.setHours(hour, 0, 0, 0);
+    
+    // Check if there are any events at this exact time
     const hourEvents = events.filter(event => {
       const eventStart = new Date(event.start_time);
-      const eventHour = eventStart.getHours();
-      return format(eventStart, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') && 
-             eventHour === hour;
+      const eventEnd = new Date(event.end_time);
+      return eventStart <= hourDate && eventEnd > hourDate;
     });
 
     if (hourEvents.length > 0) {
@@ -125,6 +128,17 @@ const DailyView = ({
             const hourStatus = getHourStatus(hour);
             const isLunchHour = isDuringBreak(hour);
             
+            // Create a date object for the current hour
+            const hourDate = new Date(selectedDate);
+            hourDate.setHours(hour, 0, 0, 0);
+            
+            // Filter events for this specific hour
+            const hourEvents = events.filter(event => {
+              const eventStart = new Date(event.start_time);
+              const eventEnd = new Date(event.end_time);
+              return eventStart <= hourDate && eventEnd > hourDate;
+            });
+            
             return (
               <Card key={hour} className="border shadow-sm">
                 <CardContent className="p-3">
@@ -136,21 +150,14 @@ const DailyView = ({
                       <div className="absolute top-2 right-2 text-xs font-medium px-2 py-1 rounded-full bg-white/90">
                         {isLunchHour ? 'Almoço' : hourStatus.label}
                       </div>
-                      {events
-                        .filter(event => {
-                          const eventStart = new Date(event.start_time);
-                          const eventHour = eventStart.getHours();
-                          return format(eventStart, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') && 
-                                 eventHour === hour;
-                        })
-                        .map((event) => (
-                          <div
-                            key={event.id}
-                            className="mt-2 p-2 bg-primary/10 rounded-md text-sm"
-                          >
-                            {event.title}
-                          </div>
-                        ))}
+                      {hourEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="mt-2 p-2 bg-primary/10 rounded-md text-sm"
+                        >
+                          {event.title}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </CardContent>

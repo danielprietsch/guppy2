@@ -26,10 +26,13 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
       if (!professionalId) return [];
 
       try {
+        console.log('Fetching events for professional:', professionalId);
+        console.log('Date range:', weekStart.toISOString(), 'to', weekEnd.toISOString());
+        
         // Use the raw Supabase query with proper typing
         const { data, error } = await supabase
           .rpc(
-            'fetch_professional_calendar_events' as any, // Type assertion to bypass TypeScript error
+            'fetch_professional_calendar_events', // Removed type assertion
             {
               p_professional_id: professionalId,
               p_start_date: weekStart.toISOString(),
@@ -41,6 +44,8 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
           console.error('Error fetching calendar events:', error);
           throw error;
         }
+        
+        console.log('Events data returned:', data);
         
         // Parse the JSON results into our CalendarEvent type
         if (!data) return [];

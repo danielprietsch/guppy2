@@ -196,11 +196,16 @@ const WeeklyView = ({
                 {hoursList.map((hour) => {
                   const cellStatus = getCellStatus(date, hour);
                   const isLunchHour = isDuringBreak(hour);
+                  
+                  // Create a new date object for the current hour and day
+                  const cellTimeDate = new Date(date);
+                  const cellTime = new Date(cellTimeDate.setHours(hour, 0, 0, 0));
+                  
+                  // Get events that overlap with this cell
                   const cellEvents = events.filter(event => {
                     const eventStart = new Date(event.start_time);
-                    const eventHour = eventStart.getHours();
-                    return format(eventStart, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
-                           eventHour === hour;
+                    const eventEnd = new Date(event.end_time);
+                    return eventStart <= cellTime && eventEnd > cellTime;
                   });
 
                   const isWeekend = format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
