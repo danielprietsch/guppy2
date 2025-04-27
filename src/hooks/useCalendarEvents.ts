@@ -28,20 +28,20 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     queryFn: async () => {
       if (!professionalId) return [];
 
+      // Use raw SQL query to fetch events as a workaround until Supabase types are updated
       const { data: calendarEvents, error } = await supabase
-        .from('professional_calendar_events')
-        .select('*')
-        .eq('professional_id', professionalId)
-        .gte('start_time', weekStart.toISOString())
-        .lte('start_time', weekEnd.toISOString())
-        .order('start_time');
+        .rpc('fetch_professional_calendar_events', { 
+          p_professional_id: professionalId,
+          p_start_date: weekStart.toISOString(),
+          p_end_date: weekEnd.toISOString()
+        });
 
       if (error) {
         console.error('Error fetching calendar events:', error);
         return [];
       }
 
-      return calendarEvents as CalendarEvent[];
+      return (calendarEvents || []) as CalendarEvent[];
     },
     enabled: !!professionalId,
   });

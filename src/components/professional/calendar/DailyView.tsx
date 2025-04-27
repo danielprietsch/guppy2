@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Card, CardContent } from "@/components/ui/card";
-import { format, addDays, subDays, startOfDay, parseISO, isBefore } from "date-fns";
+import { format, addDays, subDays, startOfDay, parseISO, isBefore, isToday } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -44,10 +45,12 @@ const DailyView = ({
       return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
     }
 
+    // Verificar eventos para este horário
     const hourEvents = events.filter(event => {
       const eventStart = new Date(event.start_time);
       const eventHour = eventStart.getHours();
-      return eventHour === hour;
+      return format(eventStart, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd') && 
+             eventHour === hour;
     });
 
     if (hourEvents.length > 0) {
