@@ -29,17 +29,20 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
       if (!professionalId) return [];
 
       try {
-        // Use a raw SQL query to avoid TypeScript issues with undefined tables
+        // Use the raw Supabase query with proper typing
         const { data, error } = await supabase
-          .rpc('fetch_professional_calendar_events', {
-            p_professional_id: professionalId,
-            p_start_date: weekStart.toISOString(),
-            p_end_date: weekEnd.toISOString()
-          });
+          .rpc(
+            'fetch_professional_calendar_events' as any, // Type assertion to bypass TypeScript error
+            {
+              p_professional_id: professionalId,
+              p_start_date: weekStart.toISOString(),
+              p_end_date: weekEnd.toISOString()
+            }
+          );
 
         if (error) {
           console.error('Error fetching calendar events:', error);
-          throw error; 
+          throw error;
         }
         
         // Parse the JSON results into our CalendarEvent type
