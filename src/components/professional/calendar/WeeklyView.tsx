@@ -20,7 +20,7 @@ const WeeklyView = ({
   createdAt
 }: WeeklyViewProps) => {
   const { user } = useAuth();
-  const { events, generateTimeSlots, toggleSlotAvailability } = useCalendarEvents(user?.id, selectedDate);
+  const { events, toggleSlotAvailability } = useCalendarEvents(user?.id, selectedDate);
   const { workingHours: workingHoursSettings, breakTime } = useWorkingHours(user?.id);
   
   const getWorkingHourRange = useCallback(() => {
