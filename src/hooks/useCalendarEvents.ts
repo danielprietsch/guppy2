@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,20 +27,24 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     queryFn: async () => {
       if (!professionalId) return [];
 
-      // Use raw SQL query to fetch events as a workaround until Supabase types are updated
-      const { data: calendarEvents, error } = await supabase
-        .rpc('fetch_professional_calendar_events', { 
-          p_professional_id: professionalId,
-          p_start_date: weekStart.toISOString(),
-          p_end_date: weekEnd.toISOString()
-        });
+      // Use a raw Supabase query to call our RPC function with proper type assertion
+      const { data, error } = await supabase
+        .from('professional_calendar_events')
+        .select('*')
+        .eq('professional_id', professionalId)
+        .gte('start_time', weekStart.toISOString())
+        .lte('start_time', weekEnd.toISOString());
 
       if (error) {
         console.error('Error fetching calendar events:', error);
-        return [];
+        throw error; // Make sure errors are thrown for query error handling
       }
-
-      return (calendarEvents || []) as CalendarEvent[];
+      
+      // If no events are found, return an empty array
+      if (!data) return [];
+      
+      // Otherwise return the properly typed data
+      return data as unknown as CalendarEvent[];
     },
     enabled: !!professionalId,
   });
