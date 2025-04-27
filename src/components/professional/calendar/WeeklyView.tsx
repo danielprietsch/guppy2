@@ -106,6 +106,27 @@ const WeeklyView = ({
     const slotTime = new Date(date);
     slotTime.setHours(hour, minutes, 0, 0);
     
+    // Check if there are events for this time slot first
+    const cellEvents = events.filter(event => {
+      if (!event) return false;
+      const eventStart = new Date(event.start_time);
+      const eventEnd = new Date(event.end_time);
+      return slotTime >= eventStart && slotTime < eventEnd;
+    });
+
+    if (cellEvents.length > 0) {
+      const mainEvent = cellEvents[0];
+      switch (mainEvent.event_type) {
+        case 'appointment':
+          return { status: 'scheduled', color: 'bg-red-500 text-white cursor-not-allowed', label: 'Ocupado' };
+        case 'availability_block':
+          return { status: 'manually_closed', color: 'bg-yellow-300 text-black cursor-pointer hover:bg-yellow-400', label: 'Fechado manualmente' };
+        default:
+          return { status: 'scheduled', color: 'bg-red-500 text-white cursor-not-allowed', label: 'Ocupado' };
+      }
+    }
+    
+    // If no events, check working hours settings
     if (!workingHoursSettings || !workingHoursSettings[dayName]?.enabled) {
       return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
     }
@@ -137,26 +158,6 @@ const WeeklyView = ({
       }
     }
     
-    // Check if there are events for this time slot
-    const cellEvents = events.filter(event => {
-      if (!event) return false;
-      const eventStart = new Date(event.start_time);
-      const eventEnd = new Date(event.end_time);
-      return slotTime >= eventStart && slotTime < eventEnd;
-    });
-
-    if (cellEvents.length > 0) {
-      const mainEvent = cellEvents[0];
-      switch (mainEvent.event_type) {
-        case 'appointment':
-          return { status: 'scheduled', color: 'bg-red-500 text-white cursor-not-allowed', label: 'Ocupado' };
-        case 'availability_block':
-          return { status: 'manually_closed', color: 'bg-yellow-300 text-black cursor-pointer hover:bg-yellow-400', label: 'Fechado manualmente' };
-        default:
-          return { status: 'scheduled', color: 'bg-red-500 text-white cursor-not-allowed', label: 'Ocupado' };
-      }
-    }
-
     return { status: 'free', color: 'bg-green-500 hover:bg-green-600 cursor-pointer text-white', label: 'Disponível' };
   };
 
@@ -185,10 +186,6 @@ const WeeklyView = ({
     );
   }
 
-  const headerHeight = 72;
-  const slotHeight = 24;
-  const slotMargin = 1;
-
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 bg-background sticky top-0 z-10 border-b">
@@ -205,6 +202,7 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
+            {/* Time column */}
             <div className="flex flex-col">
               <div className="h-[72px] flex items-end pb-1">
                 <div className="w-full text-right pr-2 text-xs font-medium text-muted-foreground opacity-0">
@@ -215,18 +213,17 @@ const WeeklyView = ({
                 <div
                   key={timeSlot}
                   className="flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
-                  style={{ 
-                    height: `${slotHeight}px`, 
-                    marginBottom: `${slotMargin}px` 
-                  }}
+                  style={{ height: '24px', marginBottom: '1px' }}
                 >
                   {timeSlot}
                 </div>
               ))}
             </div>
+            
+            {/* Day columns */}
             {weekDays.map((date) => (
-              <div key={date.toString()} className="flex flex-col space-y-1">
-                <Card className="text-center p-2 bg-background h-[72px]">
+              <div key={date.toString()} className="flex flex-col">
+                <Card className="text-center p-2 h-[72px] flex flex-col justify-center">
                   <div className="font-semibold capitalize">
                     {format(date, 'EEE', { locale: ptBR })}
                   </div>
@@ -234,6 +231,7 @@ const WeeklyView = ({
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
                 </Card>
+                
                 {timeSlots.map((timeSlot) => {
                   const [hours, minutes] = timeSlot.split(':').map(Number);
                   const cellStatus = getCellStatus(date, hours, minutes);
@@ -246,10 +244,7 @@ const WeeklyView = ({
                       title={cellStatus.label}
                       role="button"
                       aria-label={`${timeSlot} - ${cellStatus.label}`}
-                      style={{ 
-                        height: `${slotHeight}px`, 
-                        marginBottom: `${slotMargin}px` 
-                      }}
+                      style={{ height: '24px', marginBottom: '1px' }}
                     >
                       <span className="sr-only">{cellStatus.label}</span>
                     </div>
