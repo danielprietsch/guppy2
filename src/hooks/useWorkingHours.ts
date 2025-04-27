@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Json } from '@/integrations/supabase/types';
+import { toast } from '@/hooks/use-toast';
 
 export interface WorkingHoursDay {
   start: string;
@@ -75,7 +76,7 @@ export const isHourWithinWorkingHours = (
 export const useWorkingHours = (professionalId: string | undefined) => {
   const queryClient = useQueryClient();
 
-  const { data: workingHours, isLoading } = useQuery({
+  const { data: workingHoursData, isLoading } = useQuery({
     queryKey: ['working-hours', professionalId],
     queryFn: async () => {
       if (!professionalId) return null;
@@ -88,6 +89,11 @@ export const useWorkingHours = (professionalId: string | undefined) => {
 
       if (error) {
         console.error('Error fetching working hours:', error);
+        toast({
+          title: "Erro ao carregar horários de trabalho",
+          description: "Não foi possível carregar suas configurações de horário",
+          variant: "destructive"
+        });
         return null;
       }
 
@@ -108,56 +114,74 @@ export const useWorkingHours = (professionalId: string | undefined) => {
     mutationFn: async ({ workingHours, breakTime }: { workingHours: WorkingHours; breakTime: BreakTime }) => {
       if (!professionalId) throw new Error('No professional ID');
 
-      const formattedDate = format(new Date(), 'yyyy-MM-dd');
-      
-      // First check if an entry exists for this professional
-      const { data: existingData, error: fetchError } = await supabase
-        .from('professional_availability')
-        .select('id')
-        .eq('professional_id', professionalId)
-        .limit(1);
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (existingData && existingData.length > 0) {
-        // Update existing record
-        const { error } = await supabase
+      try {
+        const formattedDate = format(new Date(), 'yyyy-MM-dd');
+        
+        // First check if an entry exists for this professional
+        const { data: existingData, error: fetchError } = await supabase
           .from('professional_availability')
-          .update({
-            working_hours: workingHours as unknown as Json,
-            break_time: breakTime as unknown as Json
-          })
-          .eq('id', existingData[0].id);
+          .select('id')
+          .eq('professional_id', professionalId)
+          .limit(1);
 
-        if (error) throw error;
-      } else {
-        // Insert new record
-        const { error } = await supabase
-          .from('professional_availability')
-          .insert([{
-            professional_id: professionalId,
-            date: formattedDate,
-            working_hours: workingHours as unknown as Json,
-            break_time: breakTime as unknown as Json
-          }]);
+        if (fetchError) {
+          console.error('Error checking existing availability:', fetchError);
+          throw fetchError;
+        }
 
-        if (error) throw error;
+        if (existingData && existingData.length > 0) {
+          // Update existing record
+          const { error } = await supabase
+            .from('professional_availability')
+            .update({
+              working_hours: workingHours as unknown as Json,
+              break_time: breakTime as unknown as Json
+            })
+            .eq('id', existingData[0].id);
+
+          if (error) throw error;
+        } else {
+          // Insert new record
+          const { error } = await supabase
+            .from('professional_availability')
+            .insert([{
+              professional_id: professionalId,
+              date: formattedDate,
+              working_hours: workingHours as unknown as Json,
+              break_time: breakTime as unknown as Json
+            }]);
+
+          if (error) throw error;
+        }
+
+        toast({
+          title: "Horários atualizados",
+          description: "Suas configurações de horário foram salvas com sucesso"
+        });
+      } catch (error) {
+        console.error('Error updating working hours:', error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível atualizar seus horários de trabalho",
+          variant: "destructive"
+        });
+        throw error;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['working-hours', professionalId] });
+      // Also invalidate calendar events as they depend on working hours
+      queryClient.invalidateQueries({ queryKey: ['calendar-events', professionalId] });
     }
   });
 
   // Use our type assertions to safely convert the JSON data to our expected types
-  const typedWorkingHours = workingHours?.working_hours ? 
-    workingHours.working_hours as unknown as WorkingHours : 
+  const typedWorkingHours = workingHoursData?.working_hours ? 
+    workingHoursData.working_hours as unknown as WorkingHours : 
     defaultWorkingHours;
 
-  const typedBreakTime = workingHours?.break_time ? 
-    workingHours.break_time as unknown as BreakTime : 
+  const typedBreakTime = workingHoursData?.break_time ? 
+    workingHoursData.break_time as unknown as BreakTime : 
     defaultBreakTime;
 
   return {

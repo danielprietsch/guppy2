@@ -1,13 +1,14 @@
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek, parseISO, isBefore, startOfDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useAuth } from "@/lib/auth";
 import { useWorkingHours } from "@/hooks/useWorkingHours";
+import { toast } from "@/hooks/use-toast";
 
 interface WeeklyViewProps {
   selectedDate: Date;
@@ -21,11 +22,11 @@ const WeeklyView = ({
   createdAt
 }: WeeklyViewProps) => {
   const { user } = useAuth();
-  const { events, toggleSlotAvailability } = useCalendarEvents(user?.id, selectedDate);
-  const { workingHours: workingHoursSettings, breakTime } = useWorkingHours(user?.id);
+  const { events, toggleSlotAvailability, isLoading: eventsLoading } = useCalendarEvents(user?.id, selectedDate);
+  const { workingHours: workingHoursSettings, breakTime, isLoading: workingHoursLoading } = useWorkingHours(user?.id);
   
   const getWorkingHourRange = useCallback(() => {
-    if (!workingHoursSettings) return { startHour: 8, endHour: 17 };
+    if (!workingHoursSettings) return { startHour: 8, endHour: 18 };
     
     let earliestStart = 23;
     let latestEnd = 0;
@@ -39,6 +40,10 @@ const WeeklyView = ({
         if (endHour > latestEnd) latestEnd = endHour;
       }
     });
+    
+    // Ensure we have reasonable defaults if no working hours are enabled
+    if (earliestStart === 23) earliestStart = 8;
+    if (latestEnd === 0) latestEnd = 18;
     
     return { startHour: earliestStart, endHour: latestEnd };
   }, [workingHoursSettings]);
@@ -59,13 +64,34 @@ const WeeklyView = ({
     .filter(date => {
       if (createdAt) {
         const creationDate = parseISO(createdAt);
-        return !isBefore(date, creationDate);
+        return !isBefore(date, startOfDay(creationDate));
       }
       return true;
     });
 
   const handleSlotClick = async (date: Date, timeSlot: string, status: string) => {
-    if (status !== 'free' && status !== 'manually_closed') return;
+    if (status !== 'free' && status !== 'manually_closed') {
+      if (status === 'closed') {
+        toast({
+          title: "Horário indisponível",
+          description: "Este horário está fora do seu horário de trabalho configurado",
+          variant: "warning"
+        });
+      } else if (status === 'lunch') {
+        toast({
+          title: "Horário de pausa",
+          description: "Este horário está configurado como horário de pausa/almoço",
+          variant: "warning"
+        });
+      } else if (status === 'scheduled') {
+        toast({
+          title: "Horário ocupado",
+          description: "Este horário já tem um compromisso agendado",
+          variant: "warning"
+        });
+      }
+      return;
+    }
     
     const [hours, minutes] = timeSlot.split(':').map(Number);
     const slotDate = new Date(date);
@@ -85,20 +111,32 @@ const WeeklyView = ({
     
     const daySettings = workingHoursSettings[dayName];
     const startHour = parseInt(daySettings.start.split(':')[0]);
+    const startMinutes = parseInt(daySettings.start.split(':')[1]);
     const endHour = parseInt(daySettings.end.split(':')[0]);
+    const endMinutes = parseInt(daySettings.end.split(':')[1]);
     
-    if (hour < startHour || hour >= endHour) {
+    // Check if time slot is before start hour or after end hour
+    if (hour < startHour || (hour === startHour && minutes < startMinutes) || 
+        hour > endHour || (hour === endHour && minutes >= endMinutes)) {
       return { status: 'closed', color: 'bg-gray-200 cursor-not-allowed', label: 'Fora do horário' };
     }
     
+    // Check if time slot is during break time
     if (breakTime?.enabled) {
       const breakStartHour = parseInt(breakTime.start.split(':')[0]);
+      const breakStartMinutes = parseInt(breakTime.start.split(':')[1]);
       const breakEndHour = parseInt(breakTime.end.split(':')[0]);
-      if (hour >= breakStartHour && hour < breakEndHour) {
+      const breakEndMinutes = parseInt(breakTime.end.split(':')[1]);
+      
+      const isAfterBreakStart = hour > breakStartHour || (hour === breakStartHour && minutes >= breakStartMinutes);
+      const isBeforeBreakEnd = hour < breakEndHour || (hour === breakEndHour && minutes < breakEndMinutes);
+      
+      if (isAfterBreakStart && isBeforeBreakEnd) {
         return { status: 'lunch', color: 'bg-gray-200 cursor-not-allowed', label: 'Horário de almoço' };
       }
     }
     
+    // Check if there are events for this time slot
     const cellEvents = events.filter(event => {
       if (!event) return false;
       const eventStart = new Date(event.start_time);
@@ -136,6 +174,15 @@ const WeeklyView = ({
   const handleNextWeek = () => {
     onDateChange(addWeeks(selectedDate, 1));
   };
+
+  if (eventsLoading || workingHoursLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Carregando disponibilidade...</p>
+      </div>
+    );
+  }
 
   const headerHeight = 72;
   const slotHeight = 24;
@@ -178,10 +225,7 @@ const WeeklyView = ({
             </div>
             {weekDays.map((date) => (
               <div key={date.toString()} className="flex flex-col space-y-1">
-                <Card className={`text-center p-2 bg-background h-[${headerHeight}px] ${
-                  format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
-                  format(date, 'EEEE', { locale: ptBR }) === 'domingo' ? 'bg-gray-50' : ''
-                }`}>
+                <Card className="text-center p-2 bg-background h-[72px]">
                   <div className="font-semibold capitalize">
                     {format(date, 'EEE', { locale: ptBR })}
                   </div>
@@ -196,11 +240,15 @@ const WeeklyView = ({
                   return (
                     <div
                       key={`${date.toString()}-${timeSlot}`}
-                      className={`${cellStatus.color} h-[${slotHeight}px] mb-[${slotMargin}px] rounded transition-colors flex items-center justify-center`}
+                      className={`${cellStatus.color} rounded transition-colors flex items-center justify-center`}
                       onClick={() => handleSlotClick(date, timeSlot, cellStatus.status)}
                       title={cellStatus.label}
                       role="button"
                       aria-label={`${timeSlot} - ${cellStatus.label}`}
+                      style={{ 
+                        height: `${slotHeight}px`, 
+                        marginBottom: `${slotMargin}px` 
+                      }}
                     >
                       <span className="sr-only">{cellStatus.label}</span>
                     </div>
