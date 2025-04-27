@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCalendarEvents } from "@/hooks/useCalendarEvents";
 import { useAuth } from "@/lib/auth";
-import { useWorkingHours } from "@/hooks/useWorkingHours";
+import { useWorkingHours, WorkingHours } from "@/hooks/useWorkingHours";
 
 interface WeeklyViewProps {
   selectedDate: Date;
@@ -23,7 +23,7 @@ const WeeklyView = ({
   const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const { events, isLoading, isWithinWorkingHours, isDuringBreak } = useCalendarEvents(user?.id, selectedDate);
-  const { workingHours, breakTime } = useWorkingHours(user?.id);
+  const { workingHours: workingHoursSettings, breakTime } = useWorkingHours(user?.id);
   
   // Filter only weekdays (Monday to Friday)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -38,13 +38,13 @@ const WeeklyView = ({
 
   // Get appropriate working hours based on professional's settings
   const getWorkingHourRange = () => {
-    if (!workingHours) return Array.from({ length: 9 }, (_, i) => i + 8); // Default 8AM-5PM
+    if (!workingHoursSettings) return Array.from({ length: 9 }, (_, i) => i + 8); // Default 8AM-5PM
     
     // Find earliest start and latest end across all enabled days
     let earliestStart = 23;
     let latestEnd = 0;
     
-    Object.values(workingHours).forEach(day => {
+    Object.values(workingHoursSettings).forEach(day => {
       if (day.enabled) {
         const startHour = parseInt(day.start.split(':')[0]);
         const endHour = parseInt(day.end.split(':')[0]);
@@ -61,7 +61,7 @@ const WeeklyView = ({
     );
   };
 
-  const workingHours = getWorkingHourRange();
+  const hoursList = getWorkingHourRange();
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
@@ -81,11 +81,16 @@ const WeeklyView = ({
 
   const getCellStatus = (date: Date, hour: number) => {
     const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
-    const daySettings = workingHours?.[dayName];
+    
+    // Check if this day's settings exist in workingHoursSettings
+    if (!workingHoursSettings || !workingHoursSettings[dayName]) {
+      return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
+    }
+    
+    const daySettings = workingHoursSettings[dayName];
     
     // Check if this day is enabled in working hours
-    const isDayEnabled = daySettings?.enabled;
-    if (!isDayEnabled) {
+    if (!daySettings.enabled) {
       return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
     }
     
@@ -99,7 +104,7 @@ const WeeklyView = ({
       return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
     }
     
-    const cellTime = new Date(date.setHours(hour, 0, 0, 0));
+    const cellTime = new Date(new Date(date).setHours(hour, 0, 0, 0));
     
     const cellEvents = events.filter(event => {
       const eventStart = new Date(event.start_time);
@@ -143,7 +148,7 @@ const WeeklyView = ({
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-4">
             <div className="pt-10">
-              {workingHours.map((hour) => (
+              {hoursList.map((hour) => (
                 <div
                   key={hour}
                   className="h-12 text-sm font-medium text-muted-foreground flex items-center justify-end pr-2"
@@ -166,7 +171,7 @@ const WeeklyView = ({
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
                 </Card>
-                {workingHours.map((hour) => {
+                {hoursList.map((hour) => {
                   const cellStatus = getCellStatus(date, hour);
                   const isLunchHour = isDuringBreak(hour);
                   const cellEvents = events.filter(event => {
