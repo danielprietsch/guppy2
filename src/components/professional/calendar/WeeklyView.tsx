@@ -45,6 +45,7 @@ const WeeklyView = ({
 
   const { startHour, endHour } = getWorkingHourRange();
   
+  // Generate time slots in 15-minute increments
   const timeSlots = Array.from(
     { length: (endHour - startHour) * 4 }, 
     (_, i) => {
@@ -135,6 +136,11 @@ const WeeklyView = ({
     onDateChange(addWeeks(selectedDate, 1));
   };
 
+  // Height constants for consistent sizing
+  const headerHeight = 72; // Height of day header cards
+  const slotHeight = 24; // Height of each time slot (1.5rem)
+  const slotMargin = 1; // Margin between slots
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between px-4 py-3 bg-background sticky top-0 z-10 border-b">
@@ -151,29 +157,31 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
-            {/* Coluna de horários com alinhamento vertical corrigido */}
+            {/* Time slots column */}
             <div>
-              {/* Card vazio para alinhar com os cabeçalhos dos dias */}
-              <Card className="invisible h-[72px]">
-                <CardContent className="p-0 h-full" />
-              </Card>
+              {/* Empty header card to align with day headers */}
+              <div className="h-[72px] flex items-end pb-1">
+                <div className="w-full text-right pr-2 text-xs font-medium text-muted-foreground opacity-0">
+                  00:00
+                </div>
+              </div>
               
-              {/* Lista de horários agora corretamente alinhada com as células */}
+              {/* Time labels perfectly aligned with time slots */}
               {timeSlots.map((timeSlot) => (
                 <div
                   key={timeSlot}
                   className="flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
-                  style={{ height: "1.5rem", marginBottom: "1px" }}
+                  style={{ height: `${slotHeight}px`, marginBottom: `${slotMargin}px` }}
                 >
                   {timeSlot}
                 </div>
               ))}
             </div>
 
-            {/* Colunas de dias da semana */}
+            {/* Day columns with their time slots */}
             {weekDays.map((date) => (
               <div key={date.toString()} className="space-y-1">
-                <Card className={`text-center p-2 bg-background ${
+                <Card className={`text-center p-2 bg-background h-[${headerHeight}px] ${
                   format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
                   format(date, 'EEEE', { locale: ptBR }) === 'domingo' ? 'bg-gray-50' : ''
                 }`}>
@@ -185,7 +193,7 @@ const WeeklyView = ({
                   </div>
                 </Card>
                 
-                {/* Time slots com altura fixa e margem inferior consistente */}
+                {/* Time slots aligned with the labels on the left */}
                 {timeSlots.map((timeSlot) => {
                   const [hours, minutes] = timeSlot.split(':').map(Number);
                   const cellStatus = getCellStatus(date, hours, minutes);
@@ -194,7 +202,7 @@ const WeeklyView = ({
                     <Card
                       key={`${date.toString()}-${timeSlot}`}
                       className={`${cellStatus.color} transition-colors`}
-                      style={{ height: "1.5rem", marginBottom: "1px" }}
+                      style={{ height: `${slotHeight}px`, marginBottom: `${slotMargin}px` }}
                       onClick={() => cellStatus.status === 'free' && handleSlotClick(date, timeSlot)}
                       title={cellStatus.label}
                     >
