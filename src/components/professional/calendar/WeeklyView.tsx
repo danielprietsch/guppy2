@@ -1,3 +1,4 @@
+
 import React, { useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek, parseISO, isBefore, startOfDay } from "date-fns";
@@ -63,7 +64,9 @@ const WeeklyView = ({
       return true;
     });
 
-  const handleSlotClick = async (date: Date, timeSlot: string) => {
+  const handleSlotClick = async (date: Date, timeSlot: string, status: string) => {
+    if (status !== 'free' && status !== 'manually_closed') return;
+    
     const [hours, minutes] = timeSlot.split(':').map(Number);
     const slotDate = new Date(date);
     slotDate.setHours(hours, minutes, 0, 0);
@@ -107,15 +110,15 @@ const WeeklyView = ({
       const mainEvent = cellEvents[0];
       switch (mainEvent.event_type) {
         case 'appointment':
-          return { status: 'scheduled', color: 'bg-red-200 cursor-not-allowed', label: 'Ocupado' };
+          return { status: 'scheduled', color: 'bg-red-500 text-white cursor-not-allowed', label: 'Ocupado' };
         case 'availability_block':
-          return { status: 'manually_closed', color: 'bg-yellow-200 cursor-pointer hover:bg-yellow-300', label: 'Fechado manualmente' };
+          return { status: 'manually_closed', color: 'bg-yellow-300 text-black cursor-pointer hover:bg-yellow-400', label: 'Fechado manualmente' };
         default:
-          return { status: 'scheduled', color: 'bg-red-200 cursor-not-allowed', label: 'Ocupado' };
+          return { status: 'scheduled', color: 'bg-red-500 text-white cursor-not-allowed', label: 'Ocupado' };
       }
     }
 
-    return { status: 'free', color: 'bg-green-200 hover:bg-green-300 cursor-pointer', label: 'Disponível' };
+    return { status: 'free', color: 'bg-green-500 hover:bg-green-600 cursor-pointer text-white', label: 'Disponível' };
   };
 
   const handlePreviousWeek = () => {
@@ -154,7 +157,7 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
-            <div>
+            <div className="flex flex-col">
               <div className="h-[72px] flex items-end pb-1">
                 <div className="w-full text-right pr-2 text-xs font-medium text-muted-foreground opacity-0">
                   00:00
@@ -164,14 +167,17 @@ const WeeklyView = ({
                 <div
                   key={timeSlot}
                   className="flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
-                  style={{ height: `${slotHeight}px`, marginBottom: `${slotMargin}px` }}
+                  style={{ 
+                    height: `${slotHeight}px`, 
+                    marginBottom: `${slotMargin}px` 
+                  }}
                 >
                   {timeSlot}
                 </div>
               ))}
             </div>
             {weekDays.map((date) => (
-              <div key={date.toString()} className="space-y-1">
+              <div key={date.toString()} className="flex flex-col space-y-1">
                 <Card className={`text-center p-2 bg-background h-[${headerHeight}px] ${
                   format(date, 'EEEE', { locale: ptBR }) === 'sábado' || 
                   format(date, 'EEEE', { locale: ptBR }) === 'domingo' ? 'bg-gray-50' : ''
@@ -188,15 +194,16 @@ const WeeklyView = ({
                   const cellStatus = getCellStatus(date, hours, minutes);
                   
                   return (
-                    <Card
+                    <div
                       key={`${date.toString()}-${timeSlot}`}
-                      className={`${cellStatus.color} transition-colors`}
-                      style={{ height: `${slotHeight}px`, marginBottom: `${slotMargin}px` }}
-                      onClick={() => cellStatus.status === 'free' && handleSlotClick(date, timeSlot)}
+                      className={`${cellStatus.color} h-[${slotHeight}px] mb-[${slotMargin}px] rounded transition-colors flex items-center justify-center`}
+                      onClick={() => handleSlotClick(date, timeSlot, cellStatus.status)}
                       title={cellStatus.label}
+                      role="button"
+                      aria-label={`${timeSlot} - ${cellStatus.label}`}
                     >
-                      <CardContent className="p-0 h-full" />
-                    </Card>
+                      <span className="sr-only">{cellStatus.label}</span>
+                    </div>
                   );
                 })}
               </div>
