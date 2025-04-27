@@ -34,8 +34,8 @@ const WeeklyView = ({
       return true;
     });
 
-  // Definir horário de trabalho das 8h às 17h
-  const workingHours = Array.from({ length: 10 }, (_, i) => i + 8);
+  // Definir horário de trabalho das 8h às 17h (9 horas)
+  const workingHours = Array.from({ length: 9 }, (_, i) => i + 8);
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
@@ -146,9 +146,7 @@ const WeeklyView = ({
                   return (
                     <Card
                       key={hour}
-                      className={`h-12 ${isWeekend ? 'bg-gray-50' : cellStatus.color} relative ${
-                        hour === 12 ? 'bg-amber-100' : ''
-                      }`}
+                      className={`h-12 ${isWeekend ? 'bg-gray-50' : cellStatus.color} relative`}
                     >
                       <CardContent className="p-1 h-full">
                         <div className="absolute top-0 right-0 text-[10px] font-medium px-1.5 py-0.5 rounded-bl bg-white/90">

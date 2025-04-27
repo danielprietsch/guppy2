@@ -74,7 +74,7 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     const startHour = parseInt(daySettings.start.split(':')[0]);
     const endHour = parseInt(daySettings.end.split(':')[0]);
     
-    // Verificar se está dentro do horário de trabalho (8h-17h)
+    // Verificar se está dentro do horário de trabalho
     const isWorkingHour = hour >= startHour && hour < endHour;
     
     // Verificar se é horário de almoço
