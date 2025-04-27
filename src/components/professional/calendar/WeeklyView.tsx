@@ -22,7 +22,7 @@ const WeeklyView = ({
 }: WeeklyViewProps) => {
   const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const { events, isLoading, isWithinWorkingHours, isDuringBreak } = useCalendarEvents(user?.id, selectedDate);
+  const { events, isLoading } = useCalendarEvents(user?.id, selectedDate);
   const { workingHours: workingHoursSettings, breakTime } = useWorkingHours(user?.id);
   
   // Filter only weekdays (Monday to Friday)
@@ -79,18 +79,38 @@ const WeeklyView = ({
     onDateChange(addWeeks(selectedDate, 1));
   };
 
+  // Check if a given hour is during break time
+  const isDuringBreak = (hour: number) => {
+    if (!breakTime?.enabled) return false;
+    
+    const breakStartHour = parseInt(breakTime.start.split(':')[0]);
+    const breakEndHour = parseInt(breakTime.end.split(':')[0]);
+    
+    return hour >= breakStartHour && hour < breakEndHour;
+  };
+
+  // Check if a given hour is within working hours for a specific day
+  const isWithinWorkingHours = (date: Date, hour: number) => {
+    if (!workingHoursSettings) return false;
+    
+    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
+    const daySettings = workingHoursSettings[dayName];
+    
+    // If day is not enabled or has no settings, it's not within working hours
+    if (!daySettings?.enabled) return false;
+    
+    const startHour = parseInt(daySettings.start.split(':')[0]);
+    const endHour = parseInt(daySettings.end.split(':')[0]);
+    
+    // Check if hour is within working hours
+    return hour >= startHour && hour < endHour;
+  };
+
   const getCellStatus = (date: Date, hour: number) => {
     const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
     
-    // Check if this day's settings exist in workingHoursSettings
-    if (!workingHoursSettings || !workingHoursSettings[dayName]) {
-      return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
-    }
-    
-    const daySettings = workingHoursSettings[dayName];
-    
-    // Check if this day is enabled in working hours
-    if (!daySettings.enabled) {
+    // Check if this day's settings exist and if the day is enabled
+    if (!workingHoursSettings || !workingHoursSettings[dayName] || !workingHoursSettings[dayName].enabled) {
       return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
     }
     
