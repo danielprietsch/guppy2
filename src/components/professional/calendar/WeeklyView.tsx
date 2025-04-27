@@ -5,28 +5,24 @@ import { format, addWeeks, subWeeks, addDays, startOfWeek, startOfDay, parseISO,
 import { ptBR } from 'date-fns/locale';
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { WorkingHours, BreakTime, isHourWithinWorkingHours } from "@/hooks/useWorkingHours";
+import { useCalendarEvents } from "@/hooks/useCalendarEvents";
+import { useAuth } from "@/lib/auth";
 
 interface WeeklyViewProps {
   selectedDate: Date;
-  appointments: any[];
   onDateChange: (date: Date) => void;
-  workingHours: WorkingHours;
-  breakTime: BreakTime;
   createdAt?: string;
 }
 
 const WeeklyView = ({ 
   selectedDate, 
-  appointments, 
   onDateChange,
-  workingHours,
-  breakTime,
   createdAt
 }: WeeklyViewProps) => {
+  const { user } = useAuth();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const { events, isLoading } = useCalendarEvents(user?.id, selectedDate);
   
-  // RIGOROSAMENTE filtrar TODOS os dias da semana anteriores à data de criação
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
     .filter(date => {
       if (!createdAt) return true;
@@ -39,7 +35,6 @@ const WeeklyView = ({
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
     
-    // ESTRITAMENTE impedir navegação para semanas anteriores à data de criação
     if (createdAt) {
       const creationDate = parseISO(createdAt);
       if (isBefore(startOfDay(newDate), startOfDay(creationDate))) {
@@ -54,24 +49,31 @@ const WeeklyView = ({
   };
 
   const getCellStatus = (date: Date, hour: number) => {
-    const cellAppointments = appointments.filter(app => {
-      const appDate = new Date(app.date);
-      const appHour = parseInt(app.time.split(':')[0]);
-      return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
+    const cellTime = new Date(date.setHours(hour, 0, 0, 0));
+    
+    const cellEvents = events.filter(event => {
+      const eventStart = new Date(event.start_time);
+      const eventEnd = new Date(event.end_time);
+      return eventStart <= cellTime && eventEnd > cellTime;
     });
 
-    if (cellAppointments.length > 0) {
-      return { status: 'scheduled', color: 'bg-red-100', label: 'Agendado' };
-    } else if (isHourWithinWorkingHours(hour, date, workingHours, breakTime)) {
-      return { status: 'free', color: 'bg-green-100', label: 'Livre' };
-    } else {
-      return { status: 'closed', color: 'bg-amber-100', label: 'Fechado' };
+    if (cellEvents.length > 0) {
+      const mainEvent = cellEvents[0];
+      switch (mainEvent.event_type) {
+        case 'appointment':
+          return { status: 'scheduled', color: 'bg-red-100', label: 'Agendamento' };
+        case 'booking':
+          return { status: 'scheduled', color: 'bg-orange-100', label: 'Reserva' };
+        case 'availability_block':
+          return mainEvent.status === 'confirmed' 
+            ? { status: 'busy', color: 'bg-red-100', label: 'Ocupado' }
+            : { status: 'tentative', color: 'bg-yellow-100', label: 'Provisório' };
+        default:
+          return { status: 'scheduled', color: 'bg-blue-100', label: mainEvent.title };
+      }
     }
-  };
 
-  const formatDayName = (date: Date) => {
-    const fullName = format(date, 'EEEE', { locale: ptBR });
-    return format(date, 'EEE', { locale: ptBR });
+    return { status: 'free', color: 'bg-green-100', label: 'Livre' };
   };
 
   return (
@@ -105,7 +107,7 @@ const WeeklyView = ({
               <div key={date.toString()} className="space-y-2">
                 <Card className="text-center p-2 bg-background">
                   <div className="font-semibold capitalize">
-                    {formatDayName(date)}
+                    {format(date, 'EEE', { locale: ptBR })}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {format(date, 'd MMM', { locale: ptBR })}
@@ -113,10 +115,11 @@ const WeeklyView = ({
                 </Card>
                 {hours.map((hour) => {
                   const cellStatus = getCellStatus(date, hour);
-                  const cellAppointments = appointments.filter(app => {
-                    const appDate = new Date(app.date);
-                    const appHour = parseInt(app.time.split(':')[0]);
-                    return format(appDate, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && appHour === hour;
+                  const cellEvents = events.filter(event => {
+                    const eventStart = new Date(event.start_time);
+                    const eventHour = eventStart.getHours();
+                    return format(eventStart, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd') && 
+                           eventHour === hour;
                   });
 
                   return (
@@ -128,12 +131,13 @@ const WeeklyView = ({
                         <div className="absolute top-0 right-0 text-[10px] font-medium px-1.5 py-0.5 rounded-bl bg-white/90">
                           {cellStatus.label}
                         </div>
-                        {cellAppointments.map((app) => (
+                        {cellEvents.map((event) => (
                           <div
-                            key={app.id}
+                            key={event.id}
                             className="text-[10px] p-1 bg-primary/10 rounded-sm truncate mt-1"
+                            title={event.description || event.title}
                           >
-                            {app.client.name}
+                            {event.title}
                           </div>
                         ))}
                       </CardContent>
