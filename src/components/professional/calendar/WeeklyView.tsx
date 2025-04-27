@@ -151,13 +151,19 @@ const WeeklyView = ({
       <div className="flex-1 overflow-auto">
         <div className="min-w-[800px] p-4">
           <div className="grid grid-cols-8 gap-1">
-            {/* Coluna de horários - alinhamento corrigido */}
-            <div className="pt-10 pr-2">
+            {/* Coluna de horários com alinhamento vertical corrigido */}
+            <div>
+              {/* Card vazio para alinhar com os cabeçalhos dos dias */}
+              <Card className="invisible h-[72px]">
+                <CardContent className="p-0 h-full" />
+              </Card>
+              
+              {/* Lista de horários agora corretamente alinhada com as células */}
               {timeSlots.map((timeSlot) => (
                 <div
                   key={timeSlot}
-                  className="h-6 flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
-                  style={{ height: "1.5rem" }}
+                  className="flex items-center justify-end pr-2 text-xs font-medium text-muted-foreground"
+                  style={{ height: "1.5rem", marginBottom: "1px" }}
                 >
                   {timeSlot}
                 </div>
@@ -179,7 +185,7 @@ const WeeklyView = ({
                   </div>
                 </Card>
                 
-                {/* Time slots com altura fixa */}
+                {/* Time slots com altura fixa e margem inferior consistente */}
                 {timeSlots.map((timeSlot) => {
                   const [hours, minutes] = timeSlot.split(':').map(Number);
                   const cellStatus = getCellStatus(date, hours, minutes);
@@ -188,7 +194,7 @@ const WeeklyView = ({
                     <Card
                       key={`${date.toString()}-${timeSlot}`}
                       className={`${cellStatus.color} transition-colors`}
-                      style={{ height: "1.5rem" }}
+                      style={{ height: "1.5rem", marginBottom: "1px" }}
                       onClick={() => cellStatus.status === 'free' && handleSlotClick(date, timeSlot)}
                       title={cellStatus.label}
                     >
