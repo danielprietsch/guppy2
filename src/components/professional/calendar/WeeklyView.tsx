@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { format, addWeeks, subWeeks, addDays, startOfWeek, parseISO, isBefore, startOfDay } from "date-fns";
 import { ptBR } from 'date-fns/locale';
@@ -21,27 +20,11 @@ const WeeklyView = ({
   createdAt
 }: WeeklyViewProps) => {
   const { user } = useAuth();
-  const { events, generateTimeSlots } = useCalendarEvents(user?.id, selectedDate);
+  const { events, generateTimeSlots, toggleSlotAvailability } = useCalendarEvents(user?.id, selectedDate);
   const { workingHours: workingHoursSettings, breakTime } = useWorkingHours(user?.id);
   
-  const timeSlots = Array.from({ length: 96 }, (_, i) => {
-    const hour = Math.floor(i / 4);
-    const minutes = (i % 4) * 15;
-    return `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  });
-
-  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-    .filter(date => {
-      if (createdAt) {
-        const creationDate = parseISO(createdAt);
-        return !isBefore(date, creationDate);
-      }
-      return true;
-    });
-
-  const getWorkingHourRange = () => {
-    if (!workingHoursSettings) return Array.from({ length: 9 }, (_, i) => i + 8);
+  const getWorkingHourRange = useCallback(() => {
+    if (!workingHoursSettings) return { startHour: 8, endHour: 17 };
     
     let earliestStart = 23;
     let latestEnd = 0;
@@ -56,13 +39,83 @@ const WeeklyView = ({
       }
     });
     
-    return Array.from(
-      { length: latestEnd - earliestStart }, 
-      (_, i) => i + earliestStart
-    );
+    return { startHour: earliestStart, endHour: latestEnd };
+  }, [workingHoursSettings]);
+
+  const { startHour, endHour } = getWorkingHourRange();
+  
+  const timeSlots = Array.from(
+    { length: (endHour - startHour) * 4 }, 
+    (_, i) => {
+      const hour = Math.floor(i / 4) + startHour;
+      const minutes = (i % 4) * 15;
+      return `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    }
+  );
+
+  const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+    .filter(date => {
+      if (createdAt) {
+        const creationDate = parseISO(createdAt);
+        return !isBefore(date, creationDate);
+      }
+      return true;
+    });
+
+  const handleSlotClick = async (date: Date, timeSlot: string) => {
+    const [hours, minutes] = timeSlot.split(':').map(Number);
+    const slotDate = new Date(date);
+    slotDate.setHours(hours, minutes, 0, 0);
+    
+    await toggleSlotAvailability(slotDate);
   };
 
-  const hoursList = getWorkingHourRange();
+  const getCellStatus = (date: Date, hour: number, minutes: number) => {
+    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
+    const slotTime = new Date(date);
+    slotTime.setHours(hour, minutes, 0, 0);
+    
+    if (!workingHoursSettings || !workingHoursSettings[dayName]?.enabled) {
+      return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
+    }
+    
+    const daySettings = workingHoursSettings[dayName];
+    const startHour = parseInt(daySettings.start.split(':')[0]);
+    const endHour = parseInt(daySettings.end.split(':')[0]);
+    
+    if (hour < startHour || hour >= endHour) {
+      return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
+    }
+    
+    if (breakTime?.enabled) {
+      const breakStartHour = parseInt(breakTime.start.split(':')[0]);
+      const breakEndHour = parseInt(breakTime.end.split(':')[0]);
+      if (hour >= breakStartHour && hour < breakEndHour) {
+        return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
+      }
+    }
+    
+    const cellEvents = events.filter(event => {
+      const eventStart = new Date(event.start_time);
+      const eventEnd = new Date(event.end_time);
+      return slotTime >= eventStart && slotTime < eventEnd;
+    });
+
+    if (cellEvents.length > 0) {
+      const mainEvent = cellEvents[0];
+      switch (mainEvent.event_type) {
+        case 'appointment':
+          return { status: 'scheduled', color: 'bg-red-100', label: 'Agendamento' };
+        case 'availability_block':
+          return { status: 'busy', color: 'bg-red-100', label: 'Indisponível' };
+        default:
+          return { status: 'scheduled', color: 'bg-blue-100', label: mainEvent.title };
+      }
+    }
+
+    return { status: 'free', color: 'bg-green-100 hover:bg-green-200 cursor-pointer', label: 'Livre' };
+  };
 
   const handlePreviousWeek = () => {
     const newDate = subWeeks(selectedDate, 1);
@@ -78,72 +131,6 @@ const WeeklyView = ({
 
   const handleNextWeek = () => {
     onDateChange(addWeeks(selectedDate, 1));
-  };
-
-  const isDuringBreak = (hour: number) => {
-    if (!breakTime?.enabled) return false;
-    
-    const breakStartHour = parseInt(breakTime.start.split(':')[0]);
-    const breakEndHour = parseInt(breakTime.end.split(':')[0]);
-    
-    return hour >= breakStartHour && hour < breakEndHour;
-  };
-
-  const isWithinWorkingHours = (date: Date, hour: number) => {
-    if (!workingHoursSettings) return false;
-    
-    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
-    const daySettings = workingHoursSettings[dayName];
-    
-    if (!daySettings?.enabled) return false;
-    
-    const startHour = parseInt(daySettings.start.split(':')[0]);
-    const endHour = parseInt(daySettings.end.split(':')[0]);
-    
-    return hour >= startHour && hour < endHour;
-  };
-
-  const getCellStatus = (date: Date, hour: number) => {
-    const dayName = format(date, 'EEEE', { locale: ptBR }).toLowerCase();
-    
-    if (!workingHoursSettings || !workingHoursSettings[dayName] || !workingHoursSettings[dayName].enabled) {
-      return { status: 'closed', color: 'bg-gray-100', label: 'Indisponível' };
-    }
-    
-    if (!isWithinWorkingHours(date, hour)) {
-      return { status: 'closed', color: 'bg-gray-100', label: 'Fora do Horário' };
-    }
-    
-    if (isDuringBreak(hour)) {
-      return { status: 'lunch', color: 'bg-amber-100', label: 'Almoço' };
-    }
-    
-    const cellTimeDate = new Date(date);
-    const cellTime = new Date(cellTimeDate.setHours(hour, 0, 0, 0));
-    
-    const cellEvents = events.filter(event => {
-      const eventStart = new Date(event.start_time);
-      const eventEnd = new Date(event.end_time);
-      return eventStart <= cellTime && eventEnd > cellTime;
-    });
-
-    if (cellEvents.length > 0) {
-      const mainEvent = cellEvents[0];
-      switch (mainEvent.event_type) {
-        case 'appointment':
-          return { status: 'scheduled', color: 'bg-red-100', label: 'Agendamento' };
-        case 'booking':
-          return { status: 'scheduled', color: 'bg-orange-100', label: 'Reserva' };
-        case 'availability_block':
-          return mainEvent.status === 'confirmed' 
-            ? { status: 'busy', color: 'bg-red-100', label: 'Ocupado' }
-            : { status: 'tentative', color: 'bg-yellow-100', label: 'Provisório' };
-        default:
-          return { status: 'scheduled', color: 'bg-blue-100', label: mainEvent.title };
-      }
-    }
-
-    return { status: 'free', color: 'bg-green-100', label: 'Livre' };
   };
 
   return (
@@ -186,20 +173,18 @@ const WeeklyView = ({
                     {format(date, 'd MMM', { locale: ptBR })}
                   </div>
                 </Card>
-                {generateTimeSlots(date).map((slot, index) => {
-                  const isLunchHour = isDuringBreak(new Date(slot.time).getHours());
-                  const cellStatus = getCellStatus(date, new Date(slot.time).getHours());
+                {timeSlots.map((timeSlot) => {
+                  const [hours, minutes] = timeSlot.split(':').map(Number);
+                  const cellStatus = getCellStatus(date, hours, minutes);
                   
                   return (
                     <Card
-                      key={index}
-                      className={`h-3 ${isLunchHour ? 'bg-amber-100' : cellStatus.color} relative`}
+                      key={`${date.toString()}-${timeSlot}`}
+                      className={`h-3 ${cellStatus.color} transition-colors`}
+                      onClick={() => cellStatus.status === 'free' && handleSlotClick(date, timeSlot)}
+                      title={cellStatus.label}
                     >
-                      <CardContent className="p-0.5 h-full">
-                        {slot.events.length > 0 && (
-                          <div className="absolute inset-0 bg-primary/10" title={slot.events[0].title} />
-                        )}
-                      </CardContent>
+                      <CardContent className="p-0.5 h-full" />
                     </Card>
                   );
                 })}

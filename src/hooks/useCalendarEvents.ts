@@ -1,7 +1,8 @@
+
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfWeek, endOfWeek, format, addMinutes } from 'date-fns';
+import { startOfWeek, endOfWeek, format } from 'date-fns';
 
 export interface CalendarEvent {
   id: string;
@@ -10,18 +11,13 @@ export interface CalendarEvent {
   description: string;
   start_time: string;
   end_time: string;
-  event_type: 'appointment' | 'booking' | 'availability_block' | 'personal';
+  event_type: 'appointment' | 'booking' | 'availability_block';
   status: 'confirmed' | 'tentative' | 'cancelled';
   color?: string;
 }
 
-export interface TimeSlot {
-  time: Date;
-  events: CalendarEvent[];
-  status: 'free' | 'busy' | 'lunch' | 'outside';
-}
-
 export function useCalendarEvents(professionalId: string | undefined, selectedDate: Date) {
+  const queryClient = useQueryClient();
   const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
 
@@ -65,32 +61,68 @@ export function useCalendarEvents(professionalId: string | undefined, selectedDa
     enabled: !!professionalId,
   });
 
-  // Function to generate time slots for a day
-  const generateTimeSlots = (date: Date): TimeSlot[] => {
-    const slots: TimeSlot[] = [];
-    const startTime = new Date(date);
-    startTime.setHours(0, 0, 0, 0);
+  const toggleSlotAvailability = async (slotDate: Date) => {
+    if (!professionalId) return;
 
-    for (let i = 0; i < 96; i++) {
-      const slotTime = addMinutes(startTime, i * 15);
-      slots.push({
-        time: slotTime,
-        events: events.filter(event => {
-          const eventStart = new Date(event.start_time);
-          const eventEnd = new Date(event.end_time);
-          return slotTime >= eventStart && slotTime < eventEnd;
-        }),
-        status: 'free'
-      });
+    const endDate = new Date(slotDate);
+    endDate.setMinutes(endDate.getMinutes() + 15);
+
+    try {
+      const { data: existingBlock, error: fetchError } = await supabase
+        .from('professional_calendar_events')
+        .select()
+        .eq('professional_id', professionalId)
+        .eq('event_type', 'availability_block')
+        .gte('start_time', slotDate.toISOString())
+        .lt('end_time', endDate.toISOString())
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error checking availability block:', fetchError);
+        return;
+      }
+
+      if (existingBlock) {
+        // Remove the availability block
+        const { error: deleteError } = await supabase
+          .from('professional_calendar_events')
+          .delete()
+          .eq('id', existingBlock.id);
+
+        if (deleteError) {
+          console.error('Error deleting availability block:', deleteError);
+          return;
+        }
+      } else {
+        // Create new availability block
+        const { error: insertError } = await supabase
+          .from('professional_calendar_events')
+          .insert([{
+            professional_id: professionalId,
+            title: 'Indisponível',
+            start_time: slotDate.toISOString(),
+            end_time: endDate.toISOString(),
+            event_type: 'availability_block',
+            status: 'confirmed'
+          }]);
+
+        if (insertError) {
+          console.error('Error creating availability block:', insertError);
+          return;
+        }
+      }
+
+      // Invalidate the calendar events query to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['calendar-events', professionalId] });
+    } catch (error) {
+      console.error('Error toggling availability:', error);
     }
-
-    return slots;
   };
 
   return {
     events,
     isLoading,
     error,
-    generateTimeSlots
+    toggleSlotAvailability
   };
 }
