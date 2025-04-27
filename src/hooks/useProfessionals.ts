@@ -35,13 +35,13 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
     withSpecialties = true, 
     withAvailability = false, 
     date = null,
-    ignoreAvailability = true 
+    ignoreAvailability = false 
   } = options;
 
   // Safely format the date if it exists and is valid
   const safelyFormatDate = (date: Date | null): string | null => {
     if (!date) return null;
-    return isValid(date) ? format(date, 'yyyy-MM') : null;
+    return isValid(date) ? format(date, 'yyyy-MM-dd') : null;
   };
 
   const formattedDate = safelyFormatDate(date);
@@ -77,15 +77,11 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
 
         console.log(`Found ${professionalsData?.length || 0} professional profiles:`, professionalsData);
         
-        // If no professionals found, log this clearly
         if (!professionalsData || professionalsData.length === 0) {
-          console.log('CRITICAL: No professional profiles found in database. Check your Supabase data.');
-          
-          // Return empty array but don't throw an error so the UI can show "no professionals found" message
+          console.log('CRITICAL: No professional profiles found in database.');
           return [];
         }
         
-        // Get professional IDs
         const professionalIds = professionalsData.map(prof => prof.id);
         
         // Get services for the professionals
@@ -97,8 +93,6 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
         if (servicesError) {
           console.error('Error fetching services:', servicesError);
         }
-        
-        console.log(`Services data for ${services?.length || 0} services:`, services || 'No services found');
 
         // Get reviews for the professionals
         const { data: reviews, error: reviewsError } = await supabase
@@ -110,45 +104,57 @@ export const useProfessionals = (options: UseProfessionalsOptions = {}) => {
           console.error('Error fetching reviews:', reviewsError);
         }
         
-        // Process and combine all data - ALWAYS RETURN ALL PROFESSIONALS
-        // even if they don't have services or reviews yet
-        const professionals = professionalsData.map(prof => {
-          // Calculate average rating
+        // Process and filter professionals based on availability if required
+        const professionals = await Promise.all(professionalsData.map(async (prof) => {
           const profReviews = reviews?.filter(r => r.professional_id === prof.id) || [];
           const avgRating = profReviews.length > 0
             ? profReviews.reduce((acc, rev) => acc + rev.rating, 0) / profReviews.length
             : null;
 
-          // Get professional's services
           const profServices = services?.filter(s => s.professional_id === prof.id) || [];
-          
-          // Get unique specialties from services
           const specialties = [...new Set(profServices.map(s => s.category))];
-          
-          // Ensure user_type is one of the allowed types
-          const userType = prof.user_type === 'professional' ? 'professional' : 
-                          prof.user_type === 'client' ? 'client' : 
-                          prof.user_type === 'owner' ? 'owner' : 
-                          prof.user_type === 'global_admin' ? 'global_admin' : 'professional';
 
-          const professional = {
+          // If a date is provided, check availability for each shift
+          let hasConfirmedBookings = true;
+          if (date && !ignoreAvailability) {
+            const shifts = ['morning', 'afternoon', 'evening'];
+            const availabilityPromises = shifts.map(async (shift) => {
+              const { data, error } = await supabase.rpc('check_professional_availability', {
+                p_professional_id: prof.id,
+                p_date: formattedDate,
+                p_shift: shift
+              });
+
+              if (error) {
+                console.error(`Error checking availability for ${prof.name} in ${shift} shift:`, error);
+                return false;
+              }
+
+              return data;
+            });
+
+            const availabilityResults = await Promise.all(availabilityPromises);
+            hasConfirmedBookings = availabilityResults.some(result => result);
+          }
+
+          return {
             ...prof,
-            user_type: userType as "professional" | "client" | "owner" | "global_admin",
-            specialties: specialties.length > 0 ? specialties : [], // Provide empty array if no specialties
+            user_type: prof.user_type as "professional" | "client" | "owner" | "global_admin",
+            specialties: specialties.length > 0 ? specialties : [],
             services: profServices,
             rating: avgRating,
             reviewCount: profReviews.length,
-            // Always set to true to make professionals appear
-            hasConfirmedBookings: true
+            hasConfirmedBookings
           } as Professional;
-          
-          console.log(`Professional ${prof.id}: ${prof.name || 'unnamed'} with ${profServices.length} services and ${specialties.length} specialties`);
-          
-          return professional;
-        });
+        }));
 
-        console.log(`Final: Returning ${professionals.length} professionals after processing`);
-        return professionals;
+        // Filter out professionals without confirmed bookings if a date is specified and we're not ignoring availability
+        const filteredProfessionals = date && !ignoreAvailability 
+          ? professionals.filter(p => p.hasConfirmedBookings)
+          : professionals;
+
+        console.log(`Final: Returning ${filteredProfessionals.length} professionals after processing`);
+        return filteredProfessionals;
 
       } catch (error) {
         console.error('Error in useProfessionals hook:', error);

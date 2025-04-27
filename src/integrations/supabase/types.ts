@@ -281,6 +281,48 @@ export type Database = {
           },
         ]
       }
+      professional_calendar_events: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          end_time: string
+          event_type: string
+          id: string
+          professional_id: string
+          start_time: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_time: string
+          event_type: string
+          id?: string
+          professional_id: string
+          start_time: string
+          status?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_time?: string
+          event_type?: string
+          id?: string
+          professional_id?: string
+          start_time?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string | null
@@ -463,6 +505,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      check_professional_availability: {
+        Args: { p_professional_id: string; p_date: string; p_shift: string }
+        Returns: boolean
+      }
       check_user_owns_location: {
         Args: { location_id: string; user_id: string }
         Returns: boolean
@@ -528,6 +574,14 @@ export type Database = {
           updated_at: string | null
           zip_code: string
         }[]
+      }
+      fetch_professional_calendar_events: {
+        Args: {
+          p_professional_id: string
+          p_start_date: string
+          p_end_date: string
+        }
+        Returns: Json[]
       }
       fetch_user_locations: {
         Args: { p_owner_id: string }
