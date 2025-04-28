@@ -1,9 +1,9 @@
 
-# Sistema de Gestão de Espaços para Profissionais da Beleza
+# Sistema de Gestão de Espaços para Profissionais
 
 ## 📝 Sobre o Projeto
 
-Este é um sistema web desenvolvido para gerenciar espaços e cabines para profissionais da beleza. A plataforma permite que proprietários disponibilizem seus espaços para aluguel, e profissionais possam reservá-los de forma eficiente.
+Este é um sistema web desenvolvido para gerenciar espaços e cabines para profissionais que precisam de um local para trabalhar. A plataforma permite que proprietários disponibilizem seus espaços para aluguel, e profissionais possam reservá-los de forma eficiente.
 
 ## 🚀 Funcionalidades Principais
 
@@ -161,4 +161,3 @@ Para suporte, envie um email para support@seudominio.com ou abra uma issue no re
 ---
 
 Desenvolvido com ❤️ pela sua equipe
-
