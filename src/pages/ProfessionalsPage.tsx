@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import ProfessionalCard from "@/components/ProfessionalCard";
 import { Input } from "@/components/ui/input";
@@ -104,7 +103,6 @@ const ProfessionalsPage = () => {
       setSelectedDate(newDate);
       setDateMode('day');
     } else {
-      // If selectedDate is null, create a new date from today
       const newDate = addDays(new Date(), daysToAdd);
       setSelectedDate(newDate);
       setDateMode('day');
@@ -132,7 +130,6 @@ const ProfessionalsPage = () => {
     });
   };
 
-  // Safe formatting function to handle null dates
   const safeFormatDate = (date: Date | null, formatString: string): string => {
     if (!date || !isValid(date)) return "Data inválida";
     try {
@@ -147,10 +144,10 @@ const ProfessionalsPage = () => {
     <div className="container px-4 py-12 md:px-6 md:py-16">
       <div className="mx-auto max-w-2xl text-center">
         <h1 className="text-3xl font-bold tracking-tight">
-          Profissionais Qualificados
+          Profissionais que Precisam de um Local para Trabalhar
         </h1>
         <p className="mt-4 text-gray-500">
-          Encontre os melhores profissionais para o seu serviço
+          Encontre excelentes profissionais que estão buscando um espaço para oferecer seus serviços
         </p>
       </div>
       
