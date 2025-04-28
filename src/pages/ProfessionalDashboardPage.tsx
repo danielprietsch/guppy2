@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ import { useAuth } from "@/lib/auth";
 import { useServices } from "@/hooks/useServices";
 import { supabase } from "@/integrations/supabase/client";
 import ServiceEditCard from "@/components/ServiceEditCard";
-import PrivacySettingsCard from "@/components/professional/PrivacySettingsCard";
+import { PrivacySettingsCard } from "@/components/professional/PrivacySettingsCard";
 import AvailabilityCalendar from "@/components/professional/AvailabilityCalendar";
 import WorkingHoursSettings from "@/components/professional/WorkingHoursSettings";
 import { toast } from "@/hooks/use-toast";

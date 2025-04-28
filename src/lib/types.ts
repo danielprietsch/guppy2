@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -20,6 +21,7 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   hasOwnLocation?: boolean;
+  is_public?: boolean;
   commission_rate?: number;
 }
 
