@@ -42,7 +42,7 @@ const AboutPage = () => {
               </div>
               <h2 className="mt-4 text-xl font-bold">Missão</h2>
               <p className="mt-2 text-gray-500">
-                Facilitar o acesso a espaços profissionais para prestadores de serviços de beleza, promovendo autonomia e crescimento profissional.
+                Facilitar o acesso a espaços profissionais para prestadores de serviços, promovendo autonomia e crescimento profissional.
               </p>
             </div>
             <div className="flex flex-col items-center text-center">
