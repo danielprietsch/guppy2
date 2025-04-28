@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,13 +32,13 @@ const ProfessionalDashboardPage = () => {
   const { services, loading: servicesLoading, refetch: refetchServices } = useServices();
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState(user);
 
-  const [stats, setStats] = useState({
-    upcomingAppointments: 0,
-    totalClients: 0,
-    totalRevenue: 0,
-    averageRating: 0,
-  });
+  useEffect(() => {
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, [user]);
 
   useEffect(() => {
     const loadingTimeout = setTimeout(() => {
@@ -244,7 +243,7 @@ const ProfessionalDashboardPage = () => {
         </Button>
       </div>
 
-      <PrivacySettingsCard />
+      {currentUser && <PrivacySettingsCard currentUser={currentUser} setCurrentUser={setCurrentUser} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card>
