@@ -19,6 +19,8 @@ export interface User {
   phone_number?: string;
   created_at?: string;
   updated_at?: string;
+  hasOwnLocation?: boolean;
+  commission_rate?: number;
 }
 
 export interface Location {
