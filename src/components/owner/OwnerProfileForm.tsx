@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User } from "@/lib/types";
@@ -17,6 +18,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileImageUpload } from "../profile/ProfileImageUpload";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -27,6 +30,7 @@ const formSchema = z.object({
   }),
   phoneNumber: z.string().optional(),
   avatarUrl: z.string().optional(),
+  hasOwnLocation: z.boolean().optional(),
 });
 
 interface OwnerProfileFormProps {
@@ -41,6 +45,7 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
     email: currentUser.email,
     phoneNumber: currentUser.phoneNumber || "",
     avatarUrl: currentUser.avatarUrl || "",
+    hasOwnLocation: currentUser.hasOwnLocation || false,
   });
 
   useEffect(() => {
@@ -50,6 +55,7 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
         email: currentUser.email,
         phoneNumber: currentUser.phoneNumber || "",
         avatarUrl: currentUser.avatarUrl || "",
+        hasOwnLocation: currentUser.hasOwnLocation || false,
       });
     }
   }, [currentUser]);
@@ -63,6 +69,7 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
           email: formData.email,
           phone_number: formData.phoneNumber,
           avatar_url: formData.avatarUrl,
+          has_own_location: formData.hasOwnLocation,
         })
         .eq('id', currentUser.id);
         
@@ -76,6 +83,7 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
         email: formData.email,
         phoneNumber: formData.phoneNumber,
         avatarUrl: formData.avatarUrl,
+        hasOwnLocation: formData.hasOwnLocation,
       };
       
       setCurrentUser(updatedUser);
@@ -159,6 +167,17 @@ export function OwnerProfileForm({ currentUser, setCurrentUser }: OwnerProfileFo
           </FormItem>
         )}
       />
+
+      {currentUser.user_type === "professional" && (
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="has-own-location"
+            checked={formData.hasOwnLocation}
+            onCheckedChange={(checked) => setFormData({...formData, hasOwnLocation: checked})}
+          />
+          <Label htmlFor="has-own-location">Possuo local próprio para atendimento</Label>
+        </div>
+      )}
 
       <div className="flex justify-end gap-4">
         <Button 

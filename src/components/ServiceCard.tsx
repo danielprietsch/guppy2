@@ -2,7 +2,7 @@
 import { Service } from "@/lib/types";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 
 interface ServiceCardProps {
@@ -17,6 +17,19 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
     });
   };
 
+  const getLocationText = (locationType: string | undefined) => {
+    switch (locationType) {
+      case 'cabin':
+        return 'No estabelecimento';
+      case 'professional_location':
+        return 'No local do profissional';
+      case 'both':
+        return 'Estabelecimento ou local do profissional';
+      default:
+        return 'No estabelecimento';
+    }
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-4">
@@ -24,6 +37,10 @@ const ServiceCard = ({ service }: ServiceCardProps) => {
         <div className="flex items-center gap-1 mt-1 text-muted-foreground">
           <Clock className="h-3 w-3" />
           <span className="text-xs">{service.duration} minutos</span>
+        </div>
+        <div className="flex items-center gap-1 mt-1 text-muted-foreground">
+          <MapPin className="h-3 w-3" />
+          <span className="text-xs">{getLocationText(service.locationType)}</span>
         </div>
         <p className="text-sm mt-2">{service.description}</p>
         <div className="mt-2">

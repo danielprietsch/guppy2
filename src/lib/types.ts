@@ -60,19 +60,20 @@ export interface Cabin {
 export interface Service {
   id: string;
   providerId?: string;
-  professionalId?: string; // Added this property for backwards compatibility
+  professionalId?: string;
   name: string;
   description: string;
   duration: number;
   price: number;
   category: string;
+  locationType?: 'cabin' | 'professional_location' | 'both';
 }
 
 export interface Booking {
   id: string;
   cabinId: string;
   providerId?: string;
-  professionalId?: string; // Added this property for backwards compatibility
+  professionalId?: string;
   date: string;
   shift: "morning" | "afternoon" | "evening";
   status: "pending" | "confirmed" | "cancelled";
@@ -82,7 +83,7 @@ export interface Booking {
 export interface Appointment {
   id: string;
   providerId?: string;
-  professionalId?: string; // Added this property for backwards compatibility
+  professionalId?: string;
   clientId: string;
   serviceId: string;
   date: string;
@@ -94,7 +95,7 @@ export interface Appointment {
 export interface Review {
   id: string;
   providerId?: string;
-  professionalId?: string; // Added this property for backwards compatibility
+  professionalId?: string;
   clientId: string;
   rating: number;
   comment?: string;

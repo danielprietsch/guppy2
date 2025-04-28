@@ -328,9 +328,11 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           city: string | null
+          commission_rate: number | null
           cpf: string | null
           created_at: string | null
           email: string | null
+          has_own_location: boolean | null
           id: string
           is_public: boolean | null
           name: string | null
@@ -344,9 +346,11 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           city?: string | null
+          commission_rate?: number | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
+          has_own_location?: boolean | null
           id: string
           is_public?: boolean | null
           name?: string | null
@@ -360,9 +364,11 @@ export type Database = {
           address?: string | null
           avatar_url?: string | null
           city?: string | null
+          commission_rate?: number | null
           cpf?: string | null
           created_at?: string | null
           email?: string | null
+          has_own_location?: boolean | null
           id?: string
           is_public?: boolean | null
           name?: string | null
@@ -414,6 +420,7 @@ export type Database = {
           description: string | null
           duration: number
           id: string
+          location_type: string | null
           name: string
           price: number
           professional_id: string | null
@@ -425,6 +432,7 @@ export type Database = {
           description?: string | null
           duration: number
           id?: string
+          location_type?: string | null
           name: string
           price: number
           professional_id?: string | null
@@ -436,6 +444,7 @@ export type Database = {
           description?: string | null
           duration?: number
           id?: string
+          location_type?: string | null
           name?: string
           price?: number
           professional_id?: string | null
@@ -631,9 +640,11 @@ export type Database = {
           address: string | null
           avatar_url: string | null
           city: string | null
+          commission_rate: number | null
           cpf: string | null
           created_at: string | null
           email: string | null
+          has_own_location: boolean | null
           id: string
           is_public: boolean | null
           name: string | null
