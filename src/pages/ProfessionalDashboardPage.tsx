@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,14 @@ const ProfessionalDashboardPage = () => {
   const [isPublicProfile, setIsPublicProfile] = useState(true);
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState(user);
+  
+  // Re-add the stats state variable that was removed
+  const [stats, setStats] = useState({
+    upcomingAppointments: 0,
+    totalClients: 0,
+    totalRevenue: 0,
+    averageRating: 0,
+  });
 
   useEffect(() => {
     if (user) {
