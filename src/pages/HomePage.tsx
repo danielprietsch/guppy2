@@ -1,3 +1,4 @@
+
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronRight, CalendarDays, MapPin, Users } from "lucide-react";
@@ -21,7 +22,7 @@ const HomePage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
               >
-                Espaço para Profissionais da Beleza
+                Espaço para Profissionais que Precisam de um Local para Trabalhar
               </motion.h1>
               
               <motion.p 
@@ -30,7 +31,7 @@ const HomePage = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
-                Cabines equipadas para aluguel diário ou mensal para cabeleireiros, manicures, esteticistas e outros profissionais da beleza.
+                Espaços de trabalho equipados para aluguel diário ou mensal para profissionais que precisam de um local adequado para atender seus clientes.
               </motion.p>
               
               <motion.div 
@@ -56,7 +57,7 @@ const HomePage = () => {
             >
               <img 
                 src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?auto=format&fit=crop&w=800&q=80" 
-                alt="Salon Space" 
+                alt="Workspace" 
                 className="rounded-lg shadow-lg"
               />
               <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-lg shadow-lg">
@@ -87,7 +88,7 @@ const HomePage = () => {
                 <Users className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Para Profissionais</h3>
-              <p className="text-gray-600 mb-4">Alugue espaços equipados por dia ou mês para atender seus clientes com flexibilidade e sem burocracia.</p>
+              <p className="text-gray-600 mb-4">Alugue espaços de trabalho equipados por dia ou mês para atender seus clientes com flexibilidade e sem burocracia.</p>
               <Link to="/register" className="text-primary font-medium inline-flex items-center">
                 Saiba mais <ChevronRight className="h-4 w-4 ml-1" />
               </Link>
@@ -124,7 +125,7 @@ const HomePage = () => {
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-white mb-4">Pronto para começar?</h2>
             <p className="text-white/90 text-lg mb-8">
-              Junte-se a nossa comunidade de profissionais da beleza e transforme a maneira como você trabalha.
+              Junte-se a nossa comunidade de profissionais e transforme a maneira como você trabalha.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" variant="secondary" className="font-semibold">
